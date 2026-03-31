@@ -1,0 +1,1253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ProcessFlow — Process Improvement System</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Outfit:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0c10;--surface:#111318;--surface2:#1a1d24;--surface3:#22262f;--border:#2a2e38;--border2:#363b48;--accent:#00d4aa;--accent2:#0088ff;--accent3:#ff6b35;--accent4:#a855f7;--text:#e8eaf0;--text2:#9ca3af;--text3:#6b7280;--danger:#ef4444;--success:#22c55e;--warning:#f59e0b;--mono:'Space Mono',monospace;--sans:'Outfit',sans-serif;--radius:8px;--radius2:12px;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;overflow-x:hidden;}
+
+/* LOGIN */
+#login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 60% 40%,rgba(0,212,170,.06),transparent 60%),radial-gradient(ellipse at 20% 80%,rgba(0,136,255,.05),transparent 50%),var(--bg);}
+.login-box{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:2.5rem;width:100%;max-width:420px;box-shadow:0 24px 60px rgba(0,0,0,.5);}
+.login-logo{font-family:var(--mono);font-size:1.1rem;font-weight:700;color:var(--accent);display:flex;align-items:center;gap:10px;margin-bottom:2rem;}
+.login-logo-dot{width:10px;height:10px;background:var(--accent);border-radius:50%;animation:pulse 2s infinite;}
+.login-title{font-size:1.5rem;font-weight:900;margin-bottom:.3rem;}
+.login-sub{font-size:.85rem;color:var(--text3);margin-bottom:1.8rem;}
+.login-tabs{display:flex;gap:4px;background:var(--surface2);border-radius:var(--radius);padding:4px;margin-bottom:1.5rem;}
+.login-tab{flex:1;padding:8px;text-align:center;border-radius:6px;font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;cursor:pointer;color:var(--text3);transition:all .2s;border:none;background:none;}
+.login-tab.active{background:var(--surface3);color:var(--accent);border:1px solid var(--border2);}
+.login-form{display:flex;flex-direction:column;gap:1rem;}
+.login-err{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);border-radius:var(--radius);padding:10px 14px;font-size:.82rem;color:var(--danger);display:none;}
+.login-ok{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.25);border-radius:var(--radius);padding:10px 14px;font-size:.82rem;color:var(--success);display:none;}
+.demo-hint{font-size:.72rem;color:var(--text3);text-align:center;margin-top:.6rem;}
+.demo-hint strong{color:var(--accent);cursor:pointer;}
+
+/* HEADER */
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 1.5rem;display:flex;align-items:center;gap:1rem;height:60px;position:sticky;top:0;z-index:100;}
+.logo{font-family:var(--mono);font-size:.95rem;font-weight:700;color:var(--accent);display:flex;align-items:center;gap:8px;white-space:nowrap;}
+.logo-dot{width:8px;height:8px;background:var(--accent);border-radius:50%;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}
+nav{display:flex;gap:3px;overflow-x:auto;flex:1;}
+.nav-btn{background:none;border:none;color:var(--text3);font-family:var(--sans);font-size:.73rem;font-weight:600;padding:6px 11px;border-radius:var(--radius);cursor:pointer;transition:all .2s;white-space:nowrap;letter-spacing:.3px;text-transform:uppercase;}
+.nav-btn:hover{color:var(--text);background:var(--surface2);}
+.nav-btn.active{color:var(--accent);background:rgba(0,212,170,.08);}
+.header-user{display:flex;align-items:center;gap:10px;margin-left:auto;flex-shrink:0;}
+.user-avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.78rem;color:#000;flex-shrink:0;}
+.user-name{font-size:.78rem;font-weight:600;color:var(--text2);white-space:nowrap;}
+.user-role-badge{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:2px 7px;border-radius:4px;}
+
+/* LAYOUT */
+#main-app{display:none;flex-direction:column;height:calc(100vh - 60px);overflow:hidden;}
+#main-app.visible{display:flex;}
+.section{display:none;flex:1;overflow-y:auto;padding:2rem;}
+.section.active{display:flex;flex-direction:column;gap:1.5rem;}
+
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius2);padding:1.5rem;}
+.card-header{display:flex;align-items:center;gap:10px;margin-bottom:1.2rem;padding-bottom:1rem;border-bottom:1px solid var(--border);}
+.card-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;}
+.card-title{font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text2);}
+
+/* FORMS */
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:1rem;}
+.form-group{display:flex;flex-direction:column;gap:6px;}
+.form-group.full{grid-column:1/-1;}
+label{font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);}
+input,select,textarea{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:var(--sans);font-size:.88rem;padding:10px 12px;transition:border-color .2s,box-shadow .2s;width:100%;}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,212,170,.1);}
+textarea{resize:vertical;min-height:80px;}
+select option{background:var(--surface2);}
+
+/* BUTTONS */
+.btn{font-family:var(--sans);font-size:.78rem;font-weight:700;letter-spacing:.4px;text-transform:uppercase;padding:10px 18px;border-radius:var(--radius);border:none;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;}
+.btn-primary{background:var(--accent);color:#000;}.btn-primary:hover{background:#00f0c0;box-shadow:0 0 16px rgba(0,212,170,.3);}
+.btn-secondary{background:var(--surface3);color:var(--text);border:1px solid var(--border);}.btn-secondary:hover{border-color:var(--border2);}
+.btn-danger{background:rgba(239,68,68,.1);color:var(--danger);border:1px solid rgba(239,68,68,.2);}.btn-danger:hover{background:rgba(239,68,68,.2);}
+.btn-blue{background:var(--accent2);color:#fff;}.btn-blue:hover{background:#0070e0;}
+.btn-purple{background:var(--accent4);color:#fff;}.btn-purple:hover{background:#9333ea;}
+.btn-orange{background:var(--accent3);color:#fff;}.btn-orange:hover{background:#e55a27;}
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+.btn-row{display:flex;gap:.7rem;flex-wrap:wrap;align-items:center;margin-top:1rem;}
+
+/* BADGES */
+.badge{font-size:.67rem;font-weight:700;letter-spacing:.4px;text-transform:uppercase;padding:3px 8px;border-radius:4px;display:inline-flex;align-items:center;gap:4px;}
+.badge-green{background:rgba(34,197,94,.12);color:var(--success);}
+.badge-blue{background:rgba(0,136,255,.12);color:var(--accent2);}
+.badge-orange{background:rgba(255,107,53,.12);color:var(--accent3);}
+.badge-teal{background:rgba(0,212,170,.12);color:var(--accent);}
+.badge-purple{background:rgba(168,85,247,.12);color:var(--accent4);}
+.badge-gray{background:var(--surface3);color:var(--text3);}
+.badge-red{background:rgba(239,68,68,.12);color:var(--danger);}
+
+/* COLLAPSIBLE */
+.item-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius2);overflow:hidden;transition:border-color .2s;}
+.item-card:hover{border-color:var(--border2);}
+.item-header{display:flex;align-items:center;gap:12px;padding:.95rem 1.2rem;cursor:pointer;user-select:none;}
+.item-number{width:26px;height:26px;border-radius:50%;background:var(--surface3);border:2px solid var(--border2);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:.66rem;font-weight:700;color:var(--accent);flex-shrink:0;}
+.item-title-text{flex:1;font-weight:600;font-size:.87rem;}
+.item-meta{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+.item-chevron{color:var(--text3);font-size:.72rem;transition:transform .2s;}
+.item-card.open .item-chevron{transform:rotate(180deg);}
+.item-body{display:none;padding:0 1.2rem 1.2rem;border-top:1px solid var(--border);padding-top:1rem;}
+.item-card.open .item-body{display:block;}
+
+/* GAP SEVERITY */
+.gap-critical{border-left:4px solid var(--danger)!important;}
+.gap-high{border-left:4px solid var(--accent3)!important;}
+.gap-medium{border-left:4px solid var(--warning)!important;}
+.gap-low{border-left:4px solid var(--accent2)!important;}
+
+/* DIAGRAM */
+#diagram-canvas{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius2);padding:2rem;min-height:300px;overflow-x:auto;}
+
+/* METRICS */
+.metrics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:1rem;}
+.metric-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius2);padding:1.1rem;display:flex;flex-direction:column;gap:7px;}
+.metric-label{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);}
+.metric-value{font-family:var(--mono);font-size:1.55rem;font-weight:700;color:var(--text);line-height:1;}
+.metric-unit{font-size:.7rem;color:var(--text3);}
+.timeline-bar{height:4px;background:var(--surface3);border-radius:2px;overflow:hidden;}
+.timeline-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--accent),var(--accent2));}
+
+/* AI */
+.ai-output{background:linear-gradient(135deg,rgba(168,85,247,.06),rgba(0,136,255,.06));border:1px solid rgba(168,85,247,.2);border-radius:var(--radius2);padding:1.5rem;font-size:.87rem;line-height:1.7;}
+.ai-output h3{color:var(--accent4);font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;}
+.ai-thinking{display:flex;align-items:center;gap:12px;padding:1rem;color:var(--text3);font-size:.85rem;}
+.spinner{width:18px;height:18px;border:2px solid var(--border2);border-top-color:var(--accent4);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* HISTORY */
+.history-entry{background:var(--surface3);border-left:3px solid var(--accent);padding:8px 12px;border-radius:0 6px 6px 0;font-size:.79rem;line-height:1.5;color:var(--text2);}
+.he-time{font-family:var(--mono);font-size:.64rem;color:var(--text3);margin-bottom:3px;}
+
+/* RAG */
+.rag-option{display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;padding:10px 14px;border-radius:var(--radius2);border:2px solid var(--border);background:var(--surface2);transition:all .2s;min-width:88px;user-select:none;}
+.rag-option:hover{border-color:var(--border2);}
+.rag-option.sel-green{border-color:#22c55e;background:rgba(34,197,94,.08);}
+.rag-option.sel-amber{border-color:#f59e0b;background:rgba(245,158,11,.08);}
+.rag-option.sel-red{border-color:#ef4444;background:rgba(239,68,68,.08);}
+.rag-circle{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.95rem;color:#000;}
+.rag-label{font-size:.78rem;font-weight:700;}
+.rag-sub{font-size:.63rem;color:var(--text3);}
+
+/* FLOW SIGNALS */
+.signal-toggle{display:inline-flex;cursor:pointer;}
+.signal-toggle input{display:none;}
+.signal-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface3);font-size:.75rem;font-weight:700;color:var(--text3);transition:all .2s;cursor:pointer;}
+.signal-toggle input:checked+.signal-start{border-color:var(--success);background:rgba(34,197,94,.1);color:var(--success);}
+.signal-toggle input:checked+.signal-end{border-color:var(--danger);background:rgba(239,68,68,.1);color:var(--danger);}
+
+/* MISC */
+.section-hero{display:flex;align-items:center;gap:12px;margin-bottom:.4rem;}
+.section-hero-icon{font-size:1.4rem;}
+.section-hero-title{font-size:1.28rem;font-weight:900;letter-spacing:-.5px;}
+.section-hero-sub{font-size:.78rem;color:var(--text3);margin-top:2px;}
+.empty-state{text-align:center;padding:3rem;color:var(--text3);}
+.empty-state .es-icon{font-size:2.5rem;margin-bottom:1rem;opacity:.5;}
+.empty-state .es-text{font-size:.82rem;}
+.summary-bar{display:flex;gap:.75rem;flex-wrap:wrap;}
+.summary-stat{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;display:flex;flex-direction:column;gap:2px;min-width:100px;}
+.summary-stat-val{font-family:var(--mono);font-size:1.2rem;font-weight:700;color:var(--accent);}
+.summary-stat-label{font-size:.65rem;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);}
+table{width:100%;border-collapse:collapse;font-size:.81rem;}
+th{text-align:left;padding:9px 12px;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);border-bottom:1px solid var(--border);background:var(--surface2);}
+td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+tr:hover td{background:var(--surface2);}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:none;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal-box{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius2);padding:2rem;width:100%;max-width:440px;box-shadow:0 24px 60px rgba(0,0,0,.6);}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:var(--surface);}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+@media(max-width:600px){.section{padding:1rem;}.form-grid{grid-template-columns:1fr;}nav{gap:2px;}.nav-btn{padding:5px 8px;font-size:.66rem;}}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo"><div class="login-logo-dot"></div>ProcessFlow</div>
+    <div class="login-title">Welcome back</div>
+    <div class="login-sub">Sign in to your workspace</div>
+    <div class="login-tabs">
+      <button class="login-tab active" onclick="switchLoginTab('login',this)">Sign In</button>
+      <button class="login-tab" onclick="switchLoginTab('register',this)">Register</button>
+    </div>
+    <div id="tab-login" class="login-form">
+      <div id="login-err" class="login-err"></div>
+      <div class="form-group"><label>Email</label><input type="email" id="li-email" placeholder="you@company.com"/></div>
+      <div class="form-group"><label>Password</label><input type="password" id="li-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/></div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="doLogin()">→ Sign In</button>
+      <div class="demo-hint">Demo admin: <strong onclick="fillDemo('admin')">admin@processflow.io</strong> &nbsp;|&nbsp; Demo viewer: <strong onclick="fillDemo('user')">user@processflow.io</strong></div>
+    </div>
+    <div id="tab-register" class="login-form" style="display:none">
+      <div id="reg-err" class="login-err"></div>
+      <div id="reg-ok" class="login-ok"></div>
+      <div class="form-group"><label>Full Name</label><input type="text" id="reg-name" placeholder="Your name"/></div>
+      <div class="form-group"><label>Email</label><input type="email" id="reg-email" placeholder="you@company.com"/></div>
+      <div class="form-group"><label>Password</label><input type="password" id="reg-pass" placeholder="Min. 6 characters"/></div>
+      <div class="form-group"><label>Confirm Password</label><input type="password" id="reg-pass2" placeholder="Repeat password" onkeydown="if(event.key==='Enter')doRegister()"/></div>
+      <button class="btn btn-blue" style="width:100%;justify-content:center" onclick="doRegister()">✦ Create Account</button>
+      <div class="demo-hint">New accounts start as <strong style="cursor:default">Viewer</strong>. An admin can upgrade your role.</div>
+    </div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header id="main-header" style="display:none">
+  <div class="logo"><div class="logo-dot"></div>ProcessFlow</div>
+  <nav>
+    <button class="nav-btn active" onclick="showSection('register',this)">⚙ Register</button>
+    <button class="nav-btn" onclick="showSection('steps',this)">📋 Steps</button>
+    <button class="nav-btn" onclick="showSection('diagram',this)">🗺 Diagram</button>
+    <button class="nav-btn" onclick="showSection('gaps',this)">⚠ Gaps</button>
+    <button class="nav-btn" onclick="showSection('metrics',this)">📊 Metrics</button>
+    <button class="nav-btn" onclick="showSection('ai',this)">✦ AI</button>
+    <button class="nav-btn" id="nav-admin" style="display:none;color:var(--accent4)" onclick="showSection('admin',this)">👥 Users</button>
+  </nav>
+  <div class="header-user">
+    <div class="user-avatar" id="hdr-avatar"></div>
+    <div style="line-height:1.3"><div class="user-name" id="hdr-name"></div><span class="user-role-badge" id="hdr-role"></span></div>
+    <button class="btn btn-secondary" style="padding:6px 11px;font-size:.7rem" onclick="doLogout()">↩ Logout</button>
+  </div>
+</header>
+
+<div id="main-app">
+
+<!-- REGISTER -->
+<section id="section-register" class="section active">
+  <div class="section-hero"><span class="section-hero-icon">⚙</span><div><div class="section-hero-title">Process Registration</div><div class="section-hero-sub">Define main process parameters</div></div></div>
+  <div class="card">
+    <div class="card-header"><div class="card-icon" style="background:rgba(0,212,170,.1)">🏷</div><span class="card-title">Basic Information</span></div>
+    <div class="form-grid">
+      <div class="form-group"><label>Process Name *</label><input type="text" id="proc-name" placeholder="e.g. Customer Onboarding"/></div>
+      <div class="form-group"><label>Process Code</label><input type="text" id="proc-code" placeholder="e.g. PROC-001"/></div>
+      <div class="form-group"><label>Department</label><input type="text" id="proc-dept" placeholder="e.g. Sales, Operations"/></div>
+      <div class="form-group"><label>Process Owner</label><input type="text" id="proc-owner" placeholder="Name or role"/></div>
+      <div class="form-group"><label>Version</label><input type="text" id="proc-version" placeholder="e.g. 1.0"/></div>
+      <div class="form-group"><label>Status</label><select id="proc-status"><option value="draft">Draft</option><option value="active">Active</option><option value="under-review">Under Review</option><option value="deprecated">Deprecated</option></select></div>
+      <div class="form-group"><label>Start Date</label><input type="date" id="proc-start"/></div>
+      <div class="form-group"><label>Target End Date</label><input type="date" id="proc-end"/></div>
+      <div class="form-group full"><label>Process Description *</label><textarea id="proc-desc" rows="3" placeholder="Describe the purpose and scope…"></textarea></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><div class="card-icon" style="background:rgba(0,136,255,.1)">🎯</div><span class="card-title">Parameters & Scope</span></div>
+    <div class="form-grid">
+      <div class="form-group"><label>Priority</label><select id="proc-priority"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option><option value="critical">Critical</option></select></div>
+      <div class="form-group"><label>Process Type</label><select id="proc-type"><option value="operational">Operational</option><option value="administrative">Administrative</option><option value="strategic">Strategic</option><option value="support">Support</option><option value="compliance">Compliance</option></select></div>
+      <div class="form-group"><label>Expected Duration</label><input type="text" id="proc-duration" placeholder="e.g. 2 hours, 3 days"/></div>
+      <div class="form-group"><label>Frequency</label><select id="proc-frequency"><option value="">Select…</option><option value="on-demand">On Demand</option><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option><option value="quarterly">Quarterly</option><option value="annually">Annually</option></select></div>
+      <div class="form-group full"><label>Input (trigger)</label><input type="text" id="proc-input" placeholder="e.g. Customer request, data file…"/></div>
+      <div class="form-group full"><label>Output (result)</label><input type="text" id="proc-output" placeholder="e.g. Report, approval, notification…"/></div>
+      <div class="form-group full"><label>Stakeholders</label><input type="text" id="proc-stakeholders" placeholder="e.g. Sales team, IT, Finance…"/></div>
+      <div class="form-group full"><label>Tools & Systems</label><input type="text" id="proc-tools" placeholder="e.g. Salesforce, SAP, Excel…"/></div>
+      <div class="form-group full"><label>KPIs / Success Criteria</label><textarea id="proc-kpis" rows="2" placeholder="e.g. Processing time < 4h…"></textarea></div>
+      <div class="form-group full"><label>Risks & Pain Points</label><textarea id="proc-risks" rows="2" placeholder="e.g. Manual handoffs, data silos…"></textarea></div>
+    </div>
+  </div>
+  <!-- RAG -->
+  <div class="card">
+    <div class="card-header"><div class="card-icon" style="background:rgba(34,197,94,.1)">🚦</div><span class="card-title">RAG Status</span><span style="font-size:.72rem;color:var(--text3);margin-left:auto">Red · Amber · Green health indicator</span></div>
+    <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1.2rem">
+      <div class="rag-option" id="rag-green" onclick="selectRAG('green')"><div class="rag-circle" style="background:#22c55e">G</div><div class="rag-label">Green</div><div class="rag-sub">On track</div></div>
+      <div class="rag-option" id="rag-amber" onclick="selectRAG('amber')"><div class="rag-circle" style="background:#f59e0b">A</div><div class="rag-label">Amber</div><div class="rag-sub">At risk</div></div>
+      <div class="rag-option" id="rag-red"   onclick="selectRAG('red')"  ><div class="rag-circle" style="background:#ef4444">R</div><div class="rag-label">Red</div><div class="rag-sub">Off track</div></div>
+    </div>
+    <div class="form-grid">
+      <div class="form-group full"><label>RAG Justification</label><textarea id="proc-rag-notes" rows="2" placeholder="Explain the current health status…"></textarea></div>
+      <div class="form-group"><label>Last Reviewed</label><input type="date" id="proc-rag-date"/></div>
+      <div class="form-group"><label>Reviewed By</label><input type="text" id="proc-rag-by" placeholder="Name or role"/></div>
+    </div>
+    <div id="rag-history-wrap" style="margin-top:1rem;display:none">
+      <label style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3)">RAG History</label>
+      <div id="rag-history-list" style="display:flex;flex-direction:column;gap:6px;margin-top:8px"></div>
+    </div>
+  </div>
+  <div class="btn-row"><button class="btn btn-primary" onclick="saveProcess()">✓ Save Process</button><button class="btn btn-secondary" onclick="clearProcessForm()">↺ Clear</button></div>
+  <div class="card" id="process-table-card" style="display:none">
+    <div class="card-header"><div class="card-icon" style="background:rgba(168,85,247,.1)">📄</div><span class="card-title">Registered Processes</span></div>
+    <div style="overflow-x:auto"><table><thead><tr><th>Code</th><th>Name</th><th>Dept</th><th>Owner</th><th>Priority</th><th>Status</th><th>Type</th><th>RAG</th><th></th></tr></thead><tbody id="process-table-body"></tbody></table></div>
+  </div>
+</section>
+
+<!-- STEPS -->
+<section id="section-steps" class="section">
+  <div class="section-hero"><span class="section-hero-icon">📋</span><div><div class="section-hero-title">Process Steps</div><div class="section-hero-sub">Add, configure and document each step</div></div></div>
+  <div class="card">
+    <div class="card-header"><div class="card-icon" style="background:rgba(0,212,170,.1)">➕</div><span class="card-title">Add New Step</span></div>
+    <div class="form-grid">
+      <div class="form-group"><label>Step Name *</label><input type="text" id="step-name" placeholder="e.g. Validate Document"/></div>
+      <div class="form-group"><label>Responsible</label><input type="text" id="step-responsible" placeholder="Name or role"/></div>
+      <div class="form-group"><label>Step Type</label><select id="step-type" onchange="toggleDecisionFields()"><option value="task">Task</option><option value="decision">Decision</option><option value="approval">Approval</option><option value="automated">Automated</option><option value="review">Review</option><option value="notification">Notification</option></select></div>
+      <div class="form-group"><label>System / Tool</label><input type="text" id="step-system" placeholder="e.g. ERP, email, manual"/></div>
+      <div class="form-group"><label>SLA / Target Duration</label><input type="text" id="step-sla" placeholder="e.g. 30 min, 2 hours"/></div>
+      <div class="form-group"><label>Status</label><select id="step-status"><option value="not-started">Not Started</option><option value="in-progress">In Progress</option><option value="completed">Completed</option><option value="blocked">Blocked</option><option value="skipped">Skipped</option></select></div>
+      <div class="form-group" style="align-self:end">
+        <label>Flow Signals</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:2px">
+          <label class="signal-toggle"><input type="checkbox" id="step-is-start" onchange="onSignalChange('start')"/><span class="signal-btn signal-start">▶ Start</span></label>
+          <label class="signal-toggle"><input type="checkbox" id="step-is-end"   onchange="onSignalChange('end')"  /><span class="signal-btn signal-end">■ End</span></label>
+        </div>
+      </div>
+      <div class="form-group full" id="branch-fields" style="display:none">
+        <label>Decision Branches</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.7rem;margin-top:4px">
+          <div class="form-group"><label style="color:var(--success)">✓ Yes / True branch</label><input type="text" id="step-branch-yes" placeholder="e.g. Approve & continue"/></div>
+          <div class="form-group"><label style="color:var(--danger)">✗ No / False branch</label><input type="text" id="step-branch-no"  placeholder="e.g. Reject & notify"/></div>
+        </div>
+      </div>
+      <div class="form-group full"><label>Step Description</label><textarea id="step-desc" rows="2" placeholder="What happens in this step…"></textarea></div>
+      <div class="form-group full"><label>Input / Trigger</label><input type="text" id="step-input" placeholder="What is needed to start?"/></div>
+      <div class="form-group full"><label>Output / Result</label><input type="text" id="step-output" placeholder="What is produced?"/></div>
+    </div>
+    <div class="btn-row"><button class="btn btn-primary" onclick="addStep()">➕ Add Step</button><button class="btn btn-secondary" onclick="clearStepForm()">↺ Clear</button></div>
+  </div>
+  <div id="steps-summary-bar" style="display:none"><div class="summary-bar" id="summary-bar-inner"></div></div>
+  <div id="steps-list"><div class="empty-state"><div class="es-icon">📋</div><div class="es-text">No steps added yet.</div></div></div>
+</section>
+
+<!-- DIAGRAM -->
+<section id="section-diagram" class="section">
+  <div class="section-hero"><span class="section-hero-icon">🗺</span><div><div class="section-hero-title">Process Diagram</div><div class="section-hero-sub">Visual flow generated from your steps</div></div></div>
+  <div class="btn-row" style="margin-bottom:0"><button class="btn btn-primary" onclick="renderDiagram()">⟳ Refresh</button><button class="btn btn-secondary" onclick="exportDiagram()">↓ Export SVG</button></div>
+  <div id="diagram-canvas"><div class="empty-state"><div class="es-icon">🗺</div><div class="es-text">Add steps then click Refresh.</div></div></div>
+  <div class="card" id="diagram-legend" style="display:none">
+    <div class="card-header"><div class="card-icon" style="background:rgba(0,212,170,.1)">ℹ</div><span class="card-title">Legend</span></div>
+    <div style="display:flex;gap:1.5rem;flex-wrap:wrap;font-size:.77rem">
+      <span style="display:flex;align-items:center;gap:6px"><span style="width:13px;height:13px;background:rgba(34,197,94,.3);border:2px solid var(--success);border-radius:4px;display:inline-block"></span>Start/End</span>
+      <span style="display:flex;align-items:center;gap:6px"><span style="width:13px;height:13px;background:var(--surface3);border:2px solid var(--border2);border-radius:4px;display:inline-block"></span>Task</span>
+      <span style="display:flex;align-items:center;gap:6px"><span style="width:13px;height:13px;background:rgba(245,158,11,.2);border:2px solid var(--warning);border-radius:4px;display:inline-block"></span>Decision</span>
+      <span style="display:flex;align-items:center;gap:6px"><span style="width:13px;height:13px;background:rgba(0,136,255,.15);border:2px solid var(--accent2);border-radius:4px;display:inline-block"></span>Approval</span>
+      <span style="display:flex;align-items:center;gap:6px"><span style="width:13px;height:13px;background:rgba(168,85,247,.15);border:2px solid var(--accent4);border-radius:4px;display:inline-block"></span>Automated</span>
+      <span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;background:var(--success);border-radius:50%;display:inline-block"></span>Completed</span>
+      <span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;background:var(--accent2);border-radius:50%;display:inline-block"></span>In Progress</span>
+      <span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;background:var(--danger);border-radius:50%;display:inline-block"></span>Blocked</span>
+    </div>
+  </div>
+</section>
+
+<!-- GAPS -->
+<section id="section-gaps" class="section">
+  <div class="section-hero"><span class="section-hero-icon">⚠</span><div><div class="section-hero-title">Gap Analysis</div><div class="section-hero-sub">Register and track process gaps, deficiencies and improvement opportunities</div></div></div>
+  <div class="card">
+    <div class="card-header"><div class="card-icon" style="background:rgba(255,107,53,.1)">➕</div><span class="card-title">Register Gap</span></div>
+    <div class="form-grid">
+      <div class="form-group"><label>Gap Title *</label><input type="text" id="gap-title" placeholder="e.g. Missing SLA definition"/></div>
+      <div class="form-group"><label>Category</label><select id="gap-cat"><option value="process">Process Design</option><option value="people">People / Skills</option><option value="technology">Technology / Tools</option><option value="compliance">Compliance / Policy</option><option value="data">Data / Information</option><option value="communication">Communication</option><option value="performance">Performance / KPI</option><option value="other">Other</option></select></div>
+      <div class="form-group"><label>Severity</label><select id="gap-severity"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option><option value="critical">Critical</option></select></div>
+      <div class="form-group"><label>Status</label><select id="gap-status"><option value="open">Open</option><option value="in-analysis">In Analysis</option><option value="action-planned">Action Planned</option><option value="in-progress">In Progress</option><option value="resolved">Resolved</option><option value="accepted">Accepted Risk</option></select></div>
+      <div class="form-group"><label>Related Step</label><input type="text" id="gap-step" placeholder="e.g. Step 2 – Approval"/></div>
+      <div class="form-group"><label>Responsible</label><input type="text" id="gap-owner" placeholder="Name or team"/></div>
+      <div class="form-group"><label>Identified Date</label><input type="date" id="gap-date"/></div>
+      <div class="form-group"><label>Target Resolution</label><input type="date" id="gap-target"/></div>
+      <div class="form-group full"><label>Current State *</label><textarea id="gap-current" rows="2" placeholder="Describe the current situation…"></textarea></div>
+      <div class="form-group full"><label>Desired State</label><textarea id="gap-desired" rows="2" placeholder="Describe the ideal situation…"></textarea></div>
+      <div class="form-group full"><label>Root Cause</label><textarea id="gap-rootcause" rows="2" placeholder="Why does this gap exist?"></textarea></div>
+      <div class="form-group full"><label>Impact / Consequences</label><textarea id="gap-impact" rows="2" placeholder="Business impact if not addressed…"></textarea></div>
+      <div class="form-group full"><label>Proposed Action</label><textarea id="gap-action" rows="2" placeholder="What actions are proposed?"></textarea></div>
+    </div>
+    <div class="btn-row"><button class="btn btn-orange" onclick="addGap()">⚠ Register Gap</button><button class="btn btn-secondary" onclick="clearGapForm()">↺ Clear</button></div>
+  </div>
+  <div id="gaps-summary-bar" style="display:none"><div class="summary-bar" id="gaps-summary-inner"></div></div>
+  <div id="gaps-list"><div class="empty-state"><div class="es-icon">⚠</div><div class="es-text">No gaps registered yet.</div></div></div>
+  <div class="card" id="gaps-table-card" style="display:none">
+    <div class="card-header"><div class="card-icon" style="background:rgba(255,107,53,.1)">📋</div><span class="card-title">Gaps Summary Table</span></div>
+    <div style="overflow-x:auto"><table><thead><tr><th>#</th><th>Title</th><th>Category</th><th>Severity</th><th>Status</th><th>Responsible</th><th>Target</th><th></th></tr></thead><tbody id="gaps-table-body"></tbody></table></div>
+  </div>
+</section>
+
+<!-- METRICS -->
+<section id="section-metrics" class="section">
+  <div class="section-hero"><span class="section-hero-icon">📊</span><div><div class="section-hero-title">Current Metrics</div><div class="section-hero-sub">Performance data for AI analysis</div></div></div>
+  <div class="card">
+    <div class="card-header"><div class="card-icon" style="background:rgba(0,136,255,.1)">📥</div><span class="card-title">Add Metric</span></div>
+    <div class="form-grid">
+      <div class="form-group"><label>Metric Name *</label><input type="text" id="metric-name" placeholder="e.g. Average Processing Time"/></div>
+      <div class="form-group"><label>Category</label><select id="metric-cat"><option value="time">Time</option><option value="quality">Quality</option><option value="cost">Cost</option><option value="volume">Volume</option><option value="satisfaction">Satisfaction</option><option value="efficiency">Efficiency</option><option value="compliance">Compliance</option><option value="other">Other</option></select></div>
+      <div class="form-group"><label>Current Value *</label><input type="number" id="metric-val" placeholder="e.g. 45" step="any"/></div>
+      <div class="form-group"><label>Unit</label><input type="text" id="metric-unit" placeholder="e.g. min, %, $"/></div>
+      <div class="form-group"><label>Target Value</label><input type="number" id="metric-target" placeholder="e.g. 20" step="any"/></div>
+      <div class="form-group"><label>Trend</label><select id="metric-trend"><option value="">Unknown</option><option value="improving">Improving ↑</option><option value="stable">Stable →</option><option value="worsening">Worsening ↓</option></select></div>
+      <div class="form-group full"><label>Notes</label><textarea id="metric-notes" rows="2" placeholder="Context, measurement method…"></textarea></div>
+    </div>
+    <div class="btn-row"><button class="btn btn-primary" onclick="addMetric()">➕ Add Metric</button><button class="btn btn-secondary" onclick="clearMetricForm()">↺ Clear</button></div>
+  </div>
+  <div class="metrics-grid" id="metrics-grid"><div class="empty-state" style="grid-column:1/-1"><div class="es-icon">📊</div><div class="es-text">No metrics yet.</div></div></div>
+  <div class="card" id="metrics-table-card" style="display:none">
+    <div class="card-header"><div class="card-icon" style="background:rgba(255,107,53,.1)">📋</div><span class="card-title">All Metrics</span></div>
+    <div style="overflow-x:auto"><table><thead><tr><th>Metric</th><th>Category</th><th>Current</th><th>Target</th><th>Gap</th><th>Trend</th><th>Notes</th><th></th></tr></thead><tbody id="metrics-table-body"></tbody></table></div>
+  </div>
+</section>
+
+<!-- AI -->
+<section id="section-ai" class="section">
+  <div class="section-hero"><span class="section-hero-icon">✦</span><div><div class="section-hero-title">AI Process Suggestion</div><div class="section-hero-sub">AI analyses all data and proposes improvements</div></div></div>
+  <div class="card">
+    <div class="card-header"><div class="card-icon" style="background:rgba(168,85,247,.1)">⚙</div><span class="card-title">Analysis Options</span></div>
+    <div class="form-grid">
+      <div class="form-group"><label>Focus Area</label><select id="ai-focus"><option value="all">Overall improvement</option><option value="speed">Reduce processing time</option><option value="quality">Improve quality</option><option value="cost">Reduce costs</option><option value="automation">Automation opportunities</option><option value="satisfaction">Customer satisfaction</option></select></div>
+      <div class="form-group"><label>Methodology</label><select id="ai-method"><option value="lean">Lean / Waste elimination</option><option value="six-sigma">Six Sigma</option><option value="agile">Agile / Iterative</option><option value="bpm">BPM / Reengineering</option><option value="kaizen">Kaizen</option></select></div>
+      <div class="form-group full"><label>Additional Context</label><textarea id="ai-context" rows="2" placeholder="e.g. Budget limited, must keep current ERP…"></textarea></div>
+    </div>
+    <div class="btn-row"><button class="btn btn-purple" onclick="generateAISuggestion()">✦ Generate AI Suggestion</button></div>
+  </div>
+  <div id="ai-result-area"></div>
+</section>
+
+<!-- ADMIN -->
+<section id="section-admin" class="section">
+  <div class="section-hero"><span class="section-hero-icon">👥</span><div><div class="section-hero-title">User Management</div><div class="section-hero-sub">Control access and roles — Admin only</div></div></div>
+  <div class="card">
+    <div class="card-header"><div class="card-icon" style="background:rgba(168,85,247,.1)">➕</div><span class="card-title">Add User</span></div>
+    <div class="form-grid">
+      <div class="form-group"><label>Full Name *</label><input type="text" id="adm-name" placeholder="User name"/></div>
+      <div class="form-group"><label>Email *</label><input type="email" id="adm-email" placeholder="user@company.com"/></div>
+      <div class="form-group"><label>Password *</label><input type="password" id="adm-pass" placeholder="Min. 6 chars"/></div>
+      <div class="form-group"><label>Role</label><select id="adm-role"><option value="viewer">Viewer — read only</option><option value="editor">Editor — add / edit</option><option value="manager">Manager — full + AI</option><option value="admin">Admin — user control</option></select></div>
+    </div>
+    <div class="btn-row"><button class="btn btn-purple" onclick="adminAddUser()">➕ Add User</button></div>
+    <div id="adm-err" class="login-err" style="margin-top:.8rem"></div>
+    <div id="adm-ok"  class="login-ok"  style="margin-top:.8rem"></div>
+  </div>
+  <div class="card">
+    <div class="card-header"><div class="card-icon" style="background:rgba(0,212,170,.1)">👥</div><span class="card-title">Registered Users</span></div>
+    <div style="overflow-x:auto"><table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead><tbody id="users-table-body"></tbody></table></div>
+  </div>
+  <div class="card" style="background:rgba(168,85,247,.04);border-color:rgba(168,85,247,.15)">
+    <div class="card-header"><div class="card-icon" style="background:rgba(168,85,247,.1)">🔑</div><span class="card-title">Role Permissions</span></div>
+    <div style="overflow-x:auto"><table><thead><tr><th>Permission</th><th>Viewer</th><th>Editor</th><th>Manager</th><th>Admin</th></tr></thead><tbody>
+      <tr><td>View data</td><td style="color:var(--success)">✓</td><td style="color:var(--success)">✓</td><td style="color:var(--success)">✓</td><td style="color:var(--success)">✓</td></tr>
+      <tr><td>Add / edit records</td><td style="color:var(--danger)">✗</td><td style="color:var(--success)">✓</td><td style="color:var(--success)">✓</td><td style="color:var(--success)">✓</td></tr>
+      <tr><td>Delete records</td><td style="color:var(--danger)">✗</td><td style="color:var(--danger)">✗</td><td style="color:var(--success)">✓</td><td style="color:var(--success)">✓</td></tr>
+      <tr><td>AI Suggestion</td><td style="color:var(--danger)">✗</td><td style="color:var(--danger)">✗</td><td style="color:var(--success)">✓</td><td style="color:var(--success)">✓</td></tr>
+      <tr><td>User Management</td><td style="color:var(--danger)">✗</td><td style="color:var(--danger)">✗</td><td style="color:var(--danger)">✗</td><td style="color:var(--success)">✓</td></tr>
+    </tbody></table></div>
+  </div>
+</section>
+</div>
+
+<!-- ROLE MODAL -->
+<div class="modal-overlay" id="role-modal">
+  <div class="modal-box">
+    <div style="font-size:1rem;font-weight:800;margin-bottom:1.2rem">✏ Change Role — <span id="modal-user-name"></span></div>
+    <div class="form-group" style="margin-bottom:1.2rem"><label>New Role</label>
+      <select id="modal-role"><option value="viewer">Viewer — read only</option><option value="editor">Editor — add / edit</option><option value="manager">Manager — full + AI</option><option value="admin">Admin — user control</option></select>
+    </div>
+    <div class="btn-row" style="margin-top:0"><button class="btn btn-primary" onclick="applyRoleChange()">✓ Apply</button><button class="btn btn-secondary" onclick="closeRoleModal()">Cancel</button></div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// ALL STATE — declared first to avoid TDZ errors
+// ============================================================
+const ROLE_COLORS = {viewer:'#6b7280',editor:'#0088ff',manager:'#00d4aa',admin:'#a855f7'};
+const ROLE_BG     = {viewer:'rgba(107,114,128,.15)',editor:'rgba(0,136,255,.15)',manager:'rgba(0,212,170,.15)',admin:'rgba(168,85,247,.15)'};
+const CAN_EDIT   = ['editor','manager','admin'];
+const CAN_DELETE = ['manager','admin'];
+const CAN_AI     = ['manager','admin'];
+const CAN_ADMIN  = ['admin'];
+
+let users        = JSON.parse(localStorage.getItem('pf_users') || '[]');
+let currentUser  = null;
+let pendingRoleId = null;
+
+let processes   = [];
+let steps       = [];
+let stepHistory = {};
+let metrics     = [];
+let gaps        = [];
+let currentRAG  = null;
+let ragHistory  = [];
+
+// ============================================================
+// USER STORE
+// ============================================================
+function saveUsers() { localStorage.setItem('pf_users', JSON.stringify(users)); }
+
+// Seed demo accounts once
+if (!users.find(u => u.email === 'admin@processflow.io'))
+  users.push({id:'demo-admin',name:'Admin Demo',email:'admin@processflow.io',password:'demo123',role:'admin',active:true,created:new Date().toLocaleDateString()});
+if (!users.find(u => u.email === 'user@processflow.io'))
+  users.push({id:'demo-user',name:'Viewer Demo',email:'user@processflow.io',password:'demo123',role:'viewer',active:true,created:new Date().toLocaleDateString()});
+saveUsers();
+
+// ============================================================
+// AUTH
+// ============================================================
+function switchLoginTab(t, btn) {
+  document.querySelectorAll('.login-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-login').style.display    = t === 'login'    ? 'flex' : 'none';
+  document.getElementById('tab-register').style.display = t === 'register' ? 'flex' : 'none';
+}
+function fillDemo(type) {
+  document.getElementById('li-email').value = type === 'admin' ? 'admin@processflow.io' : 'user@processflow.io';
+  document.getElementById('li-pass').value  = 'demo123';
+}
+function doLogin() {
+  const email = document.getElementById('li-email').value.trim().toLowerCase();
+  const pass  = document.getElementById('li-pass').value;
+  const err   = document.getElementById('login-err');
+  err.style.display = 'none';
+  const u = users.find(x => x.email === email && x.password === pass);
+  if (!u)         { err.textContent = 'Invalid email or password.';               err.style.display = 'block'; return; }
+  if (!u.active)  { err.textContent = 'Account disabled. Contact an administrator.'; err.style.display = 'block'; return; }
+  currentUser = u;
+  sessionStorage.setItem('pf_session', u.id);
+  bootApp();
+}
+function doRegister() {
+  const name  = document.getElementById('reg-name').value.trim();
+  const email = document.getElementById('reg-email').value.trim().toLowerCase();
+  const pass  = document.getElementById('reg-pass').value;
+  const pass2 = document.getElementById('reg-pass2').value;
+  const err = document.getElementById('reg-err'), ok = document.getElementById('reg-ok');
+  err.style.display = 'none'; ok.style.display = 'none';
+  if (!name || !email || !pass) { err.textContent = 'All fields required.'; err.style.display = 'block'; return; }
+  if (pass.length < 6)          { err.textContent = 'Password min 6 chars.'; err.style.display = 'block'; return; }
+  if (pass !== pass2)           { err.textContent = 'Passwords do not match.'; err.style.display = 'block'; return; }
+  if (users.find(u => u.email === email)) { err.textContent = 'Email already registered.'; err.style.display = 'block'; return; }
+  users.push({id:'u_'+Date.now(),name,email,password:pass,role:'viewer',active:true,created:new Date().toLocaleDateString()});
+  saveUsers();
+  ok.textContent = 'Account created! You can now sign in.'; ok.style.display = 'block';
+  ['reg-name','reg-email','reg-pass','reg-pass2'].forEach(id => document.getElementById(id).value = '');
+}
+function doLogout() {
+  currentUser = null;
+  sessionStorage.removeItem('pf_session');
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('main-header').style.display  = 'none';
+  document.getElementById('main-app').classList.remove('visible');
+}
+function bootApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('main-header').style.display  = 'flex';
+  document.getElementById('main-app').classList.add('visible');
+  const initials = currentUser.name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  const av = document.getElementById('hdr-avatar');
+  av.textContent = initials; av.style.background = ROLE_COLORS[currentUser.role] || '#6b7280';
+  document.getElementById('hdr-name').textContent = currentUser.name;
+  const rb = document.getElementById('hdr-role');
+  rb.textContent = currentUser.role; rb.style.background = ROLE_BG[currentUser.role]; rb.style.color = ROLE_COLORS[currentUser.role];
+  if (CAN_ADMIN.includes(currentUser.role)) document.getElementById('nav-admin').style.display = 'inline-flex';
+  loadUserData();
+  showSection('register', document.querySelector('.nav-btn'));
+}
+
+// ============================================================
+// PER-USER DATA
+// ============================================================
+function dk(k) { return 'pf_' + currentUser.id + '_' + k; }
+function persist(k, v) { localStorage.setItem(dk(k), JSON.stringify(v)); }
+function loadUserData() {
+  processes   = JSON.parse(localStorage.getItem(dk('processes'))   || '[]');
+  steps       = JSON.parse(localStorage.getItem(dk('steps'))       || '[]');
+  stepHistory = JSON.parse(localStorage.getItem(dk('stepHistory')) || '{}');
+  metrics     = JSON.parse(localStorage.getItem(dk('metrics'))     || '[]');
+  gaps        = JSON.parse(localStorage.getItem(dk('gaps'))        || '[]');
+  ragHistory  = JSON.parse(localStorage.getItem(dk('ragHistory'))  || '[]');
+  renderProcessTable(); renderSteps(); renderMetrics(); renderGaps(); renderRAGHistory();
+  if (processes.length) document.getElementById('process-table-card').style.display = 'block';
+}
+
+// ============================================================
+// NAV
+// ============================================================
+function showSection(id, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  const sec = document.getElementById('section-' + id);
+  if (sec) sec.classList.add('active');
+  if (btn) btn.classList.add('active');
+  if (id === 'diagram') renderDiagram();
+  if (id === 'admin')   renderUserTable();
+}
+
+// ============================================================
+// RAG
+// ============================================================
+function selectRAG(color) {
+  currentRAG = color;
+  ['green','amber','red'].forEach(c => {
+    const el = document.getElementById('rag-' + c);
+    el.classList.remove('sel-green','sel-amber','sel-red');
+    if (c === color) el.classList.add('sel-' + color);
+  });
+}
+function renderRAGHistory() {
+  const wrap = document.getElementById('rag-history-wrap');
+  const list = document.getElementById('rag-history-list');
+  if (!ragHistory.length) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+  const RC = {green:'var(--success)',amber:'var(--warning)',red:'var(--danger)'};
+  const RB = {green:'rgba(34,197,94,.08)',amber:'rgba(245,158,11,.08)',red:'rgba(239,68,68,.08)'};
+  list.innerHTML = ragHistory.slice(0,5).map(r =>
+    `<div style="display:flex;align-items:flex-start;gap:10px;background:${RB[r.status]};border:1px solid ${RC[r.status]}40;border-radius:8px;padding:10px 12px">
+      <div style="width:28px;height:28px;border-radius:50%;background:${RC[r.status]};display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.75rem;color:#000;flex-shrink:0">${r.status[0].toUpperCase()}</div>
+      <div><div style="font-size:.7rem;color:var(--text3);font-family:var(--mono)">${r.ts}${r.by?' · '+r.by:''}</div><div style="font-size:.83rem;margin-top:2px">${r.notes||'No justification provided.'}</div></div>
+    </div>`
+  ).join('');
+}
+
+// ============================================================
+// PROCESS
+// ============================================================
+const priBadge = {low:'badge-gray',medium:'badge-blue',high:'badge-orange',critical:'badge-red'};
+const staBadge = {draft:'badge-gray',active:'badge-green','under-review':'badge-orange',deprecated:'badge-gray'};
+
+function saveProcess() {
+  if (!CAN_EDIT.includes(currentUser.role)) { alert('Editors or above can add processes.'); return; }
+  const name = document.getElementById('proc-name').value.trim();
+  const desc = document.getElementById('proc-desc').value.trim();
+  if (!name || !desc) { alert('Name and Description required.'); return; }
+  const ragNotes = document.getElementById('proc-rag-notes').value.trim();
+  const ragDate  = document.getElementById('proc-rag-date').value;
+  const ragBy    = document.getElementById('proc-rag-by').value.trim();
+  if (currentRAG) {
+    ragHistory.unshift({status:currentRAG, notes:ragNotes, date:ragDate, by:ragBy, ts:new Date().toLocaleString()});
+    persist('ragHistory', ragHistory);
+    renderRAGHistory();
+  }
+  processes.push({
+    id: Date.now(), name, desc,
+    code:         document.getElementById('proc-code').value.trim() || 'PROC-'+String(processes.length+1).padStart(3,'0'),
+    dept:         document.getElementById('proc-dept').value.trim(),
+    owner:        document.getElementById('proc-owner').value.trim(),
+    version:      document.getElementById('proc-version').value.trim() || '1.0',
+    status:       document.getElementById('proc-status').value,
+    start:        document.getElementById('proc-start').value,
+    end:          document.getElementById('proc-end').value,
+    priority:     document.getElementById('proc-priority').value,
+    type:         document.getElementById('proc-type').value,
+    duration:     document.getElementById('proc-duration').value.trim(),
+    frequency:    document.getElementById('proc-frequency').value,
+    input:        document.getElementById('proc-input').value.trim(),
+    output:       document.getElementById('proc-output').value.trim(),
+    stakeholders: document.getElementById('proc-stakeholders').value.trim(),
+    tools:        document.getElementById('proc-tools').value.trim(),
+    kpis:         document.getElementById('proc-kpis').value.trim(),
+    risks:        document.getElementById('proc-risks').value.trim(),
+    rag: currentRAG, ragNotes, ragDate, ragBy
+  });
+  persist('processes', processes);
+  renderProcessTable();
+  clearProcessForm();
+  document.getElementById('process-table-card').style.display = 'block';
+}
+function clearProcessForm() {
+  ['proc-name','proc-code','proc-dept','proc-owner','proc-version','proc-start','proc-end',
+   'proc-duration','proc-input','proc-output','proc-stakeholders','proc-tools','proc-kpis',
+   'proc-risks','proc-desc','proc-rag-notes','proc-rag-date','proc-rag-by'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('proc-status').value   = 'draft';
+  document.getElementById('proc-priority').value = 'medium';
+  currentRAG = null;
+  ['green','amber','red'].forEach(c => document.getElementById('rag-'+c).classList.remove('sel-green','sel-amber','sel-red'));
+}
+function deleteProcess(id) {
+  if (!CAN_DELETE.includes(currentUser.role)) { alert('Managers or above can delete.'); return; }
+  processes = processes.filter(p => p.id !== id);
+  persist('processes', processes);
+  renderProcessTable();
+  if (!processes.length) document.getElementById('process-table-card').style.display = 'none';
+}
+function renderProcessTable() {
+  const RC = {green:'var(--success)',amber:'var(--warning)',red:'var(--danger)'};
+  document.getElementById('process-table-body').innerHTML = processes.map(p =>
+    `<tr>
+      <td><span style="font-family:var(--mono);font-size:.7rem;color:var(--accent)">${p.code}</span></td>
+      <td><strong>${p.name}</strong></td>
+      <td>${p.dept||'—'}</td><td>${p.owner||'—'}</td>
+      <td><span class="badge ${priBadge[p.priority]||'badge-gray'}">${p.priority}</span></td>
+      <td><span class="badge ${staBadge[p.status]||'badge-gray'}">${p.status}</span></td>
+      <td><span class="badge badge-teal">${p.type}</span></td>
+      <td>${p.rag ? `<div style="display:flex;align-items:center;gap:5px"><div style="width:11px;height:11px;border-radius:50%;background:${RC[p.rag]}"></div><span style="font-size:.7rem;color:${RC[p.rag]};font-weight:700;text-transform:uppercase">${p.rag}</span></div>` : '—'}</td>
+      <td>${CAN_DELETE.includes(currentUser?.role) ? `<button class="btn btn-danger" style="padding:3px 9px" onclick="deleteProcess(${p.id})">✕</button>` : '—'}</td>
+    </tr>`
+  ).join('');
+}
+
+// ============================================================
+// FLOW SIGNAL HELPERS
+// ============================================================
+function toggleDecisionFields() {
+  document.getElementById('branch-fields').style.display =
+    document.getElementById('step-type').value === 'decision' ? 'block' : 'none';
+}
+function onSignalChange(sig) {
+  if (sig === 'start' && document.getElementById('step-is-start').checked) {
+    if (steps.some(s => s.isStart)) {
+      if (!confirm('Another step is already marked as Start Point. Replace it?')) {
+        document.getElementById('step-is-start').checked = false; return;
+      }
+      steps.forEach(s => { s.isStart = false; }); persist('steps', steps); renderSteps();
+    }
+  }
+  if (sig === 'end' && document.getElementById('step-is-end').checked) {
+    if (steps.some(s => s.isEnd)) {
+      if (!confirm('Another step is already marked as End Point. Replace it?')) {
+        document.getElementById('step-is-end').checked = false; return;
+      }
+      steps.forEach(s => { s.isEnd = false; }); persist('steps', steps); renderSteps();
+    }
+  }
+}
+
+// ============================================================
+// STEPS
+// ============================================================
+const stpTypeBadge = {task:'badge-blue',decision:'badge-orange',approval:'badge-green',automated:'badge-purple',review:'badge-teal',notification:'badge-gray'};
+const stpStaBadge  = {'not-started':'badge-gray','in-progress':'badge-blue',completed:'badge-green',blocked:'badge-red',skipped:'badge-gray'};
+
+function addStep() {
+  if (!CAN_EDIT.includes(currentUser.role)) { alert('Editors or above can add steps.'); return; }
+  const name = document.getElementById('step-name').value.trim();
+  if (!name) { alert('Step name required.'); return; }
+  const type    = document.getElementById('step-type').value;
+  const isStart = document.getElementById('step-is-start').checked;
+  const isEnd   = document.getElementById('step-is-end').checked;
+  if (isStart) steps.forEach(s => { s.isStart = false; });
+  if (isEnd)   steps.forEach(s => { s.isEnd   = false; });
+  const s = {
+    id: Date.now(), name, type, isStart, isEnd,
+    responsible: document.getElementById('step-responsible').value.trim(),
+    system:      document.getElementById('step-system').value.trim(),
+    sla:         document.getElementById('step-sla').value.trim(),
+    status:      document.getElementById('step-status').value,
+    desc:        document.getElementById('step-desc').value.trim(),
+    input:       document.getElementById('step-input').value.trim(),
+    output:      document.getElementById('step-output').value.trim(),
+    branchYes:   type === 'decision' ? document.getElementById('step-branch-yes').value.trim() : '',
+    branchNo:    type === 'decision' ? document.getElementById('step-branch-no').value.trim()  : '',
+  };
+  steps.push(s); stepHistory[s.id] = [];
+  persist('steps', steps); persist('stepHistory', stepHistory);
+  renderSteps(); clearStepForm(); updateSummaryBar();
+}
+function clearStepForm() {
+  ['step-name','step-responsible','step-system','step-sla','step-desc','step-input','step-output','step-branch-yes','step-branch-no']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  document.getElementById('step-type').value   = 'task';
+  document.getElementById('step-status').value = 'not-started';
+  document.getElementById('step-is-start').checked = false;
+  document.getElementById('step-is-end').checked   = false;
+  document.getElementById('branch-fields').style.display = 'none';
+}
+function deleteStep(id) {
+  if (!CAN_DELETE.includes(currentUser.role)) { alert('Managers or above can delete.'); return; }
+  steps = steps.filter(s => s.id !== id); delete stepHistory[id];
+  persist('steps', steps); persist('stepHistory', stepHistory);
+  renderSteps(); updateSummaryBar();
+}
+function toggleStep(id) { document.getElementById('step-' + id)?.classList.toggle('open'); }
+function addHistoryEntry(sid) {
+  const ta = document.getElementById('hist-input-' + sid);
+  const text = ta.value.trim(); if (!text) return;
+  if (!stepHistory[sid]) stepHistory[sid] = [];
+  stepHistory[sid].push({text, ts: new Date().toLocaleString(), user: currentUser.name});
+  ta.value = ''; persist('stepHistory', stepHistory); renderHistoryEntries(sid);
+}
+function renderHistoryEntries(sid) {
+  const c = document.getElementById('hist-list-' + sid); if (!c) return;
+  const e = stepHistory[sid] || [];
+  c.innerHTML = e.length
+    ? e.map(h => `<div class="history-entry"><div class="he-time">📅 ${h.ts}${h.user?' · '+h.user:''}</div><div>${h.text}</div></div>`).join('')
+    : '<div style="color:var(--text3);font-size:.76rem;font-style:italic">No entries yet.</div>';
+}
+function updateStepField(id, field, value) {
+  const s = steps.find(x => x.id === id);
+  if (s) { s[field] = value; persist('steps', steps); updateSummaryBar(); }
+}
+function toggleSignal(id, field, val) {
+  if (val) steps.forEach(s => { if (s.id !== id) s[field] = false; });
+  const s = steps.find(x => x.id === id);
+  if (s) { s[field] = val; persist('steps', steps); renderSteps(); }
+}
+function updateSummaryBar() {
+  const t  = steps.length;
+  const c  = steps.filter(s => s.status === 'completed').length;
+  const ip = steps.filter(s => s.status === 'in-progress').length;
+  const bl = steps.filter(s => s.status === 'blocked').length;
+  document.getElementById('summary-bar-inner').innerHTML = `
+    <div class="summary-stat"><div class="summary-stat-val">${t}</div><div class="summary-stat-label">Total</div></div>
+    <div class="summary-stat"><div class="summary-stat-val" style="color:var(--success)">${c}</div><div class="summary-stat-label">Completed</div></div>
+    <div class="summary-stat"><div class="summary-stat-val" style="color:var(--accent2)">${ip}</div><div class="summary-stat-label">In Progress</div></div>
+    <div class="summary-stat"><div class="summary-stat-val" style="color:var(--danger)">${bl}</div><div class="summary-stat-label">Blocked</div></div>
+    <div class="summary-stat"><div class="summary-stat-val" style="color:var(--accent)">${t>0?Math.round(c/t*100):0}%</div><div class="summary-stat-label">Progress</div></div>`;
+}
+function renderSteps() {
+  const c = document.getElementById('steps-list');
+  if (!steps.length) {
+    c.innerHTML = `<div class="empty-state"><div class="es-icon">📋</div><div class="es-text">No steps yet.</div></div>`;
+    document.getElementById('steps-summary-bar').style.display = 'none'; return;
+  }
+  document.getElementById('steps-summary-bar').style.display = 'block';
+  updateSummaryBar();
+  const ce = CAN_EDIT.includes(currentUser?.role), cd = CAN_DELETE.includes(currentUser?.role);
+  c.innerHTML = steps.map((s, i) => `
+    <div class="item-card" id="step-${s.id}">
+      <div class="item-header" onclick="toggleStep(${s.id})">
+        <div class="item-number">${String(i+1).padStart(2,'0')}</div>
+        <div class="item-title-text">${s.isStart?'<span style="color:var(--success);margin-right:3px">▶</span>':s.isEnd?'<span style="color:var(--danger);margin-right:3px">■</span>':''}${s.name}</div>
+        <div class="item-meta">
+          <span class="badge ${stpTypeBadge[s.type]||'badge-gray'}">${s.type}</span>
+          <span class="badge ${stpStaBadge[s.status]||'badge-gray'}">${s.status.replace('-',' ')}</span>
+          ${s.isStart?'<span class="badge badge-green">▶ Start</span>':''}
+          ${s.isEnd  ?'<span class="badge badge-red">■ End</span>'  :''}
+        </div>
+        <span class="item-chevron">▼</span>
+      </div>
+      <div class="item-body">
+        <div class="form-grid" style="margin-bottom:.8rem">
+          ${s.responsible?`<div class="form-group"><label>Responsible</label><div style="color:var(--text2);font-size:.84rem">${s.responsible}</div></div>`:''}
+          ${s.system     ?`<div class="form-group"><label>System</label><div style="color:var(--text2);font-size:.84rem">${s.system}</div></div>`:''}
+          ${s.sla        ?`<div class="form-group"><label>SLA</label><div style="color:var(--accent);font-family:var(--mono);font-size:.8rem">${s.sla}</div></div>`:''}
+          ${s.isStart    ?`<div class="form-group"><label>Flow Signal</label><div style="color:var(--success);font-weight:700;font-size:.82rem">▶ Start Point</div></div>`:''}
+          ${s.isEnd      ?`<div class="form-group"><label>Flow Signal</label><div style="color:var(--danger);font-weight:700;font-size:.82rem">■ End Point</div></div>`:''}
+          ${s.type==='decision'&&(s.branchYes||s.branchNo)?`
+            <div class="form-group full"><label>Decision Branches</label>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-top:4px">
+                ${s.branchYes?`<div style="background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.2);border-radius:6px;padding:8px 10px"><div style="font-size:.63rem;font-weight:700;color:var(--success);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">✓ Yes / True</div><div style="font-size:.82rem">${s.branchYes}</div></div>`:''}
+                ${s.branchNo ?`<div style="background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:6px;padding:8px 10px"><div style="font-size:.63rem;font-weight:700;color:var(--danger);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">✗ No / False</div><div style="font-size:.82rem">${s.branchNo}</div></div>`:''}
+              </div>
+            </div>`:''}
+          ${s.desc  ?`<div class="form-group full"><label>Description</label><div style="color:var(--text2);font-size:.84rem;line-height:1.5">${s.desc}</div></div>`:''}
+          ${s.input ?`<div class="form-group full"><label>Input</label><div style="color:var(--text2);font-size:.84rem">${s.input}</div></div>`:''}
+          ${s.output?`<div class="form-group full"><label>Output</label><div style="color:var(--text2);font-size:.84rem">${s.output}</div></div>`:''}
+        </div>
+        ${ce?`<div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.8rem;align-items:center">
+          <select onchange="updateStepField(${s.id},'status',this.value)" style="flex:1;min-width:130px">
+            ${['not-started','in-progress','completed','blocked','skipped'].map(v=>`<option value="${v}" ${s.status===v?'selected':''}>${v.replace('-',' ')}</option>`).join('')}
+          </select>
+          <label class="signal-toggle"><input type="checkbox" ${s.isStart?'checked':''} onchange="toggleSignal(${s.id},'isStart',this.checked)"/><span class="signal-btn signal-start">▶ Start</span></label>
+          <label class="signal-toggle"><input type="checkbox" ${s.isEnd?'checked':''} onchange="toggleSignal(${s.id},'isEnd',this.checked)"/><span class="signal-btn signal-end">■ End</span></label>
+        </div>`:''}
+        <div style="margin-bottom:.7rem">
+          <label style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3)">Step History</label>
+          <div style="display:flex;flex-direction:column;gap:5px;margin-top:6px" id="hist-list-${s.id}"></div>
+          ${ce?`<div style="display:flex;gap:.5rem;margin-top:.5rem">
+            <textarea id="hist-input-${s.id}" rows="2" placeholder="Log an observation or update…" style="flex:1"></textarea>
+            <button class="btn btn-secondary" onclick="addHistoryEntry(${s.id})" style="align-self:flex-start;flex-shrink:0">+ Log</button>
+          </div>`:''}
+        </div>
+        ${cd?`<button class="btn btn-danger" style="padding:4px 11px" onclick="deleteStep(${s.id})">✕ Remove</button>`:''}
+      </div>
+    </div>`).join('');
+  steps.forEach(s => renderHistoryEntries(s.id));
+}
+
+// ============================================================
+// DIAGRAM
+// ============================================================
+function renderDiagram() {
+  const canvas = document.getElementById('diagram-canvas');
+  const legend = document.getElementById('diagram-legend');
+  if (!steps.length) {
+    canvas.innerHTML = `<div class="empty-state"><div class="es-icon">🗺</div><div class="es-text">Add steps then click Refresh.</div></div>`;
+    legend.style.display = 'none'; return;
+  }
+  legend.style.display = 'block';
+  const nodeW = 150, nodeH = 82, GAP = 60, PER_ROW = 4;
+  const pName = processes.length ? processes[processes.length-1].name : 'Process';
+  const startStep = steps.find(s => s.isStart);
+  const endStep   = steps.find(s => s.isEnd);
+  const all = [{_s:'start'}, ...steps, {_s:'end'}];
+  const rows = Math.ceil(all.length / PER_ROW);
+  const svgW = Math.max(PER_ROW * (nodeW + GAP) + 40, 640);
+  const svgH = rows * 210 + 80;
+  const pos = all.map((n, i) => {
+    const row = Math.floor(i / PER_ROW), col = i % PER_ROW, rev = row % 2 === 1;
+    return { x: 20 + (rev ? (PER_ROW-1-col) : col) * (nodeW + GAP), y: 50 + row * 210, row, rev };
+  });
+  const TS = {task:{s:'#363b48',f:'#22262f'},decision:{s:'#f59e0b',f:'rgba(245,158,11,.08)'},approval:{s:'#22c55e',f:'rgba(34,197,94,.06)'},automated:{s:'#a855f7',f:'rgba(168,85,247,.08)'},review:{s:'#0088ff',f:'rgba(0,136,255,.08)'},notification:{s:'#00d4aa',f:'rgba(0,212,170,.08)'}};
+  const SD = {'completed':'#22c55e','in-progress':'#0088ff',blocked:'#ef4444','not-started':'#6b7280',skipped:'#6b7280'};
+
+  let svg = `<svg viewBox="0 0 ${svgW} ${svgH}" xmlns="http://www.w3.org/2000/svg" width="100%" style="font-family:Outfit,sans-serif">
+  <defs>
+    <marker id="arr"     markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#363b48"/></marker>
+    <marker id="arr-yes" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#22c55e"/></marker>
+    <marker id="arr-no"  markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#ef4444"/></marker>
+  </defs>
+  <text x="${svgW/2}" y="22" text-anchor="middle" font-size="11" font-weight="700" fill="#6b7280" letter-spacing="2.5">${pName.toUpperCase()}</text>`;
+
+  // Flow connectors
+  all.forEach((n, i) => {
+    if (i >= all.length - 1) return;
+    const f = pos[i], t = pos[i+1];
+    if (f.row === t.row) {
+      const x1 = f.rev ? f.x : f.x+nodeW, x2 = t.rev ? t.x+nodeW : t.x, y = f.y + nodeH/2;
+      svg += `<line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" stroke="#363b48" stroke-width="1.5" marker-end="url(#arr)"/>`;
+    } else {
+      const fx = f.rev ? f.x : f.x+nodeW, tx = t.rev ? t.x+nodeW : t.x;
+      const fy = f.y + nodeH/2, ty = t.y + nodeH/2, my = f.y + nodeH + 44;
+      svg += `<polyline points="${fx},${fy} ${fx},${my} ${tx},${my} ${tx},${ty}" stroke="#363b48" stroke-width="1.5" fill="none" marker-end="url(#arr)"/>`;
+    }
+  });
+
+  // Decision branch annotations
+  all.forEach((n, i) => {
+    if (n._s || n.type !== 'decision' || (!n.branchYes && !n.branchNo)) return;
+    const { x, y } = pos[i], bx = x + nodeW/2, by = y + nodeH + 2;
+    if (n.branchYes) {
+      svg += `<line x1="${bx-10}" y1="${by}" x2="${bx-10}" y2="${by+32}" stroke="#22c55e" stroke-width="1.2" stroke-dasharray="3,3" marker-end="url(#arr-yes)"/>`;
+      svg += `<text x="${bx-14}" y="${by+46}" text-anchor="end" font-size="8" fill="#22c55e" font-weight="700">✓ ${(n.branchYes).slice(0,20)}</text>`;
+    }
+    if (n.branchNo) {
+      svg += `<line x1="${bx+10}" y1="${by}" x2="${bx+10}" y2="${by+32}" stroke="#ef4444" stroke-width="1.2" stroke-dasharray="3,3" marker-end="url(#arr-no)"/>`;
+      svg += `<text x="${bx+14}" y="${by+46}" text-anchor="start" font-size="8" fill="#ef4444" font-weight="700">✗ ${(n.branchNo).slice(0,20)}</text>`;
+    }
+  });
+
+  // Nodes
+  all.forEach((n, i) => {
+    const { x, y } = pos[i];
+    if (n._s === 'start') {
+      svg += `<rect x="${x+5}" y="${y}" width="${nodeW-10}" height="52" rx="26" fill="rgba(34,197,94,.12)" stroke="#22c55e" stroke-width="2"/>`;
+      svg += `<text x="${x+nodeW/2}" y="${y+26}" text-anchor="middle" font-size="13" font-weight="800" fill="#22c55e">▶ START</text>`;
+      if (startStep) svg += `<text x="${x+nodeW/2}" y="${y+44}" text-anchor="middle" font-size="7.5" fill="#9ca3af">${startStep.name.slice(0,16)}</text>`;
+    } else if (n._s === 'end') {
+      svg += `<rect x="${x+5}" y="${y}" width="${nodeW-10}" height="52" rx="26" fill="rgba(239,68,68,.1)" stroke="#ef4444" stroke-width="2"/>`;
+      svg += `<text x="${x+nodeW/2}" y="${y+26}" text-anchor="middle" font-size="13" font-weight="800" fill="#ef4444">■ END</text>`;
+      if (endStep) svg += `<text x="${x+nodeW/2}" y="${y+44}" text-anchor="middle" font-size="7.5" fill="#9ca3af">${endStep.name.slice(0,16)}</text>`;
+    } else {
+      const st = TS[n.type] || TS.task, idx = steps.indexOf(n);
+      const bc = n.isStart ? '#22c55e' : n.isEnd ? '#ef4444' : st.s;
+      const bw = (n.isStart || n.isEnd) ? 2.5 : 1.5;
+      svg += `<rect x="${x}" y="${y}" width="${nodeW}" height="${nodeH}" rx="8" fill="${st.f}" stroke="${bc}" stroke-width="${bw}"/>`;
+      if (n.isStart) svg += `<rect x="${x}" y="${y}" width="5" height="${nodeH}" rx="3" fill="#22c55e"/>`;
+      if (n.isEnd)   svg += `<rect x="${x+nodeW-5}" y="${y}" width="5" height="${nodeH}" rx="3" fill="#ef4444"/>`;
+      svg += `<text x="${x+nodeW/2}" y="${y+13}" text-anchor="middle" font-size="8.5" fill="#6b7280" font-weight="700" letter-spacing=".5">${String(idx+1).padStart(2,'0')} · ${n.type.toUpperCase()}</text>`;
+      const words = n.name.split(' '); let line = '', lines = [];
+      words.forEach(w => { if ((line+' '+w).length > 16 && line) { lines.push(line); line = w; } else line = line ? line+' '+w : w; });
+      if (line) lines.push(line); lines = lines.slice(0, 2);
+      lines.forEach((l, li) => svg += `<text x="${x+nodeW/2}" y="${y+29+li*13}" text-anchor="middle" font-size="10" font-weight="600" fill="#e8eaf0">${l}</text>`);
+      if (n.sla) svg += `<text x="${x+nodeW/2}" y="${y+nodeH-5}" text-anchor="middle" font-size="7.5" fill="#00d4aa" font-weight="700">⏱ ${n.sla.slice(0,12)}</text>`;
+      svg += `<circle cx="${x+nodeW-9}" cy="${y+9}" r="5" fill="${SD[n.status]||'#6b7280'}"/>`;
+    }
+  });
+  svg += '</svg>';
+  canvas.innerHTML = svg;
+}
+function exportDiagram() {
+  const s = document.querySelector('#diagram-canvas svg');
+  if (!s) { alert('Generate diagram first.'); return; }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([s.outerHTML], {type:'image/svg+xml'}));
+  a.download = 'process-diagram.svg'; a.click();
+}
+
+// ============================================================
+// GAPS
+// ============================================================
+const gSevBadge = {critical:'badge-red',high:'badge-orange',medium:'badge-orange',low:'badge-blue'};
+const gStaBadge = {open:'badge-red','in-analysis':'badge-blue','action-planned':'badge-orange','in-progress':'badge-blue',resolved:'badge-green',accepted:'badge-gray'};
+const gCatBadge = {process:'badge-teal',people:'badge-purple',technology:'badge-blue',compliance:'badge-orange',data:'badge-green',communication:'badge-gray',performance:'badge-orange',other:'badge-gray'};
+
+function addGap() {
+  if (!CAN_EDIT.includes(currentUser.role)) { alert('Editors or above can register gaps.'); return; }
+  const title = document.getElementById('gap-title').value.trim();
+  const curr  = document.getElementById('gap-current').value.trim();
+  if (!title || !curr) { alert('Title and Current State required.'); return; }
+  gaps.push({
+    id: Date.now(), title, current: curr,
+    category:  document.getElementById('gap-cat').value,
+    severity:  document.getElementById('gap-severity').value,
+    status:    document.getElementById('gap-status').value,
+    step:      document.getElementById('gap-step').value.trim(),
+    owner:     document.getElementById('gap-owner').value.trim(),
+    date:      document.getElementById('gap-date').value,
+    target:    document.getElementById('gap-target').value,
+    desired:   document.getElementById('gap-desired').value.trim(),
+    rootcause: document.getElementById('gap-rootcause').value.trim(),
+    impact:    document.getElementById('gap-impact').value.trim(),
+    action:    document.getElementById('gap-action').value.trim(),
+    createdBy: currentUser.name, createdAt: new Date().toLocaleDateString()
+  });
+  persist('gaps', gaps); renderGaps(); clearGapForm();
+}
+function clearGapForm() {
+  ['gap-title','gap-step','gap-owner','gap-date','gap-target','gap-current','gap-desired','gap-rootcause','gap-impact','gap-action']
+    .forEach(id => document.getElementById(id).value = '');
+  document.getElementById('gap-cat').value      = 'process';
+  document.getElementById('gap-severity').value = 'medium';
+  document.getElementById('gap-status').value   = 'open';
+}
+function deleteGap(id) {
+  if (!CAN_DELETE.includes(currentUser.role)) { alert('Managers or above can delete.'); return; }
+  gaps = gaps.filter(g => g.id !== id); persist('gaps', gaps); renderGaps();
+}
+function toggleGap(id) { document.getElementById('gap-' + id)?.classList.toggle('open'); }
+function updateGapStatus(id, val) {
+  const g = gaps.find(x => x.id === id);
+  if (g) { g.status = val; persist('gaps', gaps); renderGapsSummary(); renderGapsTable(); }
+}
+function renderGaps() {
+  const c = document.getElementById('gaps-list');
+  if (!gaps.length) {
+    c.innerHTML = `<div class="empty-state"><div class="es-icon">⚠</div><div class="es-text">No gaps registered yet.</div></div>`;
+    document.getElementById('gaps-summary-bar').style.display = 'none';
+    document.getElementById('gaps-table-card').style.display  = 'none'; return;
+  }
+  document.getElementById('gaps-summary-bar').style.display = 'block';
+  document.getElementById('gaps-table-card').style.display  = 'block';
+  renderGapsSummary();
+  const ce = CAN_EDIT.includes(currentUser?.role), cd = CAN_DELETE.includes(currentUser?.role);
+  c.innerHTML = gaps.map((g, i) => `
+    <div class="item-card gap-${g.severity}" id="gap-${g.id}">
+      <div class="item-header" onclick="toggleGap(${g.id})">
+        <div style="font-family:var(--mono);font-size:.66rem;color:var(--text3);flex-shrink:0">#${String(i+1).padStart(2,'0')}</div>
+        <div class="item-title-text">${g.title}</div>
+        <div class="item-meta">
+          <span class="badge ${gCatBadge[g.category]||'badge-gray'}">${g.category}</span>
+          <span class="badge ${gSevBadge[g.severity]||'badge-gray'}">${g.severity}</span>
+          <span class="badge ${gStaBadge[g.status]||'badge-gray'}">${g.status.replace(/-/g,' ')}</span>
+        </div>
+        <span class="item-chevron">▼</span>
+      </div>
+      <div class="item-body">
+        <div class="form-grid" style="margin-bottom:.8rem">
+          ${g.step  ?`<div class="form-group"><label>Related Step</label><div style="color:var(--text2);font-size:.83rem">${g.step}</div></div>`:''}
+          ${g.owner ?`<div class="form-group"><label>Responsible</label><div style="color:var(--text2);font-size:.83rem">${g.owner}</div></div>`:''}
+          ${g.date  ?`<div class="form-group"><label>Identified</label><div style="font-family:var(--mono);font-size:.8rem;color:var(--text2)">${g.date}</div></div>`:''}
+          ${g.target?`<div class="form-group"><label>Target Resolution</label><div style="font-family:var(--mono);font-size:.8rem;color:var(--warning)">${g.target}</div></div>`:''}
+          <div class="form-group full"><label>Current State</label><div style="background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.15);border-radius:6px;padding:10px;font-size:.84rem;line-height:1.5">${g.current}</div></div>
+          ${g.desired  ?`<div class="form-group full"><label>Desired State</label><div style="background:rgba(34,197,94,.05);border:1px solid rgba(34,197,94,.1);border-radius:6px;padding:10px;font-size:.84rem;line-height:1.5">${g.desired}</div></div>`:''}
+          ${g.rootcause?`<div class="form-group full"><label>Root Cause</label><div style="color:var(--text2);font-size:.83rem;line-height:1.5">${g.rootcause}</div></div>`:''}
+          ${g.impact   ?`<div class="form-group full"><label>Impact</label><div style="color:var(--accent3);font-size:.83rem;line-height:1.5">${g.impact}</div></div>`:''}
+          ${g.action   ?`<div class="form-group full"><label>Proposed Action</label><div style="color:var(--accent);font-size:.83rem;line-height:1.5">${g.action}</div></div>`:''}
+        </div>
+        <div style="font-size:.7rem;color:var(--text3);margin-bottom:.7rem">Registered by <strong style="color:var(--text2)">${g.createdBy||'—'}</strong> on ${g.createdAt||'—'}</div>
+        ${ce?`<div style="display:flex;gap:.6rem;align-items:center;flex-wrap:wrap">
+          <label style="font-size:.68rem">Update Status:</label>
+          <select onchange="updateGapStatus(${g.id},this.value)" style="max-width:175px">
+            ${['open','in-analysis','action-planned','in-progress','resolved','accepted'].map(v=>`<option value="${v}" ${g.status===v?'selected':''}>${v.replace(/-/g,' ')}</option>`).join('')}
+          </select>
+          ${cd?`<button class="btn btn-danger" style="padding:4px 10px;margin-left:auto" onclick="deleteGap(${g.id})">✕ Delete</button>`:''}
+        </div>`:''}
+      </div>
+    </div>`).join('');
+  renderGapsTable();
+}
+function renderGapsSummary() {
+  const t=gaps.length, o=gaps.filter(g=>g.status==='open').length,
+        cr=gaps.filter(g=>g.severity==='critical').length, r=gaps.filter(g=>g.status==='resolved').length,
+        ip=gaps.filter(g=>['in-progress','action-planned','in-analysis'].includes(g.status)).length;
+  document.getElementById('gaps-summary-inner').innerHTML = `
+    <div class="summary-stat"><div class="summary-stat-val">${t}</div><div class="summary-stat-label">Total Gaps</div></div>
+    <div class="summary-stat"><div class="summary-stat-val" style="color:var(--danger)">${o}</div><div class="summary-stat-label">Open</div></div>
+    <div class="summary-stat"><div class="summary-stat-val" style="color:var(--accent3)">${cr}</div><div class="summary-stat-label">Critical</div></div>
+    <div class="summary-stat"><div class="summary-stat-val" style="color:var(--accent2)">${ip}</div><div class="summary-stat-label">In Progress</div></div>
+    <div class="summary-stat"><div class="summary-stat-val" style="color:var(--success)">${r}</div><div class="summary-stat-label">Resolved</div></div>`;
+}
+function renderGapsTable() {
+  document.getElementById('gaps-table-body').innerHTML = gaps.map((g, i) =>
+    `<tr>
+      <td style="font-family:var(--mono);font-size:.68rem;color:var(--accent)">#${String(i+1).padStart(2,'0')}</td>
+      <td><strong>${g.title}</strong></td>
+      <td><span class="badge ${gCatBadge[g.category]||'badge-gray'}">${g.category}</span></td>
+      <td><span class="badge ${gSevBadge[g.severity]||'badge-gray'}">${g.severity}</span></td>
+      <td><span class="badge ${gStaBadge[g.status]||'badge-gray'}">${g.status.replace(/-/g,' ')}</span></td>
+      <td>${g.owner||'—'}</td>
+      <td style="font-family:var(--mono);font-size:.73rem;color:var(--warning)">${g.target||'—'}</td>
+      <td>${CAN_DELETE.includes(currentUser?.role)?`<button class="btn btn-danger" style="padding:3px 9px" onclick="deleteGap(${g.id})">✕</button>`:'—'}</td>
+    </tr>`).join('');
+}
+
+// ============================================================
+// METRICS
+// ============================================================
+const catColors = {time:'badge-blue',quality:'badge-green',cost:'badge-orange',volume:'badge-teal',satisfaction:'badge-purple',efficiency:'badge-teal',compliance:'badge-green',other:'badge-gray'};
+
+function addMetric() {
+  if (!CAN_EDIT.includes(currentUser.role)) { alert('Editors or above can add metrics.'); return; }
+  const name = document.getElementById('metric-name').value.trim();
+  const val  = document.getElementById('metric-val').value;
+  if (!name || val === '') { alert('Name and Value required.'); return; }
+  metrics.push({
+    id: Date.now(), name,
+    category: document.getElementById('metric-cat').value,
+    value:    parseFloat(val),
+    unit:     document.getElementById('metric-unit').value.trim(),
+    target:   document.getElementById('metric-target').value !== '' ? parseFloat(document.getElementById('metric-target').value) : null,
+    trend:    document.getElementById('metric-trend').value,
+    notes:    document.getElementById('metric-notes').value.trim()
+  });
+  persist('metrics', metrics); renderMetrics(); clearMetricForm();
+}
+function clearMetricForm() {
+  ['metric-name','metric-val','metric-unit','metric-target','metric-notes'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('metric-cat').value   = 'time';
+  document.getElementById('metric-trend').value = '';
+}
+function deleteMetric(id) {
+  if (!CAN_DELETE.includes(currentUser.role)) { alert('Managers or above can delete.'); return; }
+  metrics = metrics.filter(m => m.id !== id); persist('metrics', metrics); renderMetrics();
+}
+function renderMetrics() {
+  const grid = document.getElementById('metrics-grid');
+  const tc   = document.getElementById('metrics-table-card');
+  const tb   = document.getElementById('metrics-table-body');
+  if (!metrics.length) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="es-icon">📊</div><div class="es-text">No metrics yet.</div></div>`;
+    tc.style.display = 'none'; return;
+  }
+  tc.style.display = 'block';
+  grid.innerHTML = metrics.map(m => {
+    const gap = m.target !== null ? ((m.value - m.target) / m.target * 100).toFixed(1) : null;
+    const pct = m.target !== null ? Math.min(Math.round(m.value / m.target * 100), 200) : null;
+    const ti  = m.trend === 'improving' ? '↑' : m.trend === 'worsening' ? '↓' : '→';
+    const tc2 = m.trend === 'improving' ? 'color:var(--success)' : m.trend === 'worsening' ? 'color:var(--danger)' : 'color:var(--text3)';
+    return `<div class="metric-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <span class="badge ${catColors[m.category]||'badge-gray'}">${m.category}</span>
+        ${CAN_DELETE.includes(currentUser?.role)?`<button class="btn btn-danger" style="padding:2px 7px;font-size:.63rem" onclick="deleteMetric(${m.id})">✕</button>`:''}
+      </div>
+      <div class="metric-label">${m.name}</div>
+      <div class="metric-value">${m.value}<span class="metric-unit"> ${m.unit}</span></div>
+      ${m.target!==null?`<div style="font-size:.7rem;color:var(--text3)">Target: <strong style="color:var(--text2)">${m.target} ${m.unit}</strong></div>`:''}
+      ${gap!==null?`<div style="font-size:.73rem;font-weight:600;${tc2}">${ti} ${Math.abs(gap)}% ${parseFloat(gap)>0?'above':'below'} target</div>`:''}
+      ${pct!==null?`<div class="timeline-bar"><div class="timeline-fill" style="width:${Math.min(pct,100)}%"></div></div>`:''}
+      ${m.notes?`<div style="font-size:.68rem;color:var(--text3);margin-top:2px">${m.notes}</div>`:''}
+    </div>`;
+  }).join('');
+  tb.innerHTML = metrics.map(m => {
+    const gap = m.target !== null ? (m.value - m.target).toFixed(2) : '—';
+    const gc  = m.target !== null ? (m.value > m.target ? 'color:var(--danger)' : 'color:var(--success)') : '';
+    return `<tr>
+      <td><strong>${m.name}</strong></td>
+      <td><span class="badge ${catColors[m.category]||'badge-gray'}">${m.category}</span></td>
+      <td><span style="font-family:var(--mono)">${m.value} ${m.unit}</span></td>
+      <td>${m.target!==null?`<span style="font-family:var(--mono)">${m.target} ${m.unit}</span>`:'—'}</td>
+      <td style="${gc}">${gap!=='—'?(gap>0?'+':'')+gap+' '+m.unit:'—'}</td>
+      <td>${m.trend?`<span class="badge ${m.trend==='improving'?'badge-green':m.trend==='worsening'?'badge-red':'badge-gray'}">${m.trend==='improving'?'↑ Improving':m.trend==='worsening'?'↓ Worsening':'→ Stable'}</span>`:'—'}</td>
+      <td style="color:var(--text3);font-size:.76rem">${m.notes||'—'}</td>
+      <td>${CAN_DELETE.includes(currentUser?.role)?`<button class="btn btn-danger" style="padding:3px 9px" onclick="deleteMetric(${m.id})">✕</button>`:'—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ============================================================
+// AI SUGGESTION
+// ============================================================
+async function generateAISuggestion() {
+  if (!CAN_AI.includes(currentUser.role)) { alert('Manager or Admin role required.'); return; }
+  const area = document.getElementById('ai-result-area');
+  if (!processes.length && !steps.length && !metrics.length && !gaps.length) {
+    area.innerHTML = `<div class="ai-output"><h3>⚠ Insufficient Data</h3><p>Register at least a process, steps, gaps, or metrics first.</p></div>`; return;
+  }
+  area.innerHTML = `<div class="ai-thinking"><div class="spinner"></div><span>Analysing all data…</span></div>`;
+  const pS = processes.map(p => `Process:${p.name}(${p.code}) Dept:${p.dept||'N/A'} Type:${p.type} Pri:${p.priority}\nDesc:${p.desc}\nInput:${p.input||'N/A'}→Output:${p.output||'N/A'}\nTools:${p.tools||'N/A'} KPIs:${p.kpis||'N/A'} Risks:${p.risks||'N/A'}`).join('\n\n');
+  const sS = steps.map((s,i) => {const h=(stepHistory[s.id]||[]).map(x=>`  [${x.ts}] ${x.text}`).join('\n');return `Step${i+1}:${s.name}(${s.type}) Responsible:${s.responsible||'N/A'} Status:${s.status} SLA:${s.sla||'N/A'}\n  Input:${s.input||'N/A'}→Output:${s.output||'N/A'}\n  Desc:${s.desc||'N/A'}\n  History:\n${h||'  (none)'}\n  Branches:Yes=${s.branchYes||'N/A'} No=${s.branchNo||'N/A'}`}).join('\n\n');
+  const mS = metrics.map(m => `${m.name}(${m.category}):${m.value}${m.unit}${m.target!==null?` Target:${m.target}${m.unit}`:''} Trend:${m.trend||'?'}`).join('\n');
+  const gS = gaps.map((g,i) => `Gap${i+1}:${g.title} Cat:${g.category} Sev:${g.severity} Sta:${g.status}\n  Current:${g.current}\n  Desired:${g.desired||'N/A'}\n  RootCause:${g.rootcause||'N/A'}\n  Impact:${g.impact||'N/A'}`).join('\n\n');
+  const focus = document.getElementById('ai-focus').value;
+  const method = document.getElementById('ai-method').value;
+  const ctx = document.getElementById('ai-context').value.trim();
+  const prompt = `You are a world-class Business Process Improvement consultant.
+PROCESS: ${pS||'None.'}
+STEPS: ${sS||'None.'}
+GAPS: ${gS||'None.'}
+METRICS: ${mS||'None.'}
+Focus: ${focus} | Methodology: ${method} | Context: ${ctx||'None.'}
+
+Produce a comprehensive improvement proposal:
+## 1. CURRENT STATE ASSESSMENT
+## 2. GAP ANALYSIS SUMMARY
+## 3. TOP 5 IMPROVEMENT OPPORTUNITIES
+## 4. PROPOSED NEW PROCESS (step by step)
+## 5. EXPECTED BENEFITS (quantified)
+## 6. IMPLEMENTATION ROADMAP
+## 7. RISK & CHANGE MANAGEMENT`;
+  try {
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]})
+    });
+    const d = await r.json();
+    const t = d.content?.map(b => b.text||'').join('') || 'No response.';
+    area.innerHTML = `<div class="ai-output"><h3>✦ AI Process Improvement Proposal</h3>${mdHtml(t)}</div>
+      <div class="btn-row"><button class="btn btn-purple" onclick="generateAISuggestion()">⟳ Regenerate</button><button class="btn btn-secondary" onclick="copyAI()">⎘ Copy</button></div>`;
+  } catch(e) { area.innerHTML = `<div class="ai-output"><h3>⚠ Error</h3><p>${e.message}</p></div>`; }
+}
+function mdHtml(t) {
+  return t
+    .replace(/^## (.+)$/gm,'<h3 style="color:var(--accent4);font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin:1.1rem 0 .5rem">$1</h3>')
+    .replace(/^### (.+)$/gm,'<h4 style="color:var(--text);font-size:.84rem;font-weight:700;margin:.6rem 0 .3rem">$1</h4>')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/^\- (.+)$/gm,'<li>$1</li>')
+    .replace(/(<li>.*<\/li>\n?)+/g, m => '<ul style="margin:.4rem 0 .4rem 1.1rem">'+m+'</ul>')
+    .replace(/\n\n/g,'</p><p>');
+}
+function copyAI() {
+  navigator.clipboard.writeText(document.querySelector('#ai-result-area .ai-output')?.innerText||'').then(()=>alert('Copied!'));
+}
+
+// ============================================================
+// USER MANAGEMENT
+// ============================================================
+function adminAddUser() {
+  const name = document.getElementById('adm-name').value.trim();
+  const email = document.getElementById('adm-email').value.trim().toLowerCase();
+  const pass = document.getElementById('adm-pass').value;
+  const role = document.getElementById('adm-role').value;
+  const err = document.getElementById('adm-err'), ok = document.getElementById('adm-ok');
+  err.style.display = 'none'; ok.style.display = 'none';
+  if (!name||!email||!pass) { err.textContent='All fields required.'; err.style.display='block'; return; }
+  if (pass.length < 6)      { err.textContent='Password min 6 chars.'; err.style.display='block'; return; }
+  if (users.find(u=>u.email===email)) { err.textContent='Email already exists.'; err.style.display='block'; return; }
+  users.push({id:'u_'+Date.now(),name,email,password:pass,role,active:true,created:new Date().toLocaleDateString()});
+  saveUsers(); ok.textContent=`${name} added as ${role}.`; ok.style.display='block';
+  ['adm-name','adm-email','adm-pass'].forEach(id=>document.getElementById(id).value='');
+  renderUserTable();
+}
+function renderUserTable() {
+  const tbody = document.getElementById('users-table-body'); if (!tbody) return;
+  tbody.innerHTML = users.map(u =>
+    `<tr>
+      <td><strong>${u.name}</strong>${u.id===currentUser?.id?'<span class="badge badge-teal" style="margin-left:6px">You</span>':''}</td>
+      <td style="font-family:var(--mono);font-size:.76rem;color:var(--text2)">${u.email}</td>
+      <td><span class="badge" style="background:${ROLE_BG[u.role]};color:${ROLE_COLORS[u.role]}">${u.role}</span></td>
+      <td><span class="badge ${u.active?'badge-green':'badge-red'}">${u.active?'Active':'Disabled'}</span></td>
+      <td style="font-size:.76rem;color:var(--text3)">${u.created||'—'}</td>
+      <td>${u.id!==currentUser?.id
+        ? `<div style="display:flex;gap:5px;flex-wrap:wrap">
+            <button class="btn btn-secondary" style="padding:3px 9px;font-size:.68rem" onclick="openRoleModal('${u.id}')">✏ Role</button>
+            <button class="btn ${u.active?'btn-danger':'btn-blue'}" style="padding:3px 9px;font-size:.68rem" onclick="toggleUserActive('${u.id}')">${u.active?'Disable':'Enable'}</button>
+            <button class="btn btn-danger" style="padding:3px 9px;font-size:.68rem" onclick="deleteUser('${u.id}')">✕</button>
+          </div>`
+        : '<span style="color:var(--text3);font-size:.73rem">Current user</span>'}</td>
+    </tr>`).join('');
+}
+function toggleUserActive(id) { const u=users.find(x=>x.id===id); if(u){u.active=!u.active;saveUsers();renderUserTable();} }
+function deleteUser(id) { if(!confirm('Delete this user?'))return; users=users.filter(u=>u.id!==id); saveUsers(); renderUserTable(); }
+function openRoleModal(id) {
+  const u = users.find(x=>x.id===id); if(!u)return;
+  pendingRoleId = id;
+  document.getElementById('modal-user-name').textContent = u.name;
+  document.getElementById('modal-role').value = u.role;
+  document.getElementById('role-modal').classList.add('open');
+}
+function closeRoleModal() { document.getElementById('role-modal').classList.remove('open'); pendingRoleId=null; }
+function applyRoleChange() {
+  const u = users.find(x=>x.id===pendingRoleId);
+  if(u){ u.role=document.getElementById('modal-role').value; saveUsers(); renderUserTable(); }
+  closeRoleModal();
+}
+document.getElementById('role-modal').addEventListener('click', function(e){ if(e.target===this) closeRoleModal(); });
+
+// ============================================================
+// AUTO-RESTORE SESSION — must run LAST, after all declarations
+// ============================================================
+(function(){
+  const s = sessionStorage.getItem('pf_session');
+  if (s) { const u = users.find(x=>x.id===s); if(u&&u.active){ currentUser=u; bootApp(); } }
+})();
+</script>
+</body>
+</html>
