@@ -1,20 +1,5 @@
-
 <!DOCTYPE html>
 <html lang="en">
-
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ProcessFlow — Process Improvement System</title>
-
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Outfit:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
-
-<!-- ✅ Supabase library -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-
-<style>
-/* KEEP ALL YOUR CSS EXACTLY AS IS */
-</style>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -239,7 +224,7 @@ tr:hover td{background:var(--surface2);}
     <button class="nav-btn" onclick="showSection('ai',this)">✦ AI</button>
     <button class="nav-btn" onclick="showSection('graphs',this)">📈 Graphs</button>
     <button class="nav-btn" onclick="showSection('project',this)">🗂 Project</button>
-    <button class="nav-btn" id="nav-admin" style="display:none;color:var(--accent4)" onclick="showSection('admin',this)">👥 Users</button>
+    <button class="nav-btn" id="nav-config" style="display:none;color:var(--accent4)" onclick="showSection('config',this)">⚙ Config</button>
   </nav>
   <div class="header-user">
     <div class="user-avatar" id="hdr-avatar"></div>
@@ -257,9 +242,15 @@ tr:hover td{background:var(--surface2);}
     <div class="card-header"><div class="card-icon" style="background:rgba(0,212,170,.1)">🏷</div><span class="card-title">Basic Information</span></div>
     <div class="form-grid">
       <div class="form-group">
+        <label>Company <span style="color:var(--accent);font-weight:900">*</span></label>
+        <select id="proc-company-id" onchange="generateProcId()">
+          <option value="">— select company —</option>
+        </select>
+      </div>
+      <div class="form-group">
         <label>Process ID <span style="color:var(--accent);font-weight:900">*</span></label>
         <div style="display:flex;gap:6px">
-          <input type="text" id="proc-id" placeholder="e.g. PRC-2024-001" style="font-family:var(--mono);font-size:.82rem"/>
+          <input type="text" id="proc-id" placeholder="e.g. ACME-PRC-001" style="font-family:var(--mono);font-size:.82rem"/>
           <button class="btn btn-secondary" style="padding:8px 12px;flex-shrink:0" onclick="generateProcId()" title="Auto-generate ID">⚡</button>
         </div>
       </div>
@@ -308,7 +299,7 @@ tr:hover td{background:var(--surface2);}
   <div class="btn-row"><button class="btn btn-primary" onclick="saveProcess()">✓ Save Process</button><button class="btn btn-secondary" onclick="clearProcessForm()">↺ Clear</button></div>
   <div class="card" id="process-table-card" style="display:none">
     <div class="card-header"><div class="card-icon" style="background:rgba(168,85,247,.1)">📄</div><span class="card-title">Registered Processes</span></div>
-    <div style="overflow-x:auto"><table><thead><tr><th>Process ID</th><th>Name</th><th>Dept</th><th>Owner</th><th>Priority</th><th>Status</th><th>RAG</th><th></th></tr></thead><tbody id="process-table-body"></tbody></table></div>
+    <div style="overflow-x:auto"><table><thead><tr><th>Company</th><th>Process ID</th><th>Name</th><th>Dept</th><th>Owner</th><th>Priority</th><th>Status</th><th>RAG</th><th></th></tr></thead><tbody id="process-table-body"></tbody></table></div>
   </div>
 </section>
 
@@ -606,34 +597,105 @@ tr:hover td{background:var(--surface2);}
 </section>
 
 
-<!-- ==================== ADMIN ==================== -->
-<section id="section-admin" class="section">
-  <div class="section-hero"><span class="section-hero-icon">👥</span><div><div class="section-hero-title">User Management</div><div class="section-hero-sub">Control access and roles — Admin only</div></div></div>
-  <div class="card">
-    <div class="card-header"><div class="card-icon" style="background:rgba(168,85,247,.1)">➕</div><span class="card-title">Add User</span></div>
-    <div class="form-grid">
-      <div class="form-group"><label>Full Name *</label><input type="text" id="adm-name" placeholder="User name"/></div>
-      <div class="form-group"><label>Email *</label><input type="email" id="adm-email" placeholder="user@company.com"/></div>
-      <div class="form-group"><label>Password *</label><input type="password" id="adm-pass" placeholder="Min. 6 chars"/></div>
-      <div class="form-group"><label>Role</label><select id="adm-role"><option value="viewer">Viewer — read only</option><option value="editor">Editor — add / edit</option><option value="manager">Manager — full + AI</option><option value="admin">Admin — user control</option></select></div>
+<!-- ==================== CONFIGURATION ==================== -->
+<section id="section-config" class="section">
+  <div class="section-hero"><span class="section-hero-icon">⚙</span><div><div class="section-hero-title">Configuration</div><div class="section-hero-sub">System parameters — Business registration and User management</div></div></div>
+
+  <!-- Sub-tabs -->
+  <div style="display:flex;gap:4px;background:var(--surface2);border-radius:var(--radius);padding:4px;border:1px solid var(--border);width:fit-content">
+    <button class="graph-tab active" id="ctab-biz" onclick="switchConfigTab('biz',this)">🏢 Business</button>
+    <button class="graph-tab" id="ctab-users" onclick="switchConfigTab('users',this)">👥 Users</button>
+  </div>
+
+  <!-- ===== BUSINESS ===== -->
+  <div id="config-pane-biz" style="display:flex;flex-direction:column;gap:1.5rem">
+    <div class="card">
+      <div class="card-header"><div class="card-icon" style="background:rgba(0,112,214,.1)">🏢</div><span class="card-title">Register Company</span></div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Company ID <span style="color:var(--accent);font-weight:900">*</span></label>
+          <div style="display:flex;gap:6px">
+            <input type="text" id="biz-id" placeholder="e.g. ACME" style="font-family:var(--mono);font-size:.84rem;text-transform:uppercase"/>
+            <button class="btn btn-secondary" style="padding:8px 12px;flex-shrink:0" onclick="generateBizId()" title="Auto-generate">⚡</button>
+          </div>
+        </div>
+        <div class="form-group"><label>Company Name *</label><input type="text" id="biz-name" placeholder="e.g. ACME Corporation"/></div>
+        <div class="form-group"><label>Industry / Sector</label><input type="text" id="biz-industry" placeholder="e.g. Manufacturing, Healthcare, Finance"/></div>
+        <div class="form-group"><label>Country</label><input type="text" id="biz-country" placeholder="e.g. Brazil, USA"/></div>
+        <div class="form-group"><label>Company Size</label><select id="biz-size">
+          <option value="">Select…</option>
+          <option value="micro">Micro (1–9)</option>
+          <option value="small">Small (10–49)</option>
+          <option value="medium">Medium (50–249)</option>
+          <option value="large">Large (250–999)</option>
+          <option value="enterprise">Enterprise (1000+)</option>
+        </select></div>
+        <div class="form-group"><label>Status</label><select id="biz-status">
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+        </select></div>
+        <div class="form-group full"><label>Description / Notes</label><textarea id="biz-desc" rows="2" placeholder="Brief description, scope, or any notes about this company…"></textarea></div>
+        <div class="form-group"><label>Primary Contact</label><input type="text" id="biz-contact" placeholder="Name or role"/></div>
+        <div class="form-group"><label>Contact Email</label><input type="email" id="biz-email" placeholder="contact@company.com"/></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-blue" onclick="saveCompany()">🏢 Register Company</button>
+        <button class="btn btn-secondary" onclick="clearCompanyForm()">↺ Clear</button>
+      </div>
+      <div id="biz-err" class="login-err" style="margin-top:.8rem"></div>
+      <div id="biz-ok"  class="login-ok"  style="margin-top:.8rem"></div>
     </div>
-    <div class="btn-row"><button class="btn btn-purple" onclick="adminAddUser()">➕ Add User</button></div>
-    <div id="adm-err" class="login-err" style="margin-top:.8rem"></div>
-    <div id="adm-ok"  class="login-ok"  style="margin-top:.8rem"></div>
+
+    <div class="card" id="biz-table-card" style="display:none">
+      <div class="card-header"><div class="card-icon" style="background:rgba(0,112,214,.1)">🏢</div><span class="card-title">Registered Companies</span></div>
+      <div style="overflow-x:auto">
+        <table><thead><tr><th>Company ID</th><th>Name</th><th>Industry</th><th>Country</th><th>Size</th><th>Status</th><th>Processes</th><th>Contact</th><th></th></tr></thead>
+        <tbody id="biz-table-body"></tbody></table>
+      </div>
+    </div>
   </div>
-  <div class="card">
-    <div class="card-header"><div class="card-icon" style="background:rgba(0,212,170,.1)">👥</div><span class="card-title">Registered Users</span></div>
-    <div style="overflow-x:auto"><table><thead><tr><th>Name</th><th>Role</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead><tbody id="users-table-body"></tbody></table></div>
-  </div>
-  <div class="card" style="background:rgba(168,85,247,.04);border-color:rgba(168,85,247,.15)">
-    <div class="card-header"><div class="card-icon" style="background:rgba(168,85,247,.1)">🔑</div><span class="card-title">Role Permissions</span></div>
-    <div style="overflow-x:auto"><table><thead><tr><th>Permission</th><th>Viewer</th><th>Editor</th><th>Manager</th><th>Admin</th></tr></thead><tbody>
-      <tr><td>View data</td><td style="color:var(--success)">✓</td><td style="color:var(--success)">✓</td><td style="color:var(--success)">✓</td><td style="color:var(--success)">✓</td></tr>
-      <tr><td>Add / edit records</td><td style="color:var(--danger)">✗</td><td style="color:var(--success)">✓</td><td style="color:var(--success)">✓</td><td style="color:var(--success)">✓</td></tr>
-      <tr><td>Delete records</td><td style="color:var(--danger)">✗</td><td style="color:var(--danger)">✗</td><td style="color:var(--success)">✓</td><td style="color:var(--success)">✓</td></tr>
-      <tr><td>AI Suggestion</td><td style="color:var(--danger)">✗</td><td style="color:var(--danger)">✗</td><td style="color:var(--success)">✓</td><td style="color:var(--success)">✓</td></tr>
-      <tr><td>User Management</td><td style="color:var(--danger)">✗</td><td style="color:var(--danger)">✗</td><td style="color:var(--danger)">✗</td><td style="color:var(--success)">✓</td></tr>
-    </tbody></table></div>
+
+  <!-- ===== USERS ===== -->
+  <div id="config-pane-users" style="display:none;flex-direction:column;gap:1.5rem">
+    <div class="card">
+      <div class="card-header"><div class="card-icon" style="background:rgba(124,58,237,.1)">➕</div><span class="card-title">Add User</span></div>
+      <div class="form-grid">
+        <div class="form-group"><label>Full Name *</label><input type="text" id="adm-name" placeholder="User name"/></div>
+        <div class="form-group"><label>Email *</label><input type="email" id="adm-email" placeholder="user@company.com"/></div>
+        <div class="form-group"><label>Password *</label><input type="password" id="adm-pass" placeholder="Min. 6 chars"/></div>
+        <div class="form-group"><label>Role</label><select id="adm-role">
+          <option value="viewer">Viewer — read only</option>
+          <option value="editor">Editor — add / edit</option>
+          <option value="manager">Manager — full + AI</option>
+          <option value="admin">Admin — user control</option>
+        </select></div>
+        <div class="form-group"><label>Linked Company <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
+          <select id="adm-company-id"><option value="">— all companies —</option></select>
+        </div>
+      </div>
+      <div class="btn-row"><button class="btn btn-purple" onclick="adminAddUser()">➕ Add User</button></div>
+      <div id="adm-err" class="login-err" style="margin-top:.8rem"></div>
+      <div id="adm-ok"  class="login-ok"  style="margin-top:.8rem"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-icon" style="background:rgba(0,143,116,.1)">👥</div><span class="card-title">Registered Users</span></div>
+      <div style="overflow-x:auto">
+        <table><thead><tr><th>Name</th><th>Role</th><th>Company</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead>
+        <tbody id="users-table-body"></tbody></table>
+      </div>
+    </div>
+
+    <div class="card" style="background:rgba(124,58,237,.04);border-color:rgba(124,58,237,.15)">
+      <div class="card-header"><div class="card-icon" style="background:rgba(124,58,237,.1)">🔑</div><span class="card-title">Role Permissions</span></div>
+      <div style="overflow-x:auto"><table><thead><tr><th>Permission</th><th>Viewer</th><th>Editor</th><th>Manager</th><th>Admin</th></tr></thead><tbody>
+        <tr><td>View data</td><td style="color:var(--success)">✓</td><td style="color:var(--success)">✓</td><td style="color:var(--success)">✓</td><td style="color:var(--success)">✓</td></tr>
+        <tr><td>Add / edit records</td><td style="color:var(--danger)">✗</td><td style="color:var(--success)">✓</td><td style="color:var(--success)">✓</td><td style="color:var(--success)">✓</td></tr>
+        <tr><td>Delete records</td><td style="color:var(--danger)">✗</td><td style="color:var(--danger)">✗</td><td style="color:var(--success)">✓</td><td style="color:var(--success)">✓</td></tr>
+        <tr><td>AI Suggestion</td><td style="color:var(--danger)">✗</td><td style="color:var(--danger)">✗</td><td style="color:var(--success)">✓</td><td style="color:var(--success)">✓</td></tr>
+        <tr><td>Configuration / Users</td><td style="color:var(--danger)">✗</td><td style="color:var(--danger)">✗</td><td style="color:var(--danger)">✗</td><td style="color:var(--success)">✓</td></tr>
+      </tbody></table></div>
+    </div>
   </div>
 </section>
 </div>
@@ -730,6 +792,7 @@ let metrics     = [];
 let gaps        = [];
 let projects    = [];
 let tasks       = [];
+let companies   = [];
 let currentRAG  = null;
 let ragHistory  = [];
 
@@ -806,7 +869,7 @@ function bootApp() {
   document.getElementById('hdr-name').textContent=currentUser.name;
   const rb=document.getElementById('hdr-role');
   rb.textContent=currentUser.role; rb.style.background=ROLE_BG[currentUser.role]; rb.style.color=ROLE_COLORS[currentUser.role];
-  if (CAN_ADMIN.includes(currentUser.role)) document.getElementById('nav-admin').style.display='inline-flex';
+  if (CAN_ADMIN.includes(currentUser.role)) document.getElementById('nav-config').style.display='inline-flex';
   loadUserData();
   showSection('register', document.querySelector('.nav-btn'));
 }
@@ -825,18 +888,38 @@ function loadUserData() {
   projects    = JSON.parse(localStorage.getItem(dk('projects'))    || '[]');
   tasks       = JSON.parse(localStorage.getItem(dk('tasks'))       || '[]');
   ragHistory  = JSON.parse(localStorage.getItem(dk('ragHistory'))  || '[]');
+  companies   = JSON.parse(localStorage.getItem(dk('companies'))   || '[]');
+  populateCompanyDropdowns();
   populateProcessDropdowns();
   renderProcessTable(); renderSteps(); renderMetrics(); renderGaps();
   renderRAGHistory(); renderTasks(); renderProjectsTable();
+  renderBizTable();
   if (processes.length) document.getElementById('process-table-card').style.display='block';
   if (projects.length)  document.getElementById('project-summary-card').style.display='block';
+  if (companies.length) document.getElementById('biz-table-card').style.display='block';
+}
+
+// ============================================================
+// COMPANY DROPDOWNS
+// ============================================================
+function populateCompanyDropdowns() {
+  const opts = companies.map(c=>`<option value="${c.id}">[${c.bizId}] ${c.name}</option>`).join('');
+  const none = '<option value="">— select company —</option>';
+  ['proc-company-id','adm-company-id'].forEach(id=>{
+    const el=document.getElementById(id); if(!el)return;
+    const val=el.value; el.innerHTML=none+opts; el.value=val;
+  });
 }
 
 // ============================================================
 // PROCESS DROPDOWNS — keep all <select> in sync
 // ============================================================
 function populateProcessDropdowns() {
-  const opts = processes.map(p=>`<option value="${p.id}">[${p.procId}] ${p.name}</option>`).join('');
+  const opts = processes.map(p=>{
+    const co=companies.find(c=>String(c.id)===String(p.companyId));
+    const prefix=co?`[${co.bizId}] `:'';
+    return `<option value="${p.id}">${prefix}[${p.procId}] ${p.name}</option>`;
+  }).join('');
   const none = '<option value="">— select process —</option>';
   const anyP = '<option value="">All Processes</option>';
   ['step-proc-id','metric-proc-id','proj-proc-id','gap-proc-id'].forEach(id=>{
@@ -875,9 +958,16 @@ function showSection(id, btn) {
   if(sec) sec.classList.add('active');
   if(btn) btn.classList.add('active');
   if(id==='diagram') renderDiagram();
-  if(id==='admin')   renderUserTable();
+  if(id==='config')  { renderUserTable(); renderBizTable(); }
   if(id==='graphs')  { populateIshikawaSelect(); renderRAGDashboard(); }
   if(id==='project') { renderTasks(); renderProjectsTable(); }
+}
+
+function switchConfigTab(tab, btn) {
+  document.querySelectorAll('#section-config .graph-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('config-pane-biz').style.display   = tab==='biz'   ? 'flex' : 'none';
+  document.getElementById('config-pane-users').style.display = tab==='users' ? 'flex' : 'none';
 }
 
 // ============================================================
@@ -912,17 +1002,27 @@ const priBadge={low:'badge-gray',medium:'badge-blue',high:'badge-orange',critica
 const staBadge={draft:'badge-gray',active:'badge-green','under-review':'badge-orange',deprecated:'badge-gray'};
 
 function generateProcId() {
-  const yr=new Date().getFullYear();
-  const seq=String(processes.length+1).padStart(3,'0');
-  document.getElementById('proc-id').value=`PRC-${yr}-${seq}`;
+  const companyId = document.getElementById('proc-company-id').value;
+  const co = companies.find(c=>String(c.id)===String(companyId));
+  const prefix = co ? co.bizId : 'PRC';
+  const yr = new Date().getFullYear();
+  // Count processes for this company to get next sequence
+  const companyProcs = processes.filter(p=>String(p.companyId)===String(companyId));
+  const seq = String(companyProcs.length + 1).padStart(3,'0');
+  document.getElementById('proc-id').value = `${prefix}-${yr}-${seq}`;
 }
 function saveProcess() {
   if(!CAN_EDIT.includes(currentUser.role)){ alert('Editors or above can add processes.'); return; }
-  const procId=document.getElementById('proc-id').value.trim();
-  const name=document.getElementById('proc-name').value.trim();
-  const desc=document.getElementById('proc-desc').value.trim();
+  const companyId = document.getElementById('proc-company-id').value;
+  const procId = document.getElementById('proc-id').value.trim();
+  const name   = document.getElementById('proc-name').value.trim();
+  const desc   = document.getElementById('proc-desc').value.trim();
+  if(!companyId){ alert('Please select a Company first.'); return; }
   if(!procId||!name||!desc){ alert('Process ID, Name and Description are required.'); return; }
-  if(processes.find(p=>p.procId===procId)){ alert('Process ID already exists. Use a unique ID.'); return; }
+  // ID must be unique within the same company
+  if(processes.find(p=>p.procId===procId && String(p.companyId)===String(companyId))){
+    alert('Process ID already exists for this company. Use a unique ID.'); return;
+  }
   const ragNotes=document.getElementById('proc-rag-notes').value.trim();
   const ragDate=document.getElementById('proc-rag-date').value;
   const ragBy=document.getElementById('proc-rag-by').value.trim();
@@ -931,7 +1031,7 @@ function saveProcess() {
     persist('ragHistory',ragHistory); renderRAGHistory();
   }
   processes.push({
-    id:Date.now(), procId, name, desc,
+    id:Date.now(), procId, name, desc, companyId,
     dept:document.getElementById('proc-dept').value.trim(),
     owner:document.getElementById('proc-owner').value.trim(),
     version:document.getElementById('proc-version').value.trim()||'1.0',
@@ -954,6 +1054,7 @@ function saveProcess() {
   populateProcessDropdowns();
   renderProcessTable();
   renderRAGDashboard();
+  renderBizTable(); // update process counts
   clearProcessForm();
   document.getElementById('process-table-card').style.display='block';
 }
@@ -961,6 +1062,7 @@ function clearProcessForm() {
   ['proc-id','proc-name','proc-dept','proc-owner','proc-version','proc-start','proc-end',
    'proc-duration','proc-input','proc-output','proc-stakeholders','proc-tools','proc-kpis',
    'proc-risks','proc-desc','proc-rag-notes','proc-rag-date','proc-rag-by'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('proc-company-id').value='';
   document.getElementById('proc-status').value='draft';
   document.getElementById('proc-priority').value='medium';
   currentRAG=null;
@@ -976,8 +1078,10 @@ function deleteProcess(id) {
 function renderProcessTable() {
   const RC={green:'#16a34a',amber:'#d97706',red:'#dc2626'};
   const ce=CAN_EDIT.includes(currentUser?.role), cd=CAN_DELETE.includes(currentUser?.role);
-  document.getElementById('process-table-body').innerHTML=processes.map(p=>
-    `<tr>
+  document.getElementById('process-table-body').innerHTML=processes.map(p=>{
+    const co=companies.find(c=>String(c.id)===String(p.companyId));
+    return `<tr>
+      <td>${co?`<span style="font-family:var(--mono);font-size:.7rem;color:var(--accent2);font-weight:700">${co.bizId}</span>`:'—'}</td>
       <td><span style="font-family:var(--mono);font-size:.72rem;color:var(--accent);font-weight:700">${p.procId}</span></td>
       <td><strong>${p.name}</strong></td>
       <td>${p.dept||'—'}</td><td>${p.owner||'—'}</td>
@@ -988,8 +1092,8 @@ function renderProcessTable() {
         ${ce?`<button class="btn btn-secondary" style="padding:3px 9px;font-size:.68rem" onclick="openEditProcModal(${p.id})">✏ Edit</button>`:''}
         ${cd?`<button class="btn btn-danger" style="padding:3px 9px" onclick="deleteProcess(${p.id})">✕</button>`:'—'}
       </td>
-    </tr>`
-  ).join('');
+    </tr>`;
+  }).join('');
 }
 // Edit process modal
 function openEditProcModal(id) {
@@ -2014,22 +2118,26 @@ function renderTasks(){
 // ============================================================
 function adminAddUser(){
   const name=document.getElementById('adm-name').value.trim(),email=document.getElementById('adm-email').value.trim().toLowerCase(),pass=document.getElementById('adm-pass').value,role=document.getElementById('adm-role').value;
+  const companyId=document.getElementById('adm-company-id').value||null;
   const err=document.getElementById('adm-err'),ok=document.getElementById('adm-ok');
   err.style.display='none';ok.style.display='none';
   if(!name||!email||!pass){err.textContent='All fields required.';err.style.display='block';return;}
   if(pass.length<6){err.textContent='Password min 6 chars.';err.style.display='block';return;}
   if(users.find(u=>u.email===email)){err.textContent='Email already exists.';err.style.display='block';return;}
-  users.push({id:'u_'+Date.now(),name,email,password:pass,role,active:true,created:new Date().toLocaleDateString()});
+  users.push({id:'u_'+Date.now(),name,email,password:pass,role,companyId,active:true,created:new Date().toLocaleDateString()});
   saveUsers();ok.textContent=`${name} added as ${role}.`;ok.style.display='block';
   ['adm-name','adm-email','adm-pass'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('adm-company-id').value='';
   renderUserTable();
 }
 function renderUserTable(){
   const tbody=document.getElementById('users-table-body'); if(!tbody) return;
-  tbody.innerHTML=users.map(u=>
-    `<tr>
+  tbody.innerHTML=users.map(u=>{
+    const co=u.companyId?companies.find(c=>String(c.id)===String(u.companyId)):null;
+    return `<tr>
       <td><strong>${u.name}</strong>${u.id===currentUser?.id?'<span class="badge badge-teal" style="margin-left:6px">You</span>':''}</td>
       <td><span class="badge" style="background:${ROLE_BG[u.role]};color:${ROLE_COLORS[u.role]}">${u.role}</span></td>
+      <td>${co?`<span style="font-family:var(--mono);font-size:.7rem;color:var(--accent2);font-weight:700">${co.bizId}</span> <span style="font-size:.78rem;color:var(--text2)">${co.name}</span>`:'<span style="color:var(--text3);font-size:.75rem">All companies</span>'}</td>
       <td><span class="badge ${u.pending?'badge-orange':u.active?'badge-green':'badge-red'}">${u.pending?'⏳ Pending':u.active?'Active':'Disabled'}</span></td>
       <td style="font-size:.76rem;color:var(--text3)">${u.created||'—'}</td>
       <td>${u.id!==currentUser?.id
@@ -2041,7 +2149,8 @@ function renderUserTable(){
           </div>`
         :'<span style="color:var(--text3);font-size:.73rem">Current user</span>'}
       </td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 }
 function toggleUserActive(id){const u=users.find(x=>x.id===id);if(u){u.active=!u.active;if(u.active)u.pending=false;saveUsers();renderUserTable();}}
 function approveUser(id){const u=users.find(x=>x.id===id);if(u){u.active=true;u.pending=false;saveUsers();renderUserTable();alert(`✓ ${u.name} has been approved and can now sign in.`);}}
@@ -2051,6 +2160,81 @@ function closeRoleModal(){document.getElementById('role-modal').classList.remove
 function applyRoleChange(){const u=users.find(x=>x.id===pendingRoleId);if(u){u.role=document.getElementById('modal-role').value;saveUsers();renderUserTable();}closeRoleModal();}
 document.getElementById('role-modal').addEventListener('click',function(e){if(e.target===this)closeRoleModal();});
 document.getElementById('task-modal').addEventListener('click',function(e){if(e.target===this)closeTaskModal();});
+
+// ============================================================
+// COMPANY MANAGEMENT
+// ============================================================
+function generateBizId() {
+  const seq = String(companies.length + 1).padStart(3,'0');
+  document.getElementById('biz-id').value = `BIZ${seq}`;
+}
+function saveCompany() {
+  if(!CAN_ADMIN.includes(currentUser.role)){ alert('Admin role required to register companies.'); return; }
+  const bizId = document.getElementById('biz-id').value.trim().toUpperCase();
+  const name  = document.getElementById('biz-name').value.trim();
+  if(!bizId || !name){ alert('Company ID and Name are required.'); return; }
+  if(companies.find(c=>c.bizId===bizId)){ alert('Company ID already exists. Use a unique ID.'); return; }
+  const err=document.getElementById('biz-err'), ok=document.getElementById('biz-ok');
+  err.style.display='none'; ok.style.display='none';
+  companies.push({
+    id: Date.now(), bizId, name,
+    industry: document.getElementById('biz-industry').value.trim(),
+    country:  document.getElementById('biz-country').value.trim(),
+    size:     document.getElementById('biz-size').value,
+    status:   document.getElementById('biz-status').value,
+    desc:     document.getElementById('biz-desc').value.trim(),
+    contact:  document.getElementById('biz-contact').value.trim(),
+    email:    document.getElementById('biz-email').value.trim(),
+    created:  new Date().toLocaleDateString()
+  });
+  persist('companies', companies);
+  populateCompanyDropdowns();
+  renderBizTable();
+  clearCompanyForm();
+  document.getElementById('biz-table-card').style.display = 'block';
+  ok.textContent = `Company ${name} registered successfully.`;
+  ok.style.display = 'block';
+}
+function clearCompanyForm() {
+  ['biz-id','biz-name','biz-industry','biz-country','biz-desc','biz-contact','biz-email']
+    .forEach(id => document.getElementById(id).value = '');
+  document.getElementById('biz-size').value   = '';
+  document.getElementById('biz-status').value = 'active';
+}
+function deleteCompany(id) {
+  if(!CAN_ADMIN.includes(currentUser.role)){ alert('Admin role required.'); return; }
+  const linkedProcs = processes.filter(p=>String(p.companyId)===String(id)).length;
+  if(linkedProcs > 0){
+    if(!confirm(`This company has ${linkedProcs} linked process(es). Delete anyway?`)) return;
+  }
+  companies = companies.filter(c=>c.id!==id);
+  persist('companies', companies);
+  populateCompanyDropdowns();
+  renderBizTable();
+  if(!companies.length) document.getElementById('biz-table-card').style.display='none';
+}
+function renderBizTable() {
+  const card = document.getElementById('biz-table-card');
+  const tbody = document.getElementById('biz-table-body');
+  if(!tbody) return;
+  if(!companies.length){ card.style.display='none'; return; }
+  card.style.display='block';
+  const sizeLbl={micro:'Micro',small:'Small',medium:'Medium',large:'Large',enterprise:'Enterprise'};
+  tbody.innerHTML = companies.map(c=>{
+    const procCount = processes.filter(p=>String(p.companyId)===String(c.id)).length;
+    return `<tr>
+      <td><span style="font-family:var(--mono);font-size:.78rem;color:var(--accent2);font-weight:700">${c.bizId}</span></td>
+      <td><strong>${c.name}</strong>${c.desc?`<div style="font-size:.72rem;color:var(--text3);margin-top:1px">${c.desc.slice(0,60)}${c.desc.length>60?'…':''}</div>`:''}</td>
+      <td>${c.industry||'—'}</td>
+      <td>${c.country||'—'}</td>
+      <td>${sizeLbl[c.size]||'—'}</td>
+      <td><span class="badge ${c.status==='active'?'badge-green':'badge-gray'}">${c.status||'active'}</span></td>
+      <td><span style="font-family:var(--mono);font-size:.78rem;font-weight:700;color:${procCount>0?'var(--accent)':'var(--text3)'}">${procCount}</span></td>
+      <td>${c.contact||'—'}${c.email?`<div style="font-size:.7rem;color:var(--text3)">${c.email}</div>`:''}</td>
+      <td>${CAN_ADMIN.includes(currentUser?.role)?`<button class="btn btn-danger" style="padding:3px 9px" onclick="deleteCompany(${c.id})">✕</button>`:'—'}</td>
+    </tr>`;
+  }).join('');
+}
 
 // ============================================================
 // AUTO-RESTORE SESSION — MUST be last
