@@ -192,6 +192,7 @@ tr:hover td{background:var(--surface2);}
 .rag-timeline-text{font-size:.83rem;color:var(--text2);}
 .rag-proc-row{display:flex;align-items:center;gap:10px;padding:.6rem .8rem;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface2);}
 .rag-proc-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;}
+/* GRAPH TABS */
 @media(max-width:600px){.section{padding:1rem;}.form-grid{grid-template-columns:1fr;}nav{gap:1px;}.nav-btn{padding:5px 7px;font-size:.62rem;}#rag-charts-row{grid-template-columns:1fr!important;}}
 </style>
 </head>
@@ -263,7 +264,6 @@ tr:hover td{background:var(--surface2);}
         </div>
       </div>
       <div class="form-group"><label>Process Name *</label><input type="text" id="proc-name" placeholder="e.g. Customer Onboarding"/></div>
-      <div class="form-group"><label>Process Code</label><input type="text" id="proc-code" placeholder="e.g. PROC-001"/></div>
       <div class="form-group"><label>Department</label><input type="text" id="proc-dept" placeholder="e.g. Sales, Operations"/></div>
       <div class="form-group"><label>Process Owner</label><input type="text" id="proc-owner" placeholder="Name or role"/></div>
       <div class="form-group"><label>Version</label><input type="text" id="proc-version" placeholder="e.g. 1.0"/></div>
@@ -308,7 +308,7 @@ tr:hover td{background:var(--surface2);}
   <div class="btn-row"><button class="btn btn-primary" onclick="saveProcess()">✓ Save Process</button><button class="btn btn-secondary" onclick="clearProcessForm()">↺ Clear</button></div>
   <div class="card" id="process-table-card" style="display:none">
     <div class="card-header"><div class="card-icon" style="background:rgba(168,85,247,.1)">📄</div><span class="card-title">Registered Processes</span></div>
-    <div style="overflow-x:auto"><table><thead><tr><th>Process ID</th><th>Code</th><th>Name</th><th>Dept</th><th>Owner</th><th>Priority</th><th>Status</th><th>RAG</th><th></th></tr></thead><tbody id="process-table-body"></tbody></table></div>
+    <div style="overflow-x:auto"><table><thead><tr><th>Process ID</th><th>Name</th><th>Dept</th><th>Owner</th><th>Priority</th><th>Status</th><th>RAG</th><th></th></tr></thead><tbody id="process-table-body"></tbody></table></div>
   </div>
 </section>
 
@@ -318,7 +318,7 @@ tr:hover td{background:var(--surface2);}
   <div class="card">
     <div class="card-header"><div class="card-icon" style="background:rgba(0,212,170,.1)">➕</div><span class="card-title">Add New Step</span></div>
     <div class="form-grid">
-      <div class="form-group"><label>Linked Process *</label><select id="step-proc-id"><option value="">— select process —</option></select></div>
+      <div class="form-group"><label>Linked Process *</label><select id="step-proc-id" onchange="refreshPrevStepDropdown()"><option value="">— select process —</option></select></div>
       <div class="form-group"><label>Step Name *</label><input type="text" id="step-name" placeholder="e.g. Validate Document"/></div>
       <div class="form-group"><label>Responsible</label><input type="text" id="step-responsible" placeholder="Name or role"/></div>
       <div class="form-group"><label>Step Type</label><select id="step-type" onchange="toggleDecisionFields()"><option value="task">Task</option><option value="decision">Decision</option><option value="approval">Approval</option><option value="automated">Automated</option><option value="review">Review</option><option value="notification">Notification</option></select></div>
@@ -328,9 +328,13 @@ tr:hover td{background:var(--surface2);}
       <div class="form-group" style="align-self:end">
         <label>Flow Signals</label>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:2px">
-          <label class="signal-toggle"><input type="checkbox" id="step-is-start" onchange="onSignalChange('start')"/><span class="signal-btn signal-start">▶ Start</span></label>
+          <label class="signal-toggle"><input type="checkbox" id="step-is-start" onchange="onSignalChange('start');togglePrevStep()"/><span class="signal-btn signal-start">▶ Start</span></label>
           <label class="signal-toggle"><input type="checkbox" id="step-is-end"   onchange="onSignalChange('end')"  /><span class="signal-btn signal-end">■ End</span></label>
         </div>
+      </div>
+      <div class="form-group" id="prev-step-group">
+        <label>Previous Step <span style="color:var(--danger);font-size:.8rem">*</span> <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(required if not Start)</span></label>
+        <select id="step-prev-id"><option value="">— none / first step —</option></select>
       </div>
       <div class="form-group full" id="branch-fields" style="display:none">
         <label>Decision Branches</label>
@@ -385,15 +389,20 @@ tr:hover td{background:var(--surface2);}
       <div class="form-group"><label>Category</label><select id="gap-cat"><option value="process">Process Design</option><option value="people">People / Skills</option><option value="technology">Technology / Tools</option><option value="compliance">Compliance / Policy</option><option value="data">Data / Information</option><option value="communication">Communication</option><option value="performance">Performance / KPI</option><option value="other">Other</option></select></div>
       <div class="form-group"><label>Severity</label><select id="gap-severity"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option><option value="critical">Critical</option></select></div>
       <div class="form-group"><label>Status</label><select id="gap-status"><option value="open">Open</option><option value="in-analysis">In Analysis</option><option value="action-planned">Action Planned</option><option value="in-progress">In Progress</option><option value="resolved">Resolved</option><option value="accepted">Accepted Risk</option></select></div>
-      <div class="form-group"><label>Related Step</label><input type="text" id="gap-step" placeholder="e.g. Step 2 – Approval"/></div>
+      <div class="form-group"><label>Linked Process</label><select id="gap-proc-id" onchange="refreshGapStepDropdown()"><option value="">— select process —</option></select></div>
+      <div class="form-group"><label>Linked Step <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label><select id="gap-step-id"><option value="">— none —</option></select></div>
       <div class="form-group"><label>Responsible</label><input type="text" id="gap-owner" placeholder="Name or team"/></div>
       <div class="form-group"><label>Identified Date</label><input type="date" id="gap-date"/></div>
       <div class="form-group"><label>Target Resolution</label><input type="date" id="gap-target"/></div>
       <div class="form-group full"><label>Current State *</label><textarea id="gap-current" rows="2" placeholder="Describe the current situation…"></textarea></div>
       <div class="form-group full"><label>Desired State</label><textarea id="gap-desired" rows="2" placeholder="Describe the ideal situation…"></textarea></div>
-      <div class="form-group full"><label>Root Cause</label><textarea id="gap-rootcause" rows="2" placeholder="Why does this gap exist? (5 Whys, fishbone…)"></textarea></div>
-      <div class="form-group full"><label>Consequence of Root Cause</label><textarea id="gap-consequence" rows="2" placeholder="What happens as a direct result of this root cause?"></textarea></div>
-      <div class="form-group full"><label>Impact / Consequences</label><textarea id="gap-impact" rows="2" placeholder="Business impact if not addressed…"></textarea></div>
+      <!-- Multi root cause/consequence -->
+      <div class="form-group full">
+        <label>Root Causes &amp; Consequences</label>
+        <div id="rc-list" style="display:flex;flex-direction:column;gap:.6rem;margin-top:.4rem"></div>
+        <button type="button" class="btn btn-secondary" style="margin-top:.6rem;padding:6px 14px;font-size:.75rem" onclick="addRCRow()">+ Add Root Cause</button>
+      </div>
+      <div class="form-group full"><label>Impact / Business Consequences</label><textarea id="gap-impact" rows="2" placeholder="Overall business impact if not addressed…"></textarea></div>
       <div class="form-group full"><label>Proposed Action</label><textarea id="gap-action" rows="2" placeholder="What actions are proposed?"></textarea></div>
     </div>
     <div class="btn-row"><button class="btn btn-orange" onclick="addGap()">⚠ Register Gap</button><button class="btn btn-secondary" onclick="clearGapForm()">↺ Clear</button></div>
@@ -402,7 +411,7 @@ tr:hover td{background:var(--surface2);}
   <div id="gaps-list"><div class="empty-state"><div class="es-icon">⚠</div><div class="es-text">No gaps registered yet.</div></div></div>
   <div class="card" id="gaps-table-card" style="display:none">
     <div class="card-header"><div class="card-icon" style="background:rgba(255,107,53,.1)">📋</div><span class="card-title">Gaps Summary Table</span></div>
-    <div style="overflow-x:auto"><table><thead><tr><th>#</th><th>Title</th><th>Category</th><th>Severity</th><th>Status</th><th>Responsible</th><th>Target</th><th></th></tr></thead><tbody id="gaps-table-body"></tbody></table></div>
+    <div style="overflow-x:auto"><table><thead><tr><th>#</th><th>Title</th><th>Process</th><th>Step</th><th>Category</th><th>Severity</th><th>Status</th><th>Causes</th><th>Responsible</th><th>Target</th><th></th></tr></thead><tbody id="gaps-table-body"></tbody></table></div>
   </div>
 </section>
 
@@ -546,9 +555,8 @@ tr:hover td{background:var(--surface2);}
 <section id="section-project" class="section">
   <div class="section-hero"><span class="section-hero-icon">🗂</span><div><div class="section-hero-title">Project Management</div><div class="section-hero-sub">Transform your process improvement into an actionable project</div></div></div>
 
-  <!-- Project Setup -->
   <div class="card">
-    <div class="card-header"><div class="card-icon" style="background:rgba(0,212,170,.1)">🚀</div><span class="card-title">Project Setup</span></div>
+    <div class="card-header"><div class="card-icon" style="background:rgba(0,143,116,.1)">🚀</div><span class="card-title">Project Setup</span></div>
     <div class="form-grid">
       <div class="form-group"><label>Project Name *</label><input type="text" id="proj-name" placeholder="e.g. Customer Onboarding Optimization"/></div>
       <div class="form-group"><label>Linked Process</label><select id="proj-proc-id"><option value="">— select process —</option></select></div>
@@ -564,9 +572,8 @@ tr:hover td{background:var(--surface2);}
     <div class="btn-row"><button class="btn btn-primary" onclick="saveProject()">✓ Save Project</button><button class="btn btn-secondary" onclick="clearProjectForm()">↺ Clear</button></div>
   </div>
 
-  <!-- Task Manager -->
   <div class="card">
-    <div class="card-header"><div class="card-icon" style="background:rgba(0,136,255,.1)">✅</div><span class="card-title">Task Manager</span>
+    <div class="card-header"><div class="card-icon" style="background:rgba(0,112,214,.1)">✅</div><span class="card-title">Task Manager</span>
       <button class="btn btn-blue" style="margin-left:auto;padding:5px 12px;font-size:.72rem" onclick="openTaskModal()">+ Add Task</button>
     </div>
     <div style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;margin-bottom:1rem">
@@ -582,23 +589,22 @@ tr:hover td{background:var(--surface2);}
     <div id="tasks-list"><div class="empty-state"><div class="es-icon">✅</div><div class="es-text">No tasks yet. Add a task or generate from AI suggestion.</div></div></div>
   </div>
 
-  <!-- Kanban Board -->
   <div class="card">
-    <div class="card-header"><div class="card-icon" style="background:rgba(168,85,247,.1)">📌</div><span class="card-title">Kanban Board</span></div>
-    <div style="display:flex;gap:1rem;overflow-x:auto;padding-bottom:.5rem" id="kanban-board">
-      <div class="kanban-col"><div class="kanban-col-title" style="color:var(--text3)">🔲 Backlog</div><div id="kb-backlog"></div></div>
+    <div class="card-header"><div class="card-icon" style="background:rgba(124,58,237,.1)">📌</div><span class="card-title">Kanban Board</span></div>
+    <div style="display:flex;gap:1rem;overflow-x:auto;padding-bottom:.5rem">
+      <div class="kanban-col"><div class="kanban-col-title">🔲 Backlog</div><div id="kb-backlog"></div></div>
       <div class="kanban-col"><div class="kanban-col-title" style="color:var(--accent2)">▶ In Progress</div><div id="kb-inprogress"></div></div>
       <div class="kanban-col"><div class="kanban-col-title" style="color:var(--warning)">⏸ Review</div><div id="kb-review"></div></div>
       <div class="kanban-col"><div class="kanban-col-title" style="color:var(--success)">✓ Done</div><div id="kb-done"></div></div>
     </div>
   </div>
 
-  <!-- Project Summary -->
   <div class="card" id="project-summary-card" style="display:none">
-    <div class="card-header"><div class="card-icon" style="background:rgba(0,212,170,.1)">📊</div><span class="card-title">Projects Overview</span></div>
+    <div class="card-header"><div class="card-icon" style="background:rgba(0,143,116,.1)">📊</div><span class="card-title">Projects Overview</span></div>
     <div style="overflow-x:auto"><table><thead><tr><th>Project</th><th>Process</th><th>Manager</th><th>Start</th><th>End</th><th>Priority</th><th>Tasks</th><th>Progress</th><th></th></tr></thead><tbody id="projects-table-body"></tbody></table></div>
   </div>
 </section>
+
 
 <!-- ==================== ADMIN ==================== -->
 <section id="section-admin" class="section">
@@ -632,6 +638,65 @@ tr:hover td{background:var(--surface2);}
 </section>
 </div>
 
+<!-- TASK MODAL -->
+<div class="modal-overlay" id="task-modal">
+  <div class="modal-box">
+    <div style="font-size:1rem;font-weight:800;margin-bottom:1.2rem">➕ Add Task</div>
+    <div class="form-grid" style="grid-template-columns:1fr 1fr">
+      <div class="form-group full"><label>Task Title *</label><input type="text" id="tm-title" placeholder="e.g. Map current process steps"/></div>
+      <div class="form-group"><label>Project</label><select id="tm-proj-id"><option value="">— none —</option></select></div>
+      <div class="form-group"><label>Phase</label><select id="tm-phase">
+        <option value="quick-win">Quick Win</option>
+        <option value="short-term">Short-term</option>
+        <option value="long-term">Long-term</option>
+      </select></div>
+      <div class="form-group"><label>Assigned To</label><input type="text" id="tm-assignee" placeholder="Name or role"/></div>
+      <div class="form-group"><label>Due Date</label><input type="date" id="tm-due"/></div>
+      <div class="form-group"><label>Priority</label><select id="tm-priority"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option></select></div>
+      <div class="form-group"><label>Kanban Status</label><select id="tm-kanban"><option value="backlog">Backlog</option><option value="inprogress">In Progress</option><option value="review">Review</option><option value="done">Done</option></select></div>
+      <div class="form-group full"><label>Description</label><textarea id="tm-desc" rows="2" placeholder="What needs to be done?"></textarea></div>
+    </div>
+    <div class="btn-row" style="margin-top:.8rem"><button class="btn btn-primary" onclick="saveTask()">✓ Add Task</button><button class="btn btn-secondary" onclick="closeTaskModal()">Cancel</button></div>
+  </div>
+</div>
+<div class="modal-overlay" id="edit-proc-modal">
+  <div class="modal-box" style="max-width:620px">
+    <div style="font-size:1rem;font-weight:800;margin-bottom:1.2rem;display:flex;align-items:center;gap:8px">✏ Edit Process <span id="epm-proc-id-label" style="font-family:var(--mono);font-size:.82rem;color:var(--accent)"></span></div>
+    <input type="hidden" id="epm-internal-id"/>
+    <div class="form-grid" style="grid-template-columns:1fr 1fr">
+      <div class="form-group">
+        <label>Process ID</label>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input type="text" id="epm-proc-id" style="font-family:var(--mono);font-size:.82rem"/>
+          <span id="epm-id-lock" style="font-size:.72rem;color:var(--warning);white-space:nowrap"></span>
+        </div>
+      </div>
+      <div class="form-group"><label>Process Name *</label><input type="text" id="epm-name"/></div>
+      <div class="form-group"><label>Department</label><input type="text" id="epm-dept"/></div>
+      <div class="form-group"><label>Process Owner</label><input type="text" id="epm-owner"/></div>
+      <div class="form-group"><label>Version</label><input type="text" id="epm-version"/></div>
+      <div class="form-group"><label>Status</label><select id="epm-status"><option value="draft">Draft</option><option value="active">Active</option><option value="under-review">Under Review</option><option value="deprecated">Deprecated</option></select></div>
+      <div class="form-group"><label>Priority</label><select id="epm-priority"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="critical">Critical</option></select></div>
+      <div class="form-group"><label>Process Type</label><select id="epm-type"><option value="operational">Operational</option><option value="administrative">Administrative</option><option value="strategic">Strategic</option><option value="support">Support</option><option value="compliance">Compliance</option></select></div>
+      <div class="form-group"><label>Start Date</label><input type="date" id="epm-start"/></div>
+      <div class="form-group"><label>Target End Date</label><input type="date" id="epm-end"/></div>
+      <div class="form-group"><label>Expected Duration</label><input type="text" id="epm-duration"/></div>
+      <div class="form-group"><label>Frequency</label><select id="epm-frequency"><option value="">Select…</option><option value="on-demand">On Demand</option><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option><option value="quarterly">Quarterly</option><option value="annually">Annually</option></select></div>
+      <div class="form-group full"><label>Description *</label><textarea id="epm-desc" rows="3"></textarea></div>
+      <div class="form-group full"><label>Input (trigger)</label><input type="text" id="epm-input"/></div>
+      <div class="form-group full"><label>Output (result)</label><input type="text" id="epm-output"/></div>
+      <div class="form-group full"><label>Stakeholders</label><input type="text" id="epm-stakeholders"/></div>
+      <div class="form-group full"><label>Tools & Systems</label><input type="text" id="epm-tools"/></div>
+      <div class="form-group full"><label>KPIs / Success Criteria</label><textarea id="epm-kpis" rows="2"></textarea></div>
+      <div class="form-group full"><label>Risks & Pain Points</label><textarea id="epm-risks" rows="2"></textarea></div>
+    </div>
+    <div class="btn-row" style="margin-top:1rem">
+      <button class="btn btn-primary" onclick="applyEditProcess()">✓ Save Changes</button>
+      <button class="btn btn-secondary" onclick="closeEditProcModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <!-- ROLE MODAL -->
 <div class="modal-overlay" id="role-modal">
   <div class="modal-box">
@@ -640,24 +705,6 @@ tr:hover td{background:var(--surface2);}
       <select id="modal-role"><option value="viewer">Viewer — read only</option><option value="editor">Editor — add / edit</option><option value="manager">Manager — full + AI</option><option value="admin">Admin — user control</option></select>
     </div>
     <div class="btn-row" style="margin-top:0"><button class="btn btn-primary" onclick="applyRoleChange()">✓ Apply</button><button class="btn btn-secondary" onclick="closeRoleModal()">Cancel</button></div>
-  </div>
-</div>
-
-<!-- TASK MODAL -->
-<div class="modal-overlay" id="task-modal">
-  <div class="modal-box">
-    <div style="font-size:1rem;font-weight:800;margin-bottom:1.2rem">➕ Add Task</div>
-    <div class="form-grid" style="grid-template-columns:1fr 1fr">
-      <div class="form-group full"><label>Task Title *</label><input type="text" id="tm-title" placeholder="e.g. Map current process steps"/></div>
-      <div class="form-group"><label>Project</label><select id="tm-proj-id"><option value="">— none —</option></select></div>
-      <div class="form-group"><label>Phase</label><select id="tm-phase"><option value="quick-win">Quick Win</option><option value="short-term">Short-term</option><option value="long-term">Long-term</option></select></div>
-      <div class="form-group"><label>Assigned To</label><input type="text" id="tm-assignee" placeholder="Name or role"/></div>
-      <div class="form-group"><label>Due Date</label><input type="date" id="tm-due"/></div>
-      <div class="form-group"><label>Priority</label><select id="tm-priority"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option></select></div>
-      <div class="form-group"><label>Kanban Status</label><select id="tm-kanban"><option value="backlog">Backlog</option><option value="inprogress">In Progress</option><option value="review">Review</option><option value="done">Done</option></select></div>
-      <div class="form-group full"><label>Description</label><textarea id="tm-desc" rows="2" placeholder="What needs to be done?"></textarea></div>
-    </div>
-    <div class="btn-row" style="margin-top:.8rem"><button class="btn btn-primary" onclick="saveTask()">✓ Add Task</button><button class="btn btn-secondary" onclick="closeTaskModal()">Cancel</button></div>
   </div>
 </div>
 
@@ -792,7 +839,7 @@ function populateProcessDropdowns() {
   const opts = processes.map(p=>`<option value="${p.id}">[${p.procId}] ${p.name}</option>`).join('');
   const none = '<option value="">— select process —</option>';
   const anyP = '<option value="">All Processes</option>';
-  ['step-proc-id','metric-proc-id','proj-proc-id'].forEach(id=>{
+  ['step-proc-id','metric-proc-id','proj-proc-id','gap-proc-id'].forEach(id=>{
     const el=document.getElementById(id); if(!el)return;
     const val=el.value; el.innerHTML=none+opts; el.value=val;
   });
@@ -885,7 +932,6 @@ function saveProcess() {
   }
   processes.push({
     id:Date.now(), procId, name, desc,
-    code:document.getElementById('proc-code').value.trim(),
     dept:document.getElementById('proc-dept').value.trim(),
     owner:document.getElementById('proc-owner').value.trim(),
     version:document.getElementById('proc-version').value.trim()||'1.0',
@@ -912,7 +958,7 @@ function saveProcess() {
   document.getElementById('process-table-card').style.display='block';
 }
 function clearProcessForm() {
-  ['proc-id','proc-name','proc-code','proc-dept','proc-owner','proc-version','proc-start','proc-end',
+  ['proc-id','proc-name','proc-dept','proc-owner','proc-version','proc-start','proc-end',
    'proc-duration','proc-input','proc-output','proc-stakeholders','proc-tools','proc-kpis',
    'proc-risks','proc-desc','proc-rag-notes','proc-rag-date','proc-rag-by'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('proc-status').value='draft';
@@ -924,23 +970,90 @@ function deleteProcess(id) {
   if(!CAN_DELETE.includes(currentUser.role)){ alert('Managers or above can delete.'); return; }
   processes=processes.filter(p=>p.id!==id);
   persist('processes',processes); populateProcessDropdowns(); renderProcessTable();
+  renderRAGDashboard();
   if(!processes.length) document.getElementById('process-table-card').style.display='none';
 }
 function renderProcessTable() {
-  const RC={green:'var(--success)',amber:'var(--warning)',red:'var(--danger)'};
+  const RC={green:'#16a34a',amber:'#d97706',red:'#dc2626'};
+  const ce=CAN_EDIT.includes(currentUser?.role), cd=CAN_DELETE.includes(currentUser?.role);
   document.getElementById('process-table-body').innerHTML=processes.map(p=>
     `<tr>
       <td><span style="font-family:var(--mono);font-size:.72rem;color:var(--accent);font-weight:700">${p.procId}</span></td>
-      <td><span style="font-family:var(--mono);font-size:.68rem;color:var(--text3)">${p.code||'—'}</span></td>
       <td><strong>${p.name}</strong></td>
       <td>${p.dept||'—'}</td><td>${p.owner||'—'}</td>
       <td><span class="badge ${priBadge[p.priority]||'badge-gray'}">${p.priority}</span></td>
       <td><span class="badge ${staBadge[p.status]||'badge-gray'}">${p.status}</span></td>
       <td>${p.rag?`<div style="display:flex;align-items:center;gap:5px"><div style="width:11px;height:11px;border-radius:50%;background:${RC[p.rag]}"></div><span style="font-size:.7rem;color:${RC[p.rag]};font-weight:700;text-transform:uppercase">${p.rag}</span></div>`:'—'}</td>
-      <td>${CAN_DELETE.includes(currentUser?.role)?`<button class="btn btn-danger" style="padding:3px 9px" onclick="deleteProcess(${p.id})">✕</button>`:'—'}</td>
+      <td style="display:flex;gap:4px">
+        ${ce?`<button class="btn btn-secondary" style="padding:3px 9px;font-size:.68rem" onclick="openEditProcModal(${p.id})">✏ Edit</button>`:''}
+        ${cd?`<button class="btn btn-danger" style="padding:3px 9px" onclick="deleteProcess(${p.id})">✕</button>`:'—'}
+      </td>
     </tr>`
   ).join('');
 }
+// Edit process modal
+function openEditProcModal(id) {
+  const p=processes.find(x=>x.id===id); if(!p) return;
+  const hasSteps=steps.some(s=>String(s.procId)===String(p.id));
+  document.getElementById('epm-internal-id').value=id;
+  document.getElementById('epm-proc-id-label').textContent=p.procId;
+  document.getElementById('epm-proc-id').value=p.procId;
+  document.getElementById('epm-proc-id').disabled=hasSteps;
+  document.getElementById('epm-id-lock').textContent=hasSteps?'🔒 ID locked — has linked steps':'';
+  document.getElementById('epm-name').value=p.name||'';
+  document.getElementById('epm-dept').value=p.dept||'';
+  document.getElementById('epm-owner').value=p.owner||'';
+  document.getElementById('epm-version').value=p.version||'';
+  document.getElementById('epm-status').value=p.status||'draft';
+  document.getElementById('epm-priority').value=p.priority||'medium';
+  document.getElementById('epm-type').value=p.type||'operational';
+  document.getElementById('epm-start').value=p.start||'';
+  document.getElementById('epm-end').value=p.end||'';
+  document.getElementById('epm-duration').value=p.duration||'';
+  document.getElementById('epm-frequency').value=p.frequency||'';
+  document.getElementById('epm-desc').value=p.desc||'';
+  document.getElementById('epm-input').value=p.input||'';
+  document.getElementById('epm-output').value=p.output||'';
+  document.getElementById('epm-stakeholders').value=p.stakeholders||'';
+  document.getElementById('epm-tools').value=p.tools||'';
+  document.getElementById('epm-kpis').value=p.kpis||'';
+  document.getElementById('epm-risks').value=p.risks||'';
+  document.getElementById('edit-proc-modal').classList.add('open');
+}
+function closeEditProcModal(){ document.getElementById('edit-proc-modal').classList.remove('open'); }
+function applyEditProcess() {
+  const internalId=parseInt(document.getElementById('epm-internal-id').value);
+  const p=processes.find(x=>x.id===internalId); if(!p) return;
+  const newProcId=document.getElementById('epm-proc-id').value.trim();
+  const name=document.getElementById('epm-name').value.trim();
+  const desc=document.getElementById('epm-desc').value.trim();
+  if(!newProcId||!name||!desc){ alert('Process ID, Name and Description are required.'); return; }
+  // Check ID uniqueness only if changed
+  if(newProcId!==p.procId && processes.find(x=>x.procId===newProcId && x.id!==internalId)){
+    alert('That Process ID is already in use.'); return;
+  }
+  p.procId=newProcId; p.name=name; p.desc=desc;
+  p.dept=document.getElementById('epm-dept').value.trim();
+  p.owner=document.getElementById('epm-owner').value.trim();
+  p.version=document.getElementById('epm-version').value.trim();
+  p.status=document.getElementById('epm-status').value;
+  p.priority=document.getElementById('epm-priority').value;
+  p.type=document.getElementById('epm-type').value;
+  p.start=document.getElementById('epm-start').value;
+  p.end=document.getElementById('epm-end').value;
+  p.duration=document.getElementById('epm-duration').value.trim();
+  p.frequency=document.getElementById('epm-frequency').value;
+  p.input=document.getElementById('epm-input').value.trim();
+  p.output=document.getElementById('epm-output').value.trim();
+  p.stakeholders=document.getElementById('epm-stakeholders').value.trim();
+  p.tools=document.getElementById('epm-tools').value.trim();
+  p.kpis=document.getElementById('epm-kpis').value.trim();
+  p.risks=document.getElementById('epm-risks').value.trim();
+  persist('processes',processes);
+  populateProcessDropdowns(); renderProcessTable(); renderRAGDashboard();
+  closeEditProcModal();
+}
+document.getElementById('edit-proc-modal').addEventListener('click',function(e){if(e.target===this)closeEditProcModal();});
 
 // ============================================================
 // FLOW SIGNAL HELPERS
@@ -948,6 +1061,18 @@ function renderProcessTable() {
 function toggleDecisionFields() {
   document.getElementById('branch-fields').style.display=
     document.getElementById('step-type').value==='decision'?'block':'none';
+}
+function togglePrevStep() {
+  const isStart=document.getElementById('step-is-start').checked;
+  const grp=document.getElementById('prev-step-group');
+  if(grp) grp.style.opacity=isStart?'0.4':'1';
+}
+function refreshPrevStepDropdown() {
+  const procId=document.getElementById('step-proc-id').value;
+  const sel=document.getElementById('step-prev-id'); if(!sel)return;
+  const procSteps=procId?steps.filter(s=>String(s.procId)===String(procId)):[];
+  sel.innerHTML='<option value="">— none / first step —</option>'+
+    procSteps.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
 }
 function onSignalChange(sig) {
   const procId=document.getElementById('step-proc-id').value;
@@ -981,13 +1106,19 @@ function addStep() {
   const name=document.getElementById('step-name').value.trim();
   if(!procId){ alert('Please select a linked process first.'); return; }
   if(!name){ alert('Step name required.'); return; }
-  const type=document.getElementById('step-type').value;
   const isStart=document.getElementById('step-is-start').checked;
   const isEnd=document.getElementById('step-is-end').checked;
+  const prevStepId=document.getElementById('step-prev-id').value||null;
+  // Require previous step if not start and there are existing steps in this process
+  const existingProcSteps=steps.filter(s=>String(s.procId)===String(procId));
+  if(!isStart && existingProcSteps.length>0 && !prevStepId){
+    alert('Please select the Previous Step, or mark this step as Start Point.'); return;
+  }
+  const type=document.getElementById('step-type').value;
   if(isStart) steps.filter(s=>s.procId===procId).forEach(s=>{s.isStart=false;});
   if(isEnd)   steps.filter(s=>s.procId===procId).forEach(s=>{s.isEnd=false;});
   const s={
-    id:Date.now(), name, type, procId, isStart, isEnd,
+    id:Date.now(), name, type, procId, isStart, isEnd, prevStepId,
     responsible:document.getElementById('step-responsible').value.trim(),
     system:document.getElementById('step-system').value.trim(),
     sla:document.getElementById('step-sla').value.trim(),
@@ -1001,7 +1132,7 @@ function addStep() {
   steps.push(s); stepHistory[s.id]=[];
   persist('steps',steps); persist('stepHistory',stepHistory);
   renderSteps(); clearStepForm(); updateSummaryBar();
-  populateProcessDropdowns(); // refresh metric step dropdown
+  populateProcessDropdowns();
 }
 function clearStepForm() {
   ['step-name','step-responsible','step-system','step-sla','step-desc','step-input','step-output','step-branch-yes','step-branch-no']
@@ -1011,6 +1142,8 @@ function clearStepForm() {
   document.getElementById('step-is-start').checked=false;
   document.getElementById('step-is-end').checked=false;
   document.getElementById('branch-fields').style.display='none';
+  const prevSel=document.getElementById('step-prev-id'); if(prevSel) prevSel.value='';
+  const grp=document.getElementById('prev-step-group'); if(grp) grp.style.opacity='1';
 }
 function deleteStep(id) {
   if(!CAN_DELETE.includes(currentUser.role)){ alert('Managers or above can delete.'); return; }
@@ -1083,14 +1216,13 @@ function renderSteps() {
           ${s.responsible?`<div class="form-group"><label>Responsible</label><div style="color:var(--text2);font-size:.84rem">${s.responsible}</div></div>`:''}
           ${s.system     ?`<div class="form-group"><label>System</label><div style="color:var(--text2);font-size:.84rem">${s.system}</div></div>`:''}
           ${s.sla        ?`<div class="form-group"><label>SLA</label><div style="color:var(--accent);font-family:var(--mono);font-size:.8rem">${s.sla}</div></div>`:''}
-          ${s.type==='decision'&&(s.branchYes||s.branchNo)?`
-            <div class="form-group full"><label>Decision Branches</label>
+          ${(()=>{const prev=s.prevStepId?steps.find(x=>x.id===s.prevStepId):null;return prev?`<div class="form-group"><label>Previous Step</label><div style="color:var(--accent2);font-size:.83rem;font-weight:600">← ${prev.name}</div></div>`:s.isStart?`<div class="form-group"><label>Previous Step</label><div style="color:var(--success);font-size:.82rem">▶ Start Point — no previous step</div></div>`:''})()}
+          ${s.type==='decision'&&(s.branchYes||s.branchNo)?`<div class="form-group full"><label>Decision Branches</label>
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-top:4px">
                 ${s.branchYes?`<div style="background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.2);border-radius:6px;padding:8px 10px"><div style="font-size:.63rem;font-weight:700;color:var(--success);text-transform:uppercase;margin-bottom:3px">✓ Yes</div><div style="font-size:.82rem">${s.branchYes}</div></div>`:''}
                 ${s.branchNo ?`<div style="background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:6px;padding:8px 10px"><div style="font-size:.63rem;font-weight:700;color:var(--danger);text-transform:uppercase;margin-bottom:3px">✗ No</div><div style="font-size:.82rem">${s.branchNo}</div></div>`:''}
               </div>
-            </div>`:''}
-          ${s.desc  ?`<div class="form-group full"><label>Description</label><div style="color:var(--text2);font-size:.84rem;line-height:1.5">${s.desc}</div></div>`:''}
+            </div>`:''}          ${s.desc  ?`<div class="form-group full"><label>Description</label><div style="color:var(--text2);font-size:.84rem;line-height:1.5">${s.desc}</div></div>`:''}
           ${s.input ?`<div class="form-group full"><label>Input</label><div style="color:var(--text2);font-size:.84rem">${s.input}</div></div>`:''}
           ${s.output?`<div class="form-group full"><label>Output</label><div style="color:var(--text2);font-size:.84rem">${s.output}</div></div>`:''}
         </div>
@@ -1179,43 +1311,149 @@ function exportDiagram(){const s=document.querySelector('#diagram-canvas svg');i
 const gSevBadge={critical:'badge-red',high:'badge-orange',medium:'badge-orange',low:'badge-blue'};
 const gStaBadge={open:'badge-red','in-analysis':'badge-blue','action-planned':'badge-orange','in-progress':'badge-blue',resolved:'badge-green',accepted:'badge-gray'};
 const gCatBadge={process:'badge-teal',people:'badge-purple',technology:'badge-blue',compliance:'badge-orange',data:'badge-green',communication:'badge-gray',performance:'badge-orange',other:'badge-gray'};
-function addGap(){
+
+// Root-cause row builder state
+let rcRows = [];
+function addRCRow() {
+  const id = Date.now();
+  rcRows.push(id);
+  const list = document.getElementById('rc-list');
+  const row = document.createElement('div');
+  row.id = 'rc-row-'+id;
+  row.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:.8rem;display:flex;flex-direction:column;gap:.5rem;position:relative';
+  row.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
+      <span style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3)">Root Cause ${rcRows.length}</span>
+      <button type="button" onclick="removeRCRow(${id})" style="background:none;border:none;cursor:pointer;color:var(--danger);font-size:.9rem;padding:0 4px" title="Remove">✕</button>
+    </div>
+    <textarea id="rc-cause-${id}" rows="2" placeholder="Why does this gap exist? (5 Whys, fishbone…)" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:var(--sans);font-size:.85rem;padding:8px 10px;resize:vertical;width:100%"></textarea>
+    <textarea id="rc-cons-${id}"  rows="2" placeholder="What happens as a direct result of this root cause?" style="background:rgba(220,38,38,.04);border:1px solid rgba(220,38,38,.15);border-radius:var(--radius);color:var(--danger);font-family:var(--sans);font-size:.85rem;padding:8px 10px;resize:vertical;width:100%"></textarea>
+    <div style="font-size:.68rem;color:var(--text3)">↑ Root Cause &nbsp;|&nbsp; ↓ Consequence</div>`;
+  list.appendChild(row);
+}
+function removeRCRow(id) {
+  rcRows = rcRows.filter(r => r !== id);
+  document.getElementById('rc-row-'+id)?.remove();
+  // Re-number labels
+  document.querySelectorAll('#rc-list [id^="rc-row-"]').forEach((row, i) => {
+    const lbl = row.querySelector('span');
+    if (lbl) lbl.textContent = `Root Cause ${i+1}`;
+  });
+}
+function collectRCRows() {
+  return rcRows.map(id => ({
+    cause: (document.getElementById('rc-cause-'+id)?.value||'').trim(),
+    consequence: (document.getElementById('rc-cons-'+id)?.value||'').trim()
+  })).filter(r => r.cause);
+}
+function clearRCRows() {
+  rcRows = [];
+  const list = document.getElementById('rc-list');
+  if (list) list.innerHTML = '';
+}
+
+// Gap process→step dropdown
+function refreshGapStepDropdown() {
+  const procId = document.getElementById('gap-proc-id').value;
+  const sel = document.getElementById('gap-step-id'); if (!sel) return;
+  const procSteps = procId ? steps.filter(s=>String(s.procId)===String(procId)) : [];
+  sel.innerHTML = '<option value="">— none —</option>' +
+    procSteps.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+}
+
+function addGap() {
   if(!CAN_EDIT.includes(currentUser.role)){alert('Editors or above can register gaps.');return;}
-  const title=document.getElementById('gap-title').value.trim(), curr=document.getElementById('gap-current').value.trim();
+  const title=document.getElementById('gap-title').value.trim();
+  const curr=document.getElementById('gap-current').value.trim();
   if(!title||!curr){alert('Title and Current State required.');return;}
-  gaps.push({id:Date.now(),title,current:curr,category:document.getElementById('gap-cat').value,severity:document.getElementById('gap-severity').value,status:document.getElementById('gap-status').value,step:document.getElementById('gap-step').value.trim(),owner:document.getElementById('gap-owner').value.trim(),date:document.getElementById('gap-date').value,target:document.getElementById('gap-target').value,desired:document.getElementById('gap-desired').value.trim(),rootcause:document.getElementById('gap-rootcause').value.trim(),consequence:document.getElementById('gap-consequence').value.trim(),impact:document.getElementById('gap-impact').value.trim(),action:document.getElementById('gap-action').value.trim(),createdBy:currentUser.name,createdAt:new Date().toLocaleDateString()});
-  persist('gaps',gaps);renderGaps();clearGapForm();
+  const rootCauses = collectRCRows();
+  gaps.push({
+    id:Date.now(), title, current:curr,
+    category:document.getElementById('gap-cat').value,
+    severity:document.getElementById('gap-severity').value,
+    status:document.getElementById('gap-status').value,
+    procId:document.getElementById('gap-proc-id').value||null,
+    stepId:document.getElementById('gap-step-id').value||null,
+    owner:document.getElementById('gap-owner').value.trim(),
+    date:document.getElementById('gap-date').value,
+    target:document.getElementById('gap-target').value,
+    desired:document.getElementById('gap-desired').value.trim(),
+    rootCauses,
+    // legacy compat: keep first cause in flat fields for Ishikawa
+    rootcause: rootCauses[0]?.cause||'',
+    consequence: rootCauses[0]?.consequence||'',
+    impact:document.getElementById('gap-impact').value.trim(),
+    action:document.getElementById('gap-action').value.trim(),
+    createdBy:currentUser.name, createdAt:new Date().toLocaleDateString()
+  });
+  persist('gaps',gaps); renderGaps(); clearGapForm();
   populateIshikawaSelect();
 }
-function clearGapForm(){['gap-title','gap-step','gap-owner','gap-date','gap-target','gap-current','gap-desired','gap-rootcause','gap-consequence','gap-impact','gap-action'].forEach(id=>document.getElementById(id).value='');document.getElementById('gap-cat').value='process';document.getElementById('gap-severity').value='medium';document.getElementById('gap-status').value='open';}
+
+function clearGapForm() {
+  ['gap-title','gap-owner','gap-date','gap-target','gap-current','gap-desired','gap-impact','gap-action']
+    .forEach(id=>document.getElementById(id).value='');
+  document.getElementById('gap-cat').value='process';
+  document.getElementById('gap-severity').value='medium';
+  document.getElementById('gap-status').value='open';
+  document.getElementById('gap-proc-id').value='';
+  document.getElementById('gap-step-id').innerHTML='<option value="">— none —</option>';
+  clearRCRows();
+}
 function deleteGap(id){if(!CAN_DELETE.includes(currentUser.role)){alert('Managers or above can delete.');return;}gaps=gaps.filter(g=>g.id!==id);persist('gaps',gaps);renderGaps();}
 function toggleGap(id){document.getElementById('gap-'+id)?.classList.toggle('open');}
 function updateGapStatus(id,val){const g=gaps.find(x=>x.id===id);if(g){g.status=val;persist('gaps',gaps);renderGapsSummary();renderGapsTable();}}
-function renderGaps(){
+
+function renderGaps() {
   const c=document.getElementById('gaps-list');
-  if(!gaps.length){c.innerHTML=`<div class="empty-state"><div class="es-icon">⚠</div><div class="es-text">No gaps registered yet.</div></div>`;document.getElementById('gaps-summary-bar').style.display='none';document.getElementById('gaps-table-card').style.display='none';return;}
-  document.getElementById('gaps-summary-bar').style.display='block';document.getElementById('gaps-table-card').style.display='block';renderGapsSummary();
-  const ce=CAN_EDIT.includes(currentUser?.role),cd=CAN_DELETE.includes(currentUser?.role);
-  c.innerHTML=gaps.map((g,i)=>`<div class="item-card gap-${g.severity}" id="gap-${g.id}">
+  if(!gaps.length){
+    c.innerHTML=`<div class="empty-state"><div class="es-icon">⚠</div><div class="es-text">No gaps registered yet.</div></div>`;
+    document.getElementById('gaps-summary-bar').style.display='none';
+    document.getElementById('gaps-table-card').style.display='none'; return;
+  }
+  document.getElementById('gaps-summary-bar').style.display='block';
+  document.getElementById('gaps-table-card').style.display='block';
+  renderGapsSummary();
+  const ce=CAN_EDIT.includes(currentUser?.role), cd=CAN_DELETE.includes(currentUser?.role);
+  c.innerHTML=gaps.map((g,i)=>{
+    const proc=processes.find(p=>String(p.id)===String(g.procId));
+    const step=g.stepId?steps.find(s=>String(s.id)===String(g.stepId)):null;
+    // Support both old single and new multi root-cause
+    const rcList = g.rootCauses?.length ? g.rootCauses
+      : (g.rootcause ? [{cause:g.rootcause,consequence:g.consequence||''}] : []);
+    return `<div class="item-card gap-${g.severity}" id="gap-${g.id}">
     <div class="item-header" onclick="toggleGap(${g.id})">
       <div style="font-family:var(--mono);font-size:.66rem;color:var(--text3);flex-shrink:0">#${String(i+1).padStart(2,'0')}</div>
       <div class="item-title-text">${g.title}</div>
-      <div class="item-meta"><span class="badge ${gCatBadge[g.category]||'badge-gray'}">${g.category}</span><span class="badge ${gSevBadge[g.severity]||'badge-gray'}">${g.severity}</span><span class="badge ${gStaBadge[g.status]||'badge-gray'}">${g.status.replace(/-/g,' ')}</span></div>
+      <div class="item-meta">
+        ${proc?`<span class="badge badge-teal" style="font-size:.6rem">${proc.procId}</span>`:''}
+        <span class="badge ${gCatBadge[g.category]||'badge-gray'}">${g.category}</span>
+        <span class="badge ${gSevBadge[g.severity]||'badge-gray'}">${g.severity}</span>
+        <span class="badge ${gStaBadge[g.status]||'badge-gray'}">${g.status.replace(/-/g,' ')}</span>
+      </div>
       <span class="item-chevron">▼</span>
     </div>
     <div class="item-body">
       <div class="form-grid" style="margin-bottom:.8rem">
-        ${g.step    ?`<div class="form-group"><label>Related Step</label><div style="color:var(--text2);font-size:.83rem">${g.step}</div></div>`:''}
-        ${g.owner   ?`<div class="form-group"><label>Responsible</label><div style="color:var(--text2);font-size:.83rem">${g.owner}</div></div>`:''}
-        ${g.date    ?`<div class="form-group"><label>Identified</label><div style="font-family:var(--mono);font-size:.8rem;color:var(--text2)">${g.date}</div></div>`:''}
-        ${g.target  ?`<div class="form-group"><label>Target</label><div style="font-family:var(--mono);font-size:.8rem;color:var(--warning)">${g.target}</div></div>`:''}
-        <div class="form-group full"><label>Current State</label><div style="background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.15);border-radius:6px;padding:10px;font-size:.84rem;line-height:1.5">${g.current}</div></div>
-        ${g.desired  ?`<div class="form-group full"><label>Desired State</label><div style="background:rgba(34,197,94,.05);border:1px solid rgba(34,197,94,.1);border-radius:6px;padding:10px;font-size:.84rem;line-height:1.5">${g.desired}</div></div>`:''}
-        ${g.rootcause ?`<div class="form-group full"><label>Root Cause</label><div style="color:var(--text2);font-size:.83rem;line-height:1.5">${g.rootcause}</div></div>`:''}
-        ${g.consequence?`<div class="form-group full"><label>Consequence of Root Cause</label><div style="background:rgba(220,38,38,.04);border:1px solid rgba(220,38,38,.12);border-radius:6px;padding:10px;font-size:.83rem;line-height:1.5;color:var(--danger)">${g.consequence}</div></div>`:''}
-        ${g.impact    ?`<div class="form-group full"><label>Impact</label><div style="color:var(--accent3);font-size:.83rem;line-height:1.5">${g.impact}</div></div>`:''}
-        ${g.action    ?`<div class="form-group full"><label>Proposed Action</label><div style="color:var(--accent);font-size:.83rem;line-height:1.5">${g.action}</div></div>`:''}
+        ${proc?`<div class="form-group"><label>Linked Process</label><div style="color:var(--accent);font-family:var(--mono);font-size:.8rem;font-weight:700">${proc.procId} — ${proc.name}</div></div>`:''}
+        ${step?`<div class="form-group"><label>Linked Step</label><div style="color:var(--text2);font-size:.83rem">${step.name}</div></div>`:''}
+        ${g.owner?`<div class="form-group"><label>Responsible</label><div style="color:var(--text2);font-size:.83rem">${g.owner}</div></div>`:''}
+        ${g.date?`<div class="form-group"><label>Identified</label><div style="font-family:var(--mono);font-size:.8rem;color:var(--text2)">${g.date}</div></div>`:''}
+        ${g.target?`<div class="form-group"><label>Target</label><div style="font-family:var(--mono);font-size:.8rem;color:var(--warning)">${g.target}</div></div>`:''}
+        <div class="form-group full"><label>Current State</label><div style="background:rgba(220,38,38,.04);border:1px solid rgba(220,38,38,.12);border-radius:6px;padding:10px;font-size:.84rem;line-height:1.5">${g.current}</div></div>
+        ${g.desired?`<div class="form-group full"><label>Desired State</label><div style="background:rgba(22,163,74,.04);border:1px solid rgba(22,163,74,.12);border-radius:6px;padding:10px;font-size:.84rem;line-height:1.5">${g.desired}</div></div>`:''}
       </div>
+      ${rcList.length?`<div style="margin-bottom:.8rem">
+        <label style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);display:block;margin-bottom:.5rem">Root Causes &amp; Consequences (${rcList.length})</label>
+        ${rcList.map((rc,ri)=>`
+          <div style="border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:.4rem">
+            <div style="background:var(--surface2);padding:6px 10px;font-size:.7rem;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.4px">Root Cause ${ri+1}</div>
+            <div style="padding:8px 10px;font-size:.83rem;color:var(--text2);line-height:1.5;border-bottom:${rc.consequence?'1px solid var(--border)':'none'}">${rc.cause}</div>
+            ${rc.consequence?`<div style="padding:8px 10px;font-size:.83rem;color:var(--danger);line-height:1.5;background:rgba(220,38,38,.03)"><span style="font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--danger);display:block;margin-bottom:2px">↳ Consequence</span>${rc.consequence}</div>`:''}
+          </div>`).join('')}
+      </div>`:''}
+      ${g.impact?`<div style="margin-bottom:.6rem"><label style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);display:block;margin-bottom:4px">Impact</label><div style="color:var(--accent3);font-size:.83rem;line-height:1.5">${g.impact}</div></div>`:''}
+      ${g.action?`<div style="margin-bottom:.6rem"><label style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);display:block;margin-bottom:4px">Proposed Action</label><div style="color:var(--accent);font-size:.83rem;line-height:1.5">${g.action}</div></div>`:''}
       <div style="font-size:.7rem;color:var(--text3);margin-bottom:.7rem">Registered by <strong style="color:var(--text2)">${g.createdBy||'—'}</strong> on ${g.createdAt||'—'}</div>
       ${ce?`<div style="display:flex;gap:.6rem;align-items:center;flex-wrap:wrap">
         <label style="font-size:.68rem">Update Status:</label>
@@ -1223,11 +1461,32 @@ function renderGaps(){
         ${cd?`<button class="btn btn-danger" style="padding:4px 10px;margin-left:auto" onclick="deleteGap(${g.id})">✕ Delete</button>`:''}
       </div>`:''}
     </div>
-  </div>`).join('');
+  </div>`;
+  }).join('');
   renderGapsTable();
 }
 function renderGapsSummary(){const t=gaps.length,o=gaps.filter(g=>g.status==='open').length,cr=gaps.filter(g=>g.severity==='critical').length,r=gaps.filter(g=>g.status==='resolved').length,ip=gaps.filter(g=>['in-progress','action-planned','in-analysis'].includes(g.status)).length;document.getElementById('gaps-summary-inner').innerHTML=`<div class="summary-stat"><div class="summary-stat-val">${t}</div><div class="summary-stat-label">Total</div></div><div class="summary-stat"><div class="summary-stat-val" style="color:var(--danger)">${o}</div><div class="summary-stat-label">Open</div></div><div class="summary-stat"><div class="summary-stat-val" style="color:var(--accent3)">${cr}</div><div class="summary-stat-label">Critical</div></div><div class="summary-stat"><div class="summary-stat-val" style="color:var(--accent2)">${ip}</div><div class="summary-stat-label">In Progress</div></div><div class="summary-stat"><div class="summary-stat-val" style="color:var(--success)">${r}</div><div class="summary-stat-label">Resolved</div></div>`;}
-function renderGapsTable(){document.getElementById('gaps-table-body').innerHTML=gaps.map((g,i)=>`<tr><td style="font-family:var(--mono);font-size:.68rem;color:var(--accent)">#${String(i+1).padStart(2,'0')}</td><td><strong>${g.title}</strong></td><td><span class="badge ${gCatBadge[g.category]||'badge-gray'}">${g.category}</span></td><td><span class="badge ${gSevBadge[g.severity]||'badge-gray'}">${g.severity}</span></td><td><span class="badge ${gStaBadge[g.status]||'badge-gray'}">${g.status.replace(/-/g,' ')}</span></td><td>${g.owner||'—'}</td><td style="font-family:var(--mono);font-size:.73rem;color:var(--warning)">${g.target||'—'}</td><td>${CAN_DELETE.includes(currentUser?.role)?`<button class="btn btn-danger" style="padding:3px 9px" onclick="deleteGap(${g.id})">✕</button>`:'—'}</td></tr>`).join('');}
+function renderGapsTable(){
+  const RC2={green:'#16a34a',amber:'#d97706',red:'#dc2626'};
+  document.getElementById('gaps-table-body').innerHTML=gaps.map((g,i)=>{
+    const proc=processes.find(p=>String(p.id)===String(g.procId));
+    const step=g.stepId?steps.find(s=>String(s.id)===String(g.stepId)):null;
+    const rcCount=(g.rootCauses?.length||0)||(g.rootcause?1:0);
+    return `<tr>
+      <td style="font-family:var(--mono);font-size:.68rem;color:var(--accent)">#${String(i+1).padStart(2,'0')}</td>
+      <td><strong>${g.title}</strong></td>
+      <td>${proc?`<span style="font-family:var(--mono);font-size:.68rem;color:var(--accent)">${proc.procId}</span>`:'—'}</td>
+      <td>${step?`<span style="font-size:.75rem;color:var(--text2)">${step.name}</span>`:'—'}</td>
+      <td><span class="badge ${gCatBadge[g.category]||'badge-gray'}">${g.category}</span></td>
+      <td><span class="badge ${gSevBadge[g.severity]||'badge-gray'}">${g.severity}</span></td>
+      <td><span class="badge ${gStaBadge[g.status]||'badge-gray'}">${g.status.replace(/-/g,' ')}</span></td>
+      <td style="font-family:var(--mono);font-size:.72rem;color:var(--text3)">${rcCount>0?rcCount+' cause'+(rcCount>1?'s':''):'—'}</td>
+      <td>${g.owner||'—'}</td>
+      <td style="font-family:var(--mono);font-size:.73rem;color:var(--warning)">${g.target||'—'}</td>
+      <td>${CAN_DELETE.includes(currentUser?.role)?`<button class="btn btn-danger" style="padding:3px 9px" onclick="deleteGap(${g.id})">✕</button>`:'—'}</td>
+    </tr>`;
+  }).join('');
+}
 
 // ============================================================
 // METRICS
@@ -1475,35 +1734,37 @@ function renderIshikawa() {
   const gap = gaps.find(g => String(g.id) === String(gapId));
   if (!gap) return;
 
-  // Gather causes from all gaps that share similar category — plus this gap's own rootcause
-  // Group by the 6M Ishikawa categories: Machine, Method, Material, Man, Measurement, Environment
-  // We map gap categories to Ishikawa bones
+  // Map gap categories to Ishikawa 6M bones
   const boneMap = {
-    technology: 'Machine / Technology',
-    process:    'Method / Process',
-    data:       'Material / Data',
-    people:     'Man / People',
-    performance:'Measurement',
-    compliance: 'Environment / Policy',
-    communication:'Environment / Policy',
-    other:      'Method / Process'
+    technology:'Machine / Technology', process:'Method / Process',
+    data:'Material / Data', people:'Man / People',
+    performance:'Measurement', compliance:'Environment / Policy',
+    communication:'Environment / Policy', other:'Method / Process'
   };
 
-  // Build bones from all gaps (treating each gap as a cause contributing to the selected effect)
-  const allGaps = gaps.filter(g => g.rootcause); // only gaps with root causes
+  // Gather causes — support both new rootCauses[] and legacy rootcause string
+  const allGaps = gaps.filter(g => g.rootCauses?.length || g.rootcause);
   const bones = {};
   allGaps.forEach(g => {
     const bone = boneMap[g.category] || 'Method / Process';
     if (!bones[bone]) bones[bone] = [];
-    bones[bone].push({ cause: g.rootcause, consequence: g.consequence||'', label: g.title, sev: g.severity });
+    const causes = g.rootCauses?.length ? g.rootCauses
+      : [{cause: g.rootcause, consequence: g.consequence||''}];
+    causes.filter(c=>c.cause).forEach(c => {
+      bones[bone].push({ cause: c.cause, consequence: c.consequence||'', label: g.title, sev: g.severity });
+    });
   });
 
-  // If the selected gap itself has a rootcause, ensure it's included
-  if (gap.rootcause) {
+  // Also ensure the selected gap's causes are represented
+  const selCauses = gap.rootCauses?.length ? gap.rootCauses
+    : (gap.rootcause ? [{cause:gap.rootcause,consequence:gap.consequence||''}] : []);
+  if (selCauses.length) {
     const mainBone = boneMap[gap.category] || 'Method / Process';
     if (!bones[mainBone]) bones[mainBone] = [];
-    const alreadyIn = bones[mainBone].some(b => b.cause === gap.rootcause);
-    if (!alreadyIn) bones[mainBone].push({ cause: gap.rootcause, consequence: gap.consequence||'', label: gap.title, sev: gap.severity });
+    selCauses.filter(c=>c.cause).forEach(c => {
+      if (!bones[mainBone].some(b => b.cause === c.cause))
+        bones[mainBone].push({ cause: c.cause, consequence: c.consequence||'', label: gap.title, sev: gap.severity });
+    });
   }
 
   const boneKeys = Object.keys(bones);
@@ -1613,7 +1874,6 @@ function exportIshikawa() {
 const phaseBadge={'quick-win':'badge-green','short-term':'badge-blue','long-term':'badge-purple'};
 const phaseLabel={'quick-win':'⚡ Quick Win','short-term':'📅 Short-term','long-term':'🔭 Long-term'};
 const taskPriBadge={low:'badge-gray',medium:'badge-blue',high:'badge-red'};
-const kanbanCols={backlog:'kb-backlog',inprogress:'kb-inprogress',review:'kb-review',done:'kb-done'};
 
 function saveProject(){
   if(!CAN_EDIT.includes(currentUser.role)){alert('Editors or above can create projects.');return;}
@@ -1637,8 +1897,18 @@ function saveProject(){
   clearProjectForm();
   document.getElementById('project-summary-card').style.display='block';
 }
-function clearProjectForm(){['proj-name','proj-manager','proj-sponsor','proj-start','proj-end','proj-budget','proj-objective','proj-success'].forEach(id=>document.getElementById(id).value='');document.getElementById('proj-proc-id').value='';document.getElementById('proj-priority').value='medium';}
-function deleteProject(id){if(!CAN_DELETE.includes(currentUser.role)){alert('Managers or above can delete.');return;}projects=projects.filter(p=>p.id!==id);persist('projects',projects);renderProjectsTable();populateProcessDropdowns();if(!projects.length)document.getElementById('project-summary-card').style.display='none';}
+function clearProjectForm(){
+  ['proj-name','proj-manager','proj-sponsor','proj-start','proj-end','proj-budget','proj-objective','proj-success']
+    .forEach(id=>document.getElementById(id).value='');
+  document.getElementById('proj-proc-id').value='';
+  document.getElementById('proj-priority').value='medium';
+}
+function deleteProject(id){
+  if(!CAN_DELETE.includes(currentUser.role)){alert('Managers or above can delete.');return;}
+  projects=projects.filter(p=>p.id!==id);
+  persist('projects',projects);renderProjectsTable();populateProcessDropdowns();
+  if(!projects.length)document.getElementById('project-summary-card').style.display='none';
+}
 function renderProjectsTable(){
   const tbody=document.getElementById('projects-table-body');
   tbody.innerHTML=projects.map(p=>{
@@ -1654,7 +1924,7 @@ function renderProjectsTable(){
       <td style="font-family:var(--mono);font-size:.75rem">${p.end||'—'}</td>
       <td><span class="badge ${priBadge[p.priority]||'badge-gray'}">${p.priority}</span></td>
       <td style="font-family:var(--mono);font-size:.75rem">${pTasks.length}</td>
-      <td><div style="display:flex;align-items:center;gap:8px"><div style="flex:1;height:6px;background:var(--surface3);border-radius:3px;overflow:hidden"><div style="height:100%;background:var(--accent);width:${pct}%"></div></div><span style="font-size:.72rem;font-family:var(--mono);color:var(--accent)">${pct}%</span></div></td>
+      <td><div style="display:flex;align-items:center;gap:8px"><div style="flex:1;height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;border:1px solid var(--border)"><div style="height:100%;background:var(--accent);width:${pct}%"></div></div><span style="font-size:.72rem;font-family:var(--mono);color:var(--accent)">${pct}%</span></div></td>
       <td>${CAN_DELETE.includes(currentUser?.role)?`<button class="btn btn-danger" style="padding:3px 9px" onclick="deleteProject(${p.id})">✕</button>`:'—'}</td>
     </tr>`;
   }).join('');
@@ -1694,7 +1964,6 @@ function renderTasks(){
   if(!vis.length){
     list.innerHTML=`<div class="empty-state"><div class="es-icon">✅</div><div class="es-text">${tasks.length?'No tasks match filter.':'No tasks yet. Add a task above.'}</div></div>`;
   } else {
-    // Group by phase
     const phases=['quick-win','short-term','long-term'];
     let html='';
     phases.forEach(ph=>{
@@ -1727,11 +1996,10 @@ function renderTasks(){
     });
     list.innerHTML=html;
   }
-  // Kanban board
   ['backlog','inprogress','review','done'].forEach(col=>{
     const colEl=document.getElementById('kb-'+col); if(!colEl)return;
     const colTasks=tasks.filter(t=>t.kanban===col);
-    colEl.innerHTML=colTasks.length?colTasks.map(t=>`<div class="kanban-task" onclick="">
+    colEl.innerHTML=colTasks.length?colTasks.map(t=>`<div class="kanban-task">
       <div style="font-weight:600;font-size:.8rem">${t.title}</div>
       <div style="display:flex;gap:.4rem;flex-wrap:wrap;margin-top:4px">
         <span class="badge ${phaseBadge[t.phase]||'badge-gray'}" style="font-size:.58rem">${phaseLabel[t.phase]||t.phase}</span>
