@@ -169,12 +169,6 @@ tr:hover td{background:var(--surface2);}
 .rag-bar-track{flex:1;height:20px;background:var(--surface2);border-radius:4px;overflow:hidden;border:1px solid var(--border);}
 .rag-bar-fill{height:100%;border-radius:4px;transition:width .5s cubic-bezier(.4,0,.2,1);}
 .rag-bar-val{font-family:var(--mono);font-size:.72rem;font-weight:700;min-width:24px;text-align:right;}
-.rag-timeline-item{display:flex;align-items:flex-start;gap:12px;padding:.6rem 0;border-bottom:1px solid var(--border);}
-.rag-timeline-item:last-child{border-bottom:none;}
-.rag-timeline-dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.75rem;color:#fff;flex-shrink:0;margin-top:1px;}
-.rag-timeline-body{flex:1;}
-.rag-timeline-meta{font-size:.7rem;color:var(--text3);font-family:var(--mono);margin-bottom:2px;}
-.rag-timeline-text{font-size:.83rem;color:var(--text2);}
 .rag-proc-row{display:flex;align-items:center;gap:10px;padding:.6rem .8rem;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface2);}
 .rag-proc-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;}
 /* GRAPH TABS */
@@ -291,10 +285,6 @@ tr:hover td{background:var(--surface2);}
       <div class="form-group"><label>Last Reviewed</label><input type="date" id="proc-rag-date"/></div>
       <div class="form-group"><label>Reviewed By</label><input type="text" id="proc-rag-by" placeholder="Name or role"/></div>
     </div>
-    <div id="rag-history-wrap" style="margin-top:1rem;display:none">
-      <label style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3)">RAG History</label>
-      <div id="rag-history-list" style="display:flex;flex-direction:column;gap:6px;margin-top:8px"></div>
-    </div>
   </div>
   <div class="btn-row"><button class="btn btn-primary" onclick="saveProcess()">✓ Save Process</button><button class="btn btn-secondary" onclick="clearProcessForm()">↺ Clear</button></div>
   <div class="card" id="process-table-card" style="display:none">
@@ -319,8 +309,8 @@ tr:hover td{background:var(--surface2);}
       <div class="form-group" style="align-self:end">
         <label>Flow Signals</label>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:2px">
-          <label class="signal-toggle"><input type="checkbox" id="step-is-start" onchange="onSignalChange('start');togglePrevStep()"/><span class="signal-btn signal-start">▶ Start</span></label>
-          <label class="signal-toggle"><input type="checkbox" id="step-is-end"   onchange="onSignalChange('end')"  /><span class="signal-btn signal-end">■ End</span></label>
+          <label class="signal-toggle"><input type="checkbox" id="step-is-start" onchange="onSignalChange('start')"/><span class="signal-btn signal-start">▶ Start</span></label>
+          <label class="signal-toggle"><input type="checkbox" id="step-is-end"   onchange="onSignalChange('end')"/><span class="signal-btn signal-end">■ End</span></label>
         </div>
       </div>
       <div class="form-group" id="prev-step-group">
@@ -512,11 +502,6 @@ tr:hover td{background:var(--surface2);}
       </div>
     </div>
 
-    <!-- RAG History timeline -->
-    <div class="card">
-      <div class="card-header"><div class="card-icon" style="background:rgba(124,58,237,.1)">📅</div><span class="card-title">RAG History Timeline</span><span style="font-size:.72rem;color:var(--text3);margin-left:auto">Last 10 status changes</span></div>
-      <div id="rag-timeline"></div>
-    </div>
   </div>
 
   <!-- ===== ISHIKAWA ===== -->
@@ -794,7 +779,6 @@ let projects    = [];
 let tasks       = [];
 let companies   = [];
 let currentRAG  = null;
-let ragHistory  = [];
 
 // ============================================================
 // USER STORE
@@ -887,12 +871,11 @@ function loadUserData() {
   gaps        = JSON.parse(localStorage.getItem(dk('gaps'))        || '[]');
   projects    = JSON.parse(localStorage.getItem(dk('projects'))    || '[]');
   tasks       = JSON.parse(localStorage.getItem(dk('tasks'))       || '[]');
-  ragHistory  = JSON.parse(localStorage.getItem(dk('ragHistory'))  || '[]');
   companies   = JSON.parse(localStorage.getItem(dk('companies'))   || '[]');
   populateCompanyDropdowns();
   populateProcessDropdowns();
   renderProcessTable(); renderSteps(); renderMetrics(); renderGaps();
-  renderRAGHistory(); renderTasks(); renderProjectsTable();
+  renderTasks(); renderProjectsTable();
   renderBizTable();
   if (processes.length) document.getElementById('process-table-card').style.display='block';
   if (projects.length)  document.getElementById('project-summary-card').style.display='block';
@@ -981,20 +964,6 @@ function selectRAG(color) {
     if(c===color) el.classList.add('sel-'+color);
   });
 }
-function renderRAGHistory() {
-  const wrap=document.getElementById('rag-history-wrap'), list=document.getElementById('rag-history-list');
-  if(!ragHistory.length){ wrap.style.display='none'; return; }
-  wrap.style.display='block';
-  const RC={green:'var(--success)',amber:'var(--warning)',red:'var(--danger)'};
-  const RB={green:'rgba(34,197,94,.08)',amber:'rgba(245,158,11,.08)',red:'rgba(239,68,68,.08)'};
-  list.innerHTML=ragHistory.slice(0,5).map(r=>
-    `<div style="display:flex;align-items:flex-start;gap:10px;background:${RB[r.status]};border:1px solid ${RC[r.status]}40;border-radius:8px;padding:10px 12px">
-      <div style="width:28px;height:28px;border-radius:50%;background:${RC[r.status]};display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.75rem;color:#000;flex-shrink:0">${r.status[0].toUpperCase()}</div>
-      <div><div style="font-size:.7rem;color:var(--text3);font-family:var(--mono)">${r.ts}${r.by?' · '+r.by:''}</div><div style="font-size:.83rem;margin-top:2px">${r.notes||'No justification provided.'}</div></div>
-    </div>`
-  ).join('');
-}
-
 // ============================================================
 // PROCESS
 // ============================================================
@@ -1027,8 +996,7 @@ function saveProcess() {
   const ragDate=document.getElementById('proc-rag-date').value;
   const ragBy=document.getElementById('proc-rag-by').value.trim();
   if(currentRAG){
-    ragHistory.unshift({status:currentRAG,notes:ragNotes,date:ragDate,by:ragBy,ts:new Date().toLocaleString()});
-    persist('ragHistory',ragHistory); renderRAGHistory();
+    // RAG stored directly on the process record — no separate history
   }
   processes.push({
     id:Date.now(), procId, name, desc, companyId,
@@ -1070,9 +1038,29 @@ function clearProcessForm() {
 }
 function deleteProcess(id) {
   if(!CAN_DELETE.includes(currentUser.role)){ alert('Managers or above can delete.'); return; }
+  const p=processes.find(x=>x.id===id);
+  const linkedSteps  = steps.filter(s=>String(s.procId)===String(id)).length;
+  const linkedMetrics= metrics.filter(m=>String(m.procId)===String(id)).length;
+  const linkedGaps   = gaps.filter(g=>String(g.procId)===String(id)).length;
+  const linkedTasks  = tasks.filter(t=>projects.find(pr=>String(pr.procId)===String(id)&&String(pr.id)===String(t.projId))).length;
+  const summary=[];
+  if(linkedSteps)   summary.push(`${linkedSteps} step(s)`);
+  if(linkedMetrics) summary.push(`${linkedMetrics} metric(s)`);
+  if(linkedGaps)    summary.push(`${linkedGaps} gap(s)`);
+  if(linkedTasks)   summary.push(`${linkedTasks} task(s)`);
+  const detail=summary.length?`\n\nThis will also permanently delete: ${summary.join(', ')}.`:'';
+  if(!confirm(`⚠ This exclusion can not be undone; the deletion will delete every data linked to this process.${detail}\n\nProcess: "${p?.procId} — ${p?.name}"\n\nAre you sure?`)) return;
+  // Cascade delete
+  const stepIds=steps.filter(s=>String(s.procId)===String(id)).map(s=>s.id);
+  stepIds.forEach(sid=>{ delete stepHistory[sid]; });
+  steps   = steps.filter(s=>String(s.procId)!==String(id));
+  metrics = metrics.filter(m=>String(m.procId)!==String(id));
+  gaps    = gaps.filter(g=>String(g.procId)!==String(id));
   processes=processes.filter(p=>p.id!==id);
-  persist('processes',processes); populateProcessDropdowns(); renderProcessTable();
-  renderRAGDashboard();
+  persist('processes',processes); persist('steps',steps);
+  persist('stepHistory',stepHistory); persist('metrics',metrics); persist('gaps',gaps);
+  populateProcessDropdowns(); renderProcessTable(); renderSteps();
+  renderMetrics(); renderGaps(); renderRAGDashboard();
   if(!processes.length) document.getElementById('process-table-card').style.display='none';
 }
 function renderProcessTable() {
@@ -1179,21 +1167,29 @@ function refreshPrevStepDropdown() {
     procSteps.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
 }
 function onSignalChange(sig) {
+  const startEl=document.getElementById('step-is-start');
+  const endEl=document.getElementById('step-is-end');
+  // Mutual exclusion — checking one unchecks the other
+  if(sig==='start' && startEl.checked) endEl.checked=false;
+  if(sig==='end'   && endEl.checked)   startEl.checked=false;
+  togglePrevStep();
   const procId=document.getElementById('step-proc-id').value;
-  if(sig==='start'&&document.getElementById('step-is-start').checked){
-    if(steps.some(s=>s.isStart&&s.procId===procId)){
-      if(!confirm('Another step in this process is already marked as Start Point. Replace it?')){
-        document.getElementById('step-is-start').checked=false; return;
+  if(sig==='start' && startEl.checked){
+    if(steps.some(s=>s.isStart&&String(s.procId)===String(procId))){
+      if(!confirm('Another step is already marked as Start Point. Replace it?')){
+        startEl.checked=false; return;
       }
-      steps.filter(s=>s.procId===procId).forEach(s=>{s.isStart=false;}); persist('steps',steps); renderSteps();
+      steps.filter(s=>String(s.procId)===String(procId)).forEach(s=>{s.isStart=false;});
+      persist('steps',steps); renderSteps();
     }
   }
-  if(sig==='end'&&document.getElementById('step-is-end').checked){
-    if(steps.some(s=>s.isEnd&&s.procId===procId)){
-      if(!confirm('Another step in this process is already marked as End Point. Replace it?')){
-        document.getElementById('step-is-end').checked=false; return;
+  if(sig==='end' && endEl.checked){
+    if(steps.some(s=>s.isEnd&&String(s.procId)===String(procId))){
+      if(!confirm('Another step is already marked as End Point. Replace it?')){
+        endEl.checked=false; return;
       }
-      steps.filter(s=>s.procId===procId).forEach(s=>{s.isEnd=false;}); persist('steps',steps); renderSteps();
+      steps.filter(s=>String(s.procId)===String(procId)).forEach(s=>{s.isEnd=false;});
+      persist('steps',steps); renderSteps();
     }
   }
 }
@@ -1798,23 +1794,6 @@ function renderRAGDashboard() {
         ${p.rag
           ? `<span style="font-size:.72rem;font-weight:700;text-transform:uppercase;color:${RC[p.rag]};min-width:42px;text-align:right">${p.rag.toUpperCase()}</span>`
           : `<span style="font-size:.72rem;color:var(--text3);min-width:42px;text-align:right">—</span>`}
-      </div>`).join('');
-  }
-
-  // ---- RAG History timeline ----
-  const timeline = document.getElementById('rag-timeline');
-  const RC2 = { green: '#16a34a', amber: '#d97706', red: '#dc2626' };
-  if (!ragHistory.length) {
-    timeline.innerHTML = '<div style="color:var(--text3);font-size:.82rem;text-align:center;padding:1.5rem">No RAG status changes recorded yet.</div>';
-  } else {
-    timeline.innerHTML = ragHistory.slice(0, 10).map(r => `
-      <div class="rag-timeline-item">
-        <div class="rag-timeline-dot" style="background:${RC2[r.status]||'#9ca3af'}">${r.status[0].toUpperCase()}</div>
-        <div class="rag-timeline-body">
-          <div class="rag-timeline-meta">${r.ts}${r.by ? ' · ' + r.by : ''}</div>
-          <div class="rag-timeline-text">${r.notes || 'No justification provided.'}</div>
-        </div>
-        <span style="font-size:.72rem;font-weight:700;text-transform:uppercase;color:${RC2[r.status]||'#9ca3af'};flex-shrink:0">${r.status.toUpperCase()}</span>
       </div>`).join('');
   }
 }
