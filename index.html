@@ -171,6 +171,21 @@ tr:hover td{background:var(--surface2);}
 .rag-bar-val{font-family:var(--mono);font-size:.72rem;font-weight:700;min-width:24px;text-align:right;}
 .rag-proc-row{display:flex;align-items:center;gap:10px;padding:.6rem .8rem;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface2);}
 .rag-proc-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;}
+/* FEEDBACK */
+.fb-mood{font-size:2rem;cursor:pointer;border-radius:50%;width:52px;height:52px;display:flex;align-items:center;justify-content:center;transition:all .2s;border:2px solid transparent;user-select:none;}
+.fb-mood:hover{transform:scale(1.15);}
+.fb-mood.selected{border-color:var(--accent);background:rgba(0,143,116,.08);transform:scale(1.18);}
+.fb-star{font-size:1.9rem;cursor:pointer;color:var(--border2);transition:color .15s,transform .15s;user-select:none;line-height:1;}
+.fb-star:hover,.fb-star.lit{color:#f59e0b;}
+.fb-star:hover{transform:scale(1.15);}
+.fb-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius2);padding:1rem 1.2rem;transition:box-shadow .2s,border-color .2s;}
+.fb-card:hover{border-color:var(--border2);box-shadow:0 3px 10px rgba(0,0,0,.07);}
+.fb-type-badge{display:inline-flex;align-items:center;gap:4px;font-size:.67rem;font-weight:700;letter-spacing:.4px;text-transform:uppercase;padding:3px 8px;border-radius:4px;}
+.fb-status-pill{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:2px 8px;border-radius:10px;border:1px solid;}
+.fb-bar-row{display:flex;align-items:center;gap:.6rem;margin-bottom:.4rem;}
+.fb-bar-bg{flex:1;height:8px;background:var(--surface2);border-radius:4px;overflow:hidden;border:1px solid var(--border);}
+.fb-bar-fg{height:100%;border-radius:4px;transition:width .5s cubic-bezier(.4,0,.2,1);}
+@media(max-width:780px){#fb-layout{grid-template-columns:1fr!important;}}
 /* GRAPH TABS */
 @media(max-width:600px){.section{padding:1rem;}.form-grid{grid-template-columns:1fr;}nav{gap:1px;}.nav-btn{padding:5px 7px;font-size:.62rem;}#rag-charts-row{grid-template-columns:1fr!important;}}
 </style>
@@ -218,6 +233,7 @@ tr:hover td{background:var(--surface2);}
     <button class="nav-btn" onclick="showSection('ai',this)">✦ AI</button>
     <button class="nav-btn" onclick="showSection('graphs',this)">📈 Graphs</button>
     <button class="nav-btn" onclick="showSection('project',this)">🗂 Project</button>
+    <button class="nav-btn" onclick="showSection('feedback',this)">💬 Feedback</button>
     <button class="nav-btn" id="nav-config" style="display:none;color:var(--accent4)" onclick="showSection('config',this)">⚙ Config</button>
   </nav>
   <div class="header-user">
@@ -582,6 +598,158 @@ tr:hover td{background:var(--surface2);}
 </section>
 
 
+<!-- ==================== FEEDBACK ==================== -->
+<section id="section-feedback" class="section">
+  <div class="section-hero"><span class="section-hero-icon">💬</span><div><div class="section-hero-title">Feedback</div><div class="section-hero-sub">Share your experience, suggestions and ideas about ProcessFlow</div></div></div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem" id="fb-layout">
+
+    <!-- LEFT: submission form -->
+    <div style="display:flex;flex-direction:column;gap:1.2rem">
+
+      <!-- Mood picker -->
+      <div class="card">
+        <div class="card-header"><div class="card-icon" style="background:rgba(124,58,237,.1)">😊</div><span class="card-title">How are you feeling about ProcessFlow?</span></div>
+        <div style="display:flex;gap:.8rem;flex-wrap:wrap;margin-bottom:.3rem" id="fb-mood-row">
+          <div class="fb-mood" data-mood="love"      onclick="selectMood('love')"      title="Love it!">😍</div>
+          <div class="fb-mood" data-mood="happy"     onclick="selectMood('happy')"     title="Happy">😊</div>
+          <div class="fb-mood" data-mood="neutral"   onclick="selectMood('neutral')"   title="Neutral">😐</div>
+          <div class="fb-mood" data-mood="confused"  onclick="selectMood('confused')"  title="Confused">😕</div>
+          <div class="fb-mood" data-mood="frustrated"onclick="selectMood('frustrated')"title="Frustrated">😤</div>
+        </div>
+        <div id="fb-mood-label" style="font-size:.78rem;color:var(--text3);min-height:1.2rem"></div>
+      </div>
+
+      <!-- Star rating -->
+      <div class="card">
+        <div class="card-header"><div class="card-icon" style="background:rgba(217,119,6,.1)">⭐</div><span class="card-title">Overall Rating</span></div>
+        <div style="display:flex;gap:.3rem" id="fb-stars">
+          <span class="fb-star" data-val="1" onclick="selectStar(1)">★</span>
+          <span class="fb-star" data-val="2" onclick="selectStar(2)">★</span>
+          <span class="fb-star" data-val="3" onclick="selectStar(3)">★</span>
+          <span class="fb-star" data-val="4" onclick="selectStar(4)">★</span>
+          <span class="fb-star" data-val="5" onclick="selectStar(5)">★</span>
+        </div>
+        <div id="fb-star-label" style="font-size:.78rem;color:var(--text3);margin-top:.4rem;min-height:1.2rem"></div>
+      </div>
+
+      <!-- Category + section + form -->
+      <div class="card">
+        <div class="card-header"><div class="card-icon" style="background:rgba(0,143,116,.1)">📝</div><span class="card-title">Your Feedback</span></div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Type</label>
+            <select id="fb-type">
+              <option value="suggestion">💡 Suggestion</option>
+              <option value="bug">🐛 Bug Report</option>
+              <option value="praise">🙌 Praise</option>
+              <option value="question">❓ Question</option>
+              <option value="other">💬 Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Related Section</label>
+            <select id="fb-section">
+              <option value="">— general —</option>
+              <option value="register">⚙ Process Registration</option>
+              <option value="steps">📋 Steps</option>
+              <option value="diagram">🗺 Diagram</option>
+              <option value="gaps">⚠ Gap Analysis</option>
+              <option value="metrics">📊 Metrics</option>
+              <option value="ai">✦ AI Suggestion</option>
+              <option value="graphs">📈 Graphs</option>
+              <option value="project">🗂 Project</option>
+              <option value="config">⚙ Configuration</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Priority / Urgency</label>
+            <select id="fb-priority">
+              <option value="low">🟢 Low — nice to have</option>
+              <option value="medium" selected>🟡 Medium — would help</option>
+              <option value="high">🔴 High — blocking me</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Your Name <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(auto-filled)</span></label>
+            <input type="text" id="fb-author" placeholder="Name or role"/>
+          </div>
+          <div class="form-group full">
+            <label>Subject / Title *</label>
+            <input type="text" id="fb-title" placeholder="e.g. It would be great if I could filter gaps by company…"/>
+          </div>
+          <div class="form-group full">
+            <label>Detailed Description *</label>
+            <textarea id="fb-body" rows="5" placeholder="Describe your feedback in detail. If reporting a bug, include what you were doing and what happened. If a suggestion, describe the problem it would solve…"></textarea>
+          </div>
+          <div class="form-group full">
+            <label>Expected Outcome <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
+            <textarea id="fb-expected" rows="2" placeholder="What result or behaviour would you expect?"></textarea>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="submitFeedback()">💬 Submit Feedback</button>
+          <button class="btn btn-secondary" onclick="clearFeedbackForm()">↺ Clear</button>
+        </div>
+        <div id="fb-err" class="login-err" style="margin-top:.8rem"></div>
+        <div id="fb-ok"  class="login-ok"  style="margin-top:.8rem"></div>
+      </div>
+    </div>
+
+    <!-- RIGHT: stats + live feed -->
+    <div style="display:flex;flex-direction:column;gap:1.2rem">
+
+      <!-- Stats bar -->
+      <div id="fb-stats-row" style="display:grid;grid-template-columns:repeat(3,1fr);gap:.8rem">
+        <div class="summary-stat" style="align-items:center;text-align:center">
+          <div class="summary-stat-val" id="fb-stat-total">0</div>
+          <div class="summary-stat-label">Total</div>
+        </div>
+        <div class="summary-stat" style="align-items:center;text-align:center">
+          <div class="summary-stat-val" id="fb-stat-avg" style="color:var(--warning)">—</div>
+          <div class="summary-stat-label">Avg Rating</div>
+        </div>
+        <div class="summary-stat" style="align-items:center;text-align:center">
+          <div class="summary-stat-val" id="fb-stat-open" style="color:var(--accent2)">0</div>
+          <div class="summary-stat-label">Open</div>
+        </div>
+      </div>
+
+      <!-- Type breakdown -->
+      <div class="card" id="fb-breakdown-card" style="display:none">
+        <div class="card-header"><div class="card-icon" style="background:rgba(0,112,214,.1)">📊</div><span class="card-title">Breakdown by Type</span></div>
+        <div id="fb-breakdown"></div>
+      </div>
+
+      <!-- Admin response toggle (admin only) -->
+      <div id="fb-admin-filter" style="display:none;align-items:center;gap:.6rem;flex-wrap:wrap">
+        <label style="font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text3)">Filter:</label>
+        <select id="fb-filter-type" onchange="renderFeedback()" style="padding:7px 10px;font-size:.82rem;max-width:160px">
+          <option value="">All Types</option>
+          <option value="suggestion">💡 Suggestions</option>
+          <option value="bug">🐛 Bugs</option>
+          <option value="praise">🙌 Praise</option>
+          <option value="question">❓ Questions</option>
+          <option value="other">💬 Other</option>
+        </select>
+        <select id="fb-filter-status" onchange="renderFeedback()" style="padding:7px 10px;font-size:.82rem;max-width:160px">
+          <option value="">All Statuses</option>
+          <option value="open">Open</option>
+          <option value="reviewing">Reviewing</option>
+          <option value="planned">Planned</option>
+          <option value="done">Done</option>
+          <option value="closed">Closed</option>
+        </select>
+      </div>
+
+      <!-- Feed -->
+      <div id="fb-feed" style="display:flex;flex-direction:column;gap:.8rem">
+        <div class="empty-state"><div class="es-icon">💬</div><div class="es-text">No feedback yet. Be the first to share!</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ==================== CONFIGURATION ==================== -->
 <section id="section-config" class="section">
   <div class="section-hero"><span class="section-hero-icon">⚙</span><div><div class="section-hero-title">Configuration</div><div class="section-hero-sub">System parameters — Business registration and User management</div></div></div>
@@ -778,6 +946,7 @@ let gaps        = [];
 let projects    = [];
 let tasks       = [];
 let companies   = [];
+let feedbacks   = [];
 let currentRAG  = null;
 
 // ============================================================
@@ -872,6 +1041,7 @@ function loadUserData() {
   projects    = JSON.parse(localStorage.getItem(dk('projects'))    || '[]');
   tasks       = JSON.parse(localStorage.getItem(dk('tasks'))       || '[]');
   companies   = JSON.parse(localStorage.getItem(dk('companies'))   || '[]');
+  feedbacks   = JSON.parse(localStorage.getItem(dk('feedbacks'))   || '[]');
   populateCompanyDropdowns();
   populateProcessDropdowns();
   renderProcessTable(); renderSteps(); renderMetrics(); renderGaps();
@@ -940,10 +1110,11 @@ function showSection(id, btn) {
   const sec=document.getElementById('section-'+id);
   if(sec) sec.classList.add('active');
   if(btn) btn.classList.add('active');
-  if(id==='diagram') renderDiagram();
-  if(id==='config')  { renderUserTable(); renderBizTable(); }
-  if(id==='graphs')  { populateIshikawaSelect(); renderRAGDashboard(); }
-  if(id==='project') { renderTasks(); renderProjectsTable(); }
+  if(id==='diagram')  renderDiagram();
+  if(id==='config')   { renderUserTable(); renderBizTable(); }
+  if(id==='graphs')   { populateIshikawaSelect(); renderRAGDashboard(); }
+  if(id==='project')  { renderTasks(); renderProjectsTable(); }
+  if(id==='feedback') { initFeedbackSection(); renderFeedback(); }
 }
 
 function switchConfigTab(tab, btn) {
@@ -2090,6 +2261,201 @@ function renderTasks(){
       </div>
     </div>`).join(''):`<div style="text-align:center;padding:1.5rem;color:var(--text3);font-size:.75rem">Empty</div>`;
   });
+}
+
+// ============================================================
+// FEEDBACK
+// ============================================================
+let fbMood = null, fbStars = 0;
+
+const fbTypeConfig = {
+  suggestion: { label:'💡 Suggestion', color:'#0369a1', bg:'rgba(3,105,161,.09)' },
+  bug:        { label:'🐛 Bug Report', color:'#dc2626', bg:'rgba(220,38,38,.09)' },
+  praise:     { label:'🙌 Praise',     color:'#16a34a', bg:'rgba(22,163,74,.09)'  },
+  question:   { label:'❓ Question',   color:'#d97706', bg:'rgba(217,119,6,.09)'  },
+  other:      { label:'💬 Other',      color:'#7c3aed', bg:'rgba(124,58,237,.09)' }
+};
+const fbStatusConfig = {
+  open:      { label:'Open',      color:'#0369a1', border:'rgba(3,105,161,.3)'  },
+  reviewing: { label:'Reviewing', color:'#d97706', border:'rgba(217,119,6,.3)'  },
+  planned:   { label:'Planned',   color:'#7c3aed', border:'rgba(124,58,237,.3)' },
+  done:      { label:'Done',      color:'#16a34a', border:'rgba(22,163,74,.3)'  },
+  closed:    { label:'Closed',    color:'#6b7280', border:'rgba(107,114,128,.3)' }
+};
+const fbMoodConfig = {
+  love:       { emoji:'😍', label:'Love it!' },
+  happy:      { emoji:'😊', label:'Happy'    },
+  neutral:    { emoji:'😐', label:'Neutral'  },
+  confused:   { emoji:'😕', label:'Confused' },
+  frustrated: { emoji:'😤', label:'Frustrated' }
+};
+const fbPriConfig = {
+  low:    { label:'🟢 Low',    badge:'badge-green'  },
+  medium: { label:'🟡 Medium', badge:'badge-orange' },
+  high:   { label:'🔴 High',   badge:'badge-red'    }
+};
+
+function initFeedbackSection() {
+  // Pre-fill author from current user
+  const el = document.getElementById('fb-author');
+  if(el && !el.value) el.value = currentUser?.name || '';
+  // Show admin filter only for admins/managers
+  const af = document.getElementById('fb-admin-filter');
+  if(af) af.style.display = CAN_DELETE.includes(currentUser?.role) ? 'flex' : 'none';
+}
+
+function selectMood(mood) {
+  fbMood = mood;
+  document.querySelectorAll('.fb-mood').forEach(el => {
+    el.classList.toggle('selected', el.dataset.mood === mood);
+  });
+  const cfg = fbMoodConfig[mood];
+  document.getElementById('fb-mood-label').textContent = cfg ? `You selected: ${cfg.label}` : '';
+}
+
+function selectStar(n) {
+  fbStars = n;
+  const labels = ['','Poor','Below average','Average','Good','Excellent!'];
+  document.querySelectorAll('.fb-star').forEach(el => {
+    el.classList.toggle('lit', parseInt(el.dataset.val) <= n);
+  });
+  document.getElementById('fb-star-label').textContent = n ? `${n}/5 — ${labels[n]}` : '';
+}
+
+function submitFeedback() {
+  const title  = document.getElementById('fb-title').value.trim();
+  const body   = document.getElementById('fb-body').value.trim();
+  const author = document.getElementById('fb-author').value.trim() || currentUser?.name || 'Anonymous';
+  const err = document.getElementById('fb-err'), ok = document.getElementById('fb-ok');
+  err.style.display='none'; ok.style.display='none';
+  if(!title){ err.textContent='Please add a subject/title.'; err.style.display='block'; return; }
+  if(!body) { err.textContent='Please describe your feedback.'; err.style.display='block'; return; }
+
+  feedbacks.unshift({
+    id:       Date.now(),
+    title,  body,  author,
+    mood:     fbMood || null,
+    stars:    fbStars || null,
+    type:     document.getElementById('fb-type').value,
+    section:  document.getElementById('fb-section').value,
+    priority: document.getElementById('fb-priority').value,
+    status:   'open',
+    response: null,
+    createdAt: new Date().toLocaleString(),
+    userId:   currentUser?.id
+  });
+  persist('feedbacks', feedbacks);
+  ok.innerHTML = '✓ Thank you! Your feedback has been submitted.';
+  ok.style.display = 'block';
+  clearFeedbackForm();
+  renderFeedback();
+}
+
+function clearFeedbackForm() {
+  ['fb-title','fb-body','fb-expected'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('fb-type').value     = 'suggestion';
+  document.getElementById('fb-section').value  = '';
+  document.getElementById('fb-priority').value = 'medium';
+  document.getElementById('fb-author').value   = currentUser?.name || '';
+  fbMood=null; fbStars=0;
+  document.querySelectorAll('.fb-mood').forEach(el=>el.classList.remove('selected'));
+  document.querySelectorAll('.fb-star').forEach(el=>el.classList.remove('lit'));
+  document.getElementById('fb-mood-label').textContent='';
+  document.getElementById('fb-star-label').textContent='';
+}
+
+function updateFeedbackStatus(id, status) {
+  const fb = feedbacks.find(f=>f.id===id);
+  if(fb){ fb.status=status; persist('feedbacks',feedbacks); renderFeedback(); }
+}
+
+function deleteFeedback(id) {
+  if(!CAN_DELETE.includes(currentUser.role)){ alert('Managers or above can delete feedback.'); return; }
+  if(!confirm('Delete this feedback entry?')) return;
+  feedbacks = feedbacks.filter(f=>f.id!==id);
+  persist('feedbacks',feedbacks); renderFeedback();
+}
+
+function renderFeedback() {
+  const total = feedbacks.length;
+  const rated = feedbacks.filter(f=>f.stars);
+  const avg   = rated.length ? (rated.reduce((s,f)=>s+f.stars,0)/rated.length).toFixed(1) : null;
+  const open  = feedbacks.filter(f=>f.status==='open').length;
+
+  document.getElementById('fb-stat-total').textContent = total;
+  document.getElementById('fb-stat-avg').textContent   = avg ? `${avg}★` : '—';
+  document.getElementById('fb-stat-open').textContent  = open;
+
+  // Breakdown bar chart
+  const bcard = document.getElementById('fb-breakdown-card');
+  if(total) {
+    bcard.style.display='block';
+    const types = Object.keys(fbTypeConfig);
+    document.getElementById('fb-breakdown').innerHTML = types.map(t=>{
+      const count = feedbacks.filter(f=>f.type===t).length;
+      const pct   = total ? Math.round(count/total*100) : 0;
+      const cfg   = fbTypeConfig[t];
+      return `<div class="fb-bar-row">
+        <span style="font-size:.78rem;min-width:110px;color:var(--text2)">${cfg.label}</span>
+        <div class="fb-bar-bg"><div class="fb-bar-fg" style="width:${pct}%;background:${cfg.color}"></div></div>
+        <span style="font-family:var(--mono);font-size:.72rem;font-weight:700;min-width:28px;text-align:right;color:${cfg.color}">${count}</span>
+      </div>`;
+    }).join('');
+  } else { bcard.style.display='none'; }
+
+  // Feed
+  const feed = document.getElementById('fb-feed');
+  const isAdmin = CAN_DELETE.includes(currentUser?.role);
+  const filterType   = document.getElementById('fb-filter-type')?.value   || '';
+  const filterStatus = document.getElementById('fb-filter-status')?.value || '';
+
+  let vis = feedbacks;
+  // Non-admins only see their own + all approved entries
+  if(!isAdmin) vis = feedbacks.filter(f=>f.userId===currentUser?.id || f.status!=='open');
+  if(filterType)   vis = vis.filter(f=>f.type===filterType);
+  if(filterStatus) vis = vis.filter(f=>f.status===filterStatus);
+
+  if(!vis.length){
+    feed.innerHTML='<div class="empty-state"><div class="es-icon">💬</div><div class="es-text">No feedback yet. Be the first to share!</div></div>';
+    return;
+  }
+
+  feed.innerHTML = vis.map(fb=>{
+    const tc  = fbTypeConfig[fb.type]    || fbTypeConfig.other;
+    const sc  = fbStatusConfig[fb.status]|| fbStatusConfig.open;
+    const mCfg= fb.mood ? fbMoodConfig[fb.mood] : null;
+    const stars = fb.stars ? '★'.repeat(fb.stars)+'☆'.repeat(5-fb.stars) : null;
+    const sectionNames = {'register':'⚙ Register','steps':'📋 Steps','diagram':'🗺 Diagram','gaps':'⚠ Gaps','metrics':'📊 Metrics','ai':'✦ AI','graphs':'📈 Graphs','project':'🗂 Project','config':'⚙ Config'};
+    return `<div class="fb-card">
+      <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:.6rem">
+        <div style="flex:1">
+          <div style="display:flex;gap:.4rem;flex-wrap:wrap;align-items:center;margin-bottom:.4rem">
+            <span class="fb-type-badge" style="background:${tc.bg};color:${tc.color}">${tc.label}</span>
+            <span class="fb-status-pill" style="color:${sc.color};border-color:${sc.border}">${sc.label}</span>
+            ${fb.section?`<span class="badge badge-gray" style="font-size:.62rem">${sectionNames[fb.section]||fb.section}</span>`:''}
+            <span class="badge ${fbPriConfig[fb.priority]?.badge||'badge-gray'}" style="font-size:.62rem">${fbPriConfig[fb.priority]?.label||fb.priority}</span>
+          </div>
+          <div style="font-weight:700;font-size:.9rem;margin-bottom:.2rem">${fb.title}</div>
+          <div style="font-size:.75rem;color:var(--text3)">
+            ${mCfg?`<span style="margin-right:6px">${mCfg.emoji}</span>`:''}
+            ${stars?`<span style="color:#f59e0b;letter-spacing:-1px;margin-right:6px">${stars}</span>`:''}
+            <strong style="color:var(--text2)">${fb.author}</strong> · ${fb.createdAt}
+          </div>
+        </div>
+        ${isAdmin?`<select onchange="updateFeedbackStatus(${fb.id},this.value)" style="padding:4px 6px;font-size:.7rem;min-width:110px;flex-shrink:0">
+          ${Object.entries(fbStatusConfig).map(([v,c])=>`<option value="${v}" ${fb.status===v?'selected':''}>${c.label}</option>`).join('')}
+        </select>`:''}
+      </div>
+      <div style="font-size:.84rem;color:var(--text2);line-height:1.6;border-top:1px solid var(--border);padding-top:.6rem">${fb.body}</div>
+      ${fb.response?`<div style="margin-top:.7rem;background:rgba(0,143,116,.05);border:1px solid rgba(0,143,116,.15);border-radius:var(--radius);padding:.6rem .9rem">
+        <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--accent);margin-bottom:3px">📣 Team Response</div>
+        <div style="font-size:.83rem;color:var(--text2)">${fb.response}</div>
+      </div>`:''}
+      ${isAdmin?`<div style="display:flex;gap:.5rem;margin-top:.7rem;flex-wrap:wrap;align-items:center">
+        <button class="btn btn-danger" style="padding:3px 9px;font-size:.68rem" onclick="deleteFeedback(${fb.id})">✕ Delete</button>
+      </div>`:''}
+    </div>`;
+  }).join('');
 }
 
 // ============================================================
