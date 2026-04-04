@@ -215,8 +215,8 @@ tr:hover td{background:var(--surface2);}
       <div class="form-group"><label>Email</label><input type="email" id="reg-email" placeholder="you@company.com"/></div>
       <div class="form-group"><label>Password</label><input type="password" id="reg-pass" placeholder="Min. 6 characters"/></div>
       <div class="form-group"><label>Confirm Password</label><input type="password" id="reg-pass2" placeholder="Repeat password" onkeydown="if(event.key==='Enter')doRegister()"/></div>
-      <button class="btn btn-blue" style="width:100%;justify-content:center" onclick="doRegister()">✦ Request Access</button>
-      <div class="demo-hint" style="margin-top:.6rem;line-height:1.6">New accounts require administrator approval. You will be able to sign in once your request has been reviewed.</div>
+      <button class="btn btn-blue" style="width:100%;justify-content:center" onclick="doRegister()">✦ Create Account</button>
+      <div class="demo-hint" style="margin-top:.6rem;line-height:1.6">Your account will be created immediately and you can sign in right away.</div>
     </div>
   </div>
 </div>
@@ -1075,36 +1075,47 @@ function doLogin() {
   const pass  = document.getElementById('li-pass').value;
   const err   = document.getElementById('login-err');
   err.style.display = 'none';
-  // Always re-read users from storage so pending→active changes are reflected immediately
   users = JSON.parse(localStorage.getItem('pf_users') || '[]');
   const u = users.find(x => x.email===email && x.password===pass);
-  if (!u)        { err.textContent='Invalid email or password.'; err.style.display='block'; return; }
-  if (u.pending) { err.textContent='Your account is awaiting administrator authorization. You will be able to sign in once approved.'; err.style.display='block'; return; }
-  if (!u.active) { err.textContent='Your account has been disabled. Please register again or contact an administrator.'; err.style.display='block'; return; }
+  if (!u)       { err.textContent='Invalid email or password.'; err.style.display='block'; return; }
+  if (!u.active){ err.textContent='Your account has been disabled. Contact an administrator.'; err.style.display='block'; return; }
   currentUser = u; sessionStorage.setItem('pf_session', u.id); bootApp();
 }
 function doRegister() {
-  const name=document.getElementById('reg-name').value.trim(), email=document.getElementById('reg-email').value.trim().toLowerCase();
-  const pass=document.getElementById('reg-pass').value, pass2=document.getElementById('reg-pass2').value;
-  const err=document.getElementById('reg-err'), ok=document.getElementById('reg-ok');
+  const name  = document.getElementById('reg-name').value.trim();
+  const email = document.getElementById('reg-email').value.trim().toLowerCase();
+  const pass  = document.getElementById('reg-pass').value;
+  const pass2 = document.getElementById('reg-pass2').value;
+  const err   = document.getElementById('reg-err');
+  const ok    = document.getElementById('reg-ok');
   err.style.display='none'; ok.style.display='none';
   if (!name||!email||!pass){ err.textContent='All fields required.'; err.style.display='block'; return; }
-  if (pass.length<6)       { err.textContent='Password min 6 chars.'; err.style.display='block'; return; }
+  if (pass.length<6)       { err.textContent='Password must be at least 6 characters.'; err.style.display='block'; return; }
   if (pass!==pass2)        { err.textContent='Passwords do not match.'; err.style.display='block'; return; }
-  // Re-read from storage to get the freshest user list before duplicate check
+  // Re-read from storage to get the freshest list before duplicate check
   users = JSON.parse(localStorage.getItem('pf_users') || '[]');
-  const existing = users.find(u=>u.email===email);
-  if (existing && (existing.active || existing.pending)){
-    err.textContent='This email is already registered and active. Please sign in or use a different email.';
+  const existing = users.find(u => u.email===email);
+  if (existing && existing.active){
+    err.textContent='This email is already registered. Please sign in.';
     err.style.display='block'; return;
   }
-  // Remove any disabled account with this email so the new registration replaces it cleanly
-  if (existing) users = users.filter(u=>u.email!==email);
-  users.push({id:'u_'+Date.now(),name,email,password:pass,role:'viewer',active:false,pending:true,created:new Date().toLocaleDateString()});
+  // Remove any old disabled/pending record with this email
+  if (existing) users = users.filter(u => u.email!==email);
+  // Create account as active manager — can insert, edit and delete
+  const newUser = {
+    id:      'u_'+Date.now(),
+    name, email, password: pass,
+    role:    'manager',
+    active:  true,
+    pending: false,
+    created: new Date().toLocaleDateString()
+  };
+  users.push(newUser);
   saveUsers();
-  ok.innerHTML=`✓ Account request submitted!<br><small>An administrator will review and approve your access. You can sign in once approved.</small>`;
-  ok.style.display='block';
-  ['reg-name','reg-email','reg-pass','reg-pass2'].forEach(id=>document.getElementById(id).value='');
+  // Auto-login immediately
+  currentUser = newUser;
+  sessionStorage.setItem('pf_session', newUser.id);
+  bootApp();
 }
 function doLogout() {
   currentUser=null; sessionStorage.removeItem('pf_session');
@@ -2580,7 +2591,7 @@ function adminAddUser(){
   if(!name||!email||!pass){err.textContent='All fields required.';err.style.display='block';return;}
   if(pass.length<6){err.textContent='Password min 6 chars.';err.style.display='block';return;}
   const existing=users.find(u=>u.email===email);
-  if(existing&&(existing.active||existing.pending)){err.textContent='This email already belongs to an active account.';err.style.display='block';return;}
+  if(existing && existing.active){err.textContent='This email already belongs to an active account.';err.style.display='block';return;}
   // Remove any disabled account with the same email before creating the new one
   if(existing) users=users.filter(u=>u.email!==email);
   users.push({id:'u_'+Date.now(),name,email,password:pass,role,companyId,active:true,created:new Date().toLocaleDateString()});
