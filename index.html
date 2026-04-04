@@ -1046,9 +1046,9 @@ function doLogin() {
   const err   = document.getElementById('login-err');
   err.style.display = 'none';
   const u = users.find(x => x.email===email && x.password===pass);
-  if (!u)        { err.textContent='Invalid email or password.';               err.style.display='block'; return; }
-  if (u.pending) { err.textContent='Your account is pending administrator approval. You will be notified once approved.'; err.style.display='block'; return; }
-  if (!u.active) { err.textContent='Your account has been disabled. Contact an administrator.'; err.style.display='block'; return; }
+  if (!u)        { err.textContent='Invalid email or password.'; err.style.display='block'; return; }
+  if (u.pending) { err.textContent='Your account is awaiting administrator authorization. You will be able to sign in once approved.'; err.style.display='block'; return; }
+  if (!u.active) { err.textContent='Your account has been disabled. Please register again or contact an administrator.'; err.style.display='block'; return; }
   currentUser = u; sessionStorage.setItem('pf_session', u.id); bootApp();
 }
 function doRegister() {
@@ -1059,7 +1059,14 @@ function doRegister() {
   if (!name||!email||!pass){ err.textContent='All fields required.'; err.style.display='block'; return; }
   if (pass.length<6)       { err.textContent='Password min 6 chars.'; err.style.display='block'; return; }
   if (pass!==pass2)        { err.textContent='Passwords do not match.'; err.style.display='block'; return; }
-  if (users.find(u=>u.email===email)){ err.textContent='Email already registered.'; err.style.display='block'; return; }
+  // Only block if the email belongs to an active or pending user — a deleted or disabled account frees the email
+  const existing = users.find(u=>u.email===email);
+  if (existing && (existing.active || existing.pending)){
+    err.textContent='This email is already registered and active. Please sign in or use a different email.';
+    err.style.display='block'; return;
+  }
+  // If a disabled account with this email exists, remove it first so the new registration replaces it cleanly
+  if (existing) users = users.filter(u=>u.email!==email);
   // Save as pending — admin must approve in Config → Users
   users.push({id:'u_'+Date.now(),name,email,password:pass,role:'viewer',active:false,pending:true,created:new Date().toLocaleDateString()});
   saveUsers();
@@ -2569,7 +2576,10 @@ function adminAddUser(){
   err.style.display='none';ok.style.display='none';
   if(!name||!email||!pass){err.textContent='All fields required.';err.style.display='block';return;}
   if(pass.length<6){err.textContent='Password min 6 chars.';err.style.display='block';return;}
-  if(users.find(u=>u.email===email)){err.textContent='Email already exists.';err.style.display='block';return;}
+  const existing=users.find(u=>u.email===email);
+  if(existing&&(existing.active||existing.pending)){err.textContent='This email already belongs to an active account.';err.style.display='block';return;}
+  // Remove any disabled account with the same email before creating the new one
+  if(existing) users=users.filter(u=>u.email!==email);
   users.push({id:'u_'+Date.now(),name,email,password:pass,role,companyId,active:true,created:new Date().toLocaleDateString()});
   saveUsers();ok.textContent=`${name} added as ${role}.`;ok.style.display='block';
   ['adm-name','adm-email','adm-pass'].forEach(id=>document.getElementById(id).value='');
