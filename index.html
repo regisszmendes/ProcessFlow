@@ -838,7 +838,7 @@ tr:hover td{background:var(--surface2);}
     <div class="card">
       <div class="card-header"><div class="card-icon" style="background:rgba(0,143,116,.1)">👥</div><span class="card-title">Registered Users</span></div>
       <div style="overflow-x:auto">
-        <table><thead><tr><th>Name</th><th>Role</th><th>Company</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead>
+        <table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Company</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead>
         <tbody id="users-table-body"></tbody></table>
       </div>
     </div>
@@ -980,13 +980,44 @@ tr:hover td{background:var(--surface2);}
 </div>
 
 <!-- ROLE MODAL -->
-<div class="modal-overlay" id="role-modal">
-  <div class="modal-box">
-    <div style="font-size:1rem;font-weight:800;margin-bottom:1.2rem">✏ Change Role — <span id="modal-user-name"></span></div>
-    <div class="form-group" style="margin-bottom:1.2rem"><label>New Role</label>
-      <select id="modal-role"><option value="viewer">Viewer — read only</option><option value="editor">Editor — add / edit</option><option value="manager">Manager — full + AI</option><option value="admin">Admin — user control</option></select>
+<div class="modal-overlay" id="edit-user-modal">
+  <div class="modal-box" style="max-width:500px">
+    <div style="font-size:1rem;font-weight:800;margin-bottom:1.4rem;display:flex;align-items:center;gap:8px">
+      👤 Edit User — <span id="eum-name-label" style="color:var(--accent);font-family:var(--mono);font-size:.85rem"></span>
     </div>
-    <div class="btn-row" style="margin-top:0"><button class="btn btn-primary" onclick="applyRoleChange()">✓ Apply</button><button class="btn btn-secondary" onclick="closeRoleModal()">Cancel</button></div>
+    <input type="hidden" id="eum-id"/>
+    <div class="form-grid" style="grid-template-columns:1fr 1fr">
+      <div class="form-group full">
+        <label>Full Name *</label>
+        <input type="text" id="eum-name" placeholder="Full name"/>
+      </div>
+      <div class="form-group full">
+        <label>Email *</label>
+        <input type="email" id="eum-email" placeholder="user@company.com"/>
+      </div>
+      <div class="form-group full">
+        <label>New Password <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(leave blank to keep current)</span></label>
+        <input type="password" id="eum-pass" placeholder="Min. 6 characters"/>
+      </div>
+      <div class="form-group">
+        <label>Role</label>
+        <select id="eum-role">
+          <option value="viewer">Viewer — read only</option>
+          <option value="editor">Editor — add / edit</option>
+          <option value="manager">Manager — full + AI</option>
+          <option value="admin">Admin — user control</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Linked Company</label>
+        <select id="eum-company-id"><option value="">— all companies —</option></select>
+      </div>
+    </div>
+    <div id="eum-err" class="login-err" style="margin-top:.8rem"></div>
+    <div class="btn-row" style="margin-top:1rem">
+      <button class="btn btn-primary" onclick="applyEditUser()">✓ Save Changes</button>
+      <button class="btn btn-secondary" onclick="closeEditUserModal()">Cancel</button>
+    </div>
   </div>
 </div>
 
@@ -1003,7 +1034,6 @@ const CAN_ADMIN  = ['admin'];
 
 let users        = JSON.parse(localStorage.getItem('pf_users') || '[]');
 let currentUser  = null;
-let pendingRoleId = null;
 
 let processes   = [];
 let steps       = [];
@@ -2573,26 +2603,31 @@ function syncUsers(){
   users=JSON.parse(localStorage.getItem('pf_users')||'[]');
 }
 function renderUserTable(){
-  syncUsers(); // pull latest from storage — picks up registrations from other sessions
+  syncUsers();
   const tbody=document.getElementById('users-table-body'); if(!tbody) return;
   tbody.innerHTML=users.map(u=>{
     const co=u.companyId?companies.find(c=>String(c.id)===String(u.companyId)):null;
     return `<tr style="${u.pending?'background:rgba(217,119,6,.04)':''}">
-      <td><strong>${u.name}</strong>${u.id===currentUser?.id?'<span class="badge badge-teal" style="margin-left:6px">You</span>':''}</td>
+      <td>
+        <div style="font-weight:700">${u.name}${u.id===currentUser?.id?'<span class="badge badge-teal" style="margin-left:6px;font-size:.58rem">You</span>':''}</div>
+      </td>
+      <td style="font-size:.78rem;color:var(--text2);font-family:var(--mono)">${u.email||'—'}</td>
       <td><span class="badge" style="background:${ROLE_BG[u.role]};color:${ROLE_COLORS[u.role]}">${u.role}</span></td>
-      <td>${co?`<span style="font-family:var(--mono);font-size:.7rem;color:var(--accent2);font-weight:700">${co.bizId}</span> <span style="font-size:.78rem;color:var(--text2)">${co.name}</span>`:'<span style="color:var(--text3);font-size:.75rem">All companies</span>'}</td>
+      <td>${co?`<span style="font-family:var(--mono);font-size:.7rem;color:var(--accent2);font-weight:700">${co.bizId}</span> <span style="font-size:.75rem;color:var(--text2)">${co.name}</span>`:'<span style="color:var(--text3);font-size:.75rem">—</span>'}</td>
       <td><span class="badge ${u.pending?'badge-orange':u.active?'badge-green':'badge-red'}">${u.pending?'⏳ Pending':u.active?'Active':'Disabled'}</span></td>
-      <td style="font-size:.76rem;color:var(--text3)">${u.created||'—'}</td>
+      <td style="font-size:.74rem;color:var(--text3)">${u.created||'—'}</td>
       <td>${u.id!==currentUser?.id
         ?`<div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center">
             ${u.pending
               ?`<button class="btn" style="padding:4px 12px;font-size:.7rem;background:#16a34a;color:#fff;font-weight:700" onclick="authorizeUser('${u.id}')">✓ Authorize</button>
                 <button class="btn btn-danger" style="padding:4px 10px;font-size:.7rem" onclick="declineUser('${u.id}')">✗ Decline</button>`
-              :`<button class="btn btn-secondary" style="padding:3px 9px;font-size:.68rem" onclick="openRoleModal('${u.id}')">✏ Role</button>
+              :`<button class="btn btn-secondary" style="padding:3px 9px;font-size:.7rem" onclick="openEditUserModal('${u.id}')">✏ Edit</button>
                 <button class="btn ${u.active?'btn-danger':'btn-blue'}" style="padding:3px 9px;font-size:.68rem" onclick="toggleUserActive('${u.id}')">${u.active?'Disable':'Enable'}</button>
                 <button class="btn btn-danger" style="padding:3px 9px;font-size:.68rem" onclick="deleteUser('${u.id}')">✕</button>`}
           </div>`
-        :'<span style="color:var(--text3);font-size:.73rem">Current user</span>'}
+        :`<div style="display:flex;gap:5px">
+            <button class="btn btn-secondary" style="padding:3px 9px;font-size:.7rem" onclick="openEditUserModal('${u.id}')">✏ Edit</button>
+          </div>`}
       </td>
     </tr>`;
   }).join('');
@@ -2655,10 +2690,63 @@ function deleteUser(id){
   users=users.filter(u=>u.id!==id);
   saveUsers();renderUserTable();renderPendingBanner();refreshConfigNavBadge();
 }
-function openRoleModal(id){syncUsers();const u=users.find(x=>x.id===id);if(!u)return;pendingRoleId=id;document.getElementById('modal-user-name').textContent=u.name;document.getElementById('modal-role').value=u.role;document.getElementById('role-modal').classList.add('open');}
-function closeRoleModal(){document.getElementById('role-modal').classList.remove('open');pendingRoleId=null;}
-function applyRoleChange(){syncUsers();const u=users.find(x=>x.id===pendingRoleId);if(u){u.role=document.getElementById('modal-role').value;saveUsers();renderUserTable();}closeRoleModal();}
-document.getElementById('role-modal').addEventListener('click',function(e){if(e.target===this)closeRoleModal();});
+function openEditUserModal(id){
+  syncUsers();
+  const u=users.find(x=>x.id===id); if(!u)return;
+  document.getElementById('eum-id').value=id;
+  document.getElementById('eum-name-label').textContent=u.name;
+  document.getElementById('eum-name').value=u.name||'';
+  document.getElementById('eum-email').value=u.email||'';
+  document.getElementById('eum-pass').value='';
+  document.getElementById('eum-role').value=u.role||'viewer';
+  // populate company dropdown
+  const coSel=document.getElementById('eum-company-id');
+  const coOpts=companies.map(c=>`<option value="${c.id}">[${c.bizId}] ${c.name}</option>`).join('');
+  coSel.innerHTML='<option value="">— all companies —</option>'+coOpts;
+  coSel.value=u.companyId||'';
+  document.getElementById('eum-err').style.display='none';
+  document.getElementById('edit-user-modal').classList.add('open');
+}
+function closeEditUserModal(){
+  document.getElementById('edit-user-modal').classList.remove('open');
+}
+function applyEditUser(){
+  const id=document.getElementById('eum-id').value;
+  syncUsers();
+  const u=users.find(x=>x.id===id);
+  if(!u)return;
+  const name=document.getElementById('eum-name').value.trim();
+  const email=document.getElementById('eum-email').value.trim().toLowerCase();
+  const pass=document.getElementById('eum-pass').value;
+  const role=document.getElementById('eum-role').value;
+  const companyId=document.getElementById('eum-company-id').value||null;
+  const err=document.getElementById('eum-err');
+  err.style.display='none';
+  if(!name||!email){err.textContent='Name and email are required.';err.style.display='block';return;}
+  // Check email uniqueness — only block if another *different* user has this email and is active/pending
+  const conflict=users.find(x=>x.email===email && x.id!==id && (x.active||x.pending));
+  if(conflict){err.textContent='This email is already in use by another active account.';err.style.display='block';return;}
+  if(pass && pass.length<6){err.textContent='New password must be at least 6 characters.';err.style.display='block';return;}
+  u.name=name;
+  u.email=email;
+  u.role=role;
+  u.companyId=companyId;
+  if(pass) u.password=pass;
+  // If editing the currently logged-in user, keep session in sync
+  if(currentUser && currentUser.id===id){
+    currentUser.name=name; currentUser.email=email; currentUser.role=role;
+    document.getElementById('hdr-name').textContent=name;
+    const rb=document.getElementById('hdr-role');
+    rb.textContent=role; rb.style.background=ROLE_BG[role]; rb.style.color=ROLE_COLORS[role];
+    const initials=name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+    const av=document.getElementById('hdr-avatar');
+    av.textContent=initials; av.style.background=ROLE_COLORS[role]||'#6b7280';
+  }
+  saveUsers();
+  renderUserTable();
+  closeEditUserModal();
+}
+document.getElementById('edit-user-modal').addEventListener('click',function(e){if(e.target===this)closeEditUserModal();});
 document.getElementById('task-modal').addEventListener('click',function(e){if(e.target===this)closeTaskModal();});
 
 // ============================================================
