@@ -216,7 +216,7 @@ tr:hover td{background:var(--surface2);}
       <div class="form-group"><label>Password</label><input type="password" id="reg-pass" placeholder="Min. 6 characters"/></div>
       <div class="form-group"><label>Confirm Password</label><input type="password" id="reg-pass2" placeholder="Repeat password" onkeydown="if(event.key==='Enter')doRegister()"/></div>
       <button class="btn btn-blue" style="width:100%;justify-content:center" onclick="doRegister()">✦ Request Access</button>
-      <div class="demo-hint" style="margin-top:.6rem;line-height:1.6">After registering, an approval request will be sent to the administrator. You will be able to sign in once your account is approved.</div>
+      <div class="demo-hint" style="margin-top:.6rem;line-height:1.6">New accounts require administrator approval. You will be able to sign in once your request has been reviewed.</div>
     </div>
   </div>
 </div>
@@ -754,10 +754,14 @@ tr:hover td{background:var(--surface2);}
 <section id="section-config" class="section">
   <div class="section-hero"><span class="section-hero-icon">⚙</span><div><div class="section-hero-title">Configuration</div><div class="section-hero-sub">System parameters — Business registration and User management</div></div></div>
 
+  <!-- Pending approvals alert — shown only when there are pending users -->
+  <div id="pending-banner" style="display:none"></div>
+
   <!-- Sub-tabs -->
   <div style="display:flex;gap:4px;background:var(--surface2);border-radius:var(--radius);padding:4px;border:1px solid var(--border);width:fit-content">
     <button class="graph-tab active" id="ctab-biz" onclick="switchConfigTab('biz',this)">🏢 Business</button>
     <button class="graph-tab" id="ctab-users" onclick="switchConfigTab('users',this)">👥 Users</button>
+    <button class="graph-tab" id="ctab-analytics" onclick="switchConfigTab('analytics',this)">📊 Analytics</button>
   </div>
 
   <!-- ===== BUSINESS ===== -->
@@ -849,7 +853,70 @@ tr:hover td{background:var(--surface2);}
         <tr><td>Configuration / Users</td><td style="color:var(--danger)">✗</td><td style="color:var(--danger)">✗</td><td style="color:var(--danger)">✗</td><td style="color:var(--success)">✓</td></tr>
       </tbody></table></div>
     </div>
+
+    <div class="card" style="background:rgba(124,58,237,.04);border-color:rgba(124,58,237,.15)">
+      <div class="card-header"><div class="card-icon" style="background:rgba(124,58,237,.1)">🔑</div><span class="card-title">Role Permissions</span></div>
+      <div style="overflow-x:auto"><table><thead><tr><th>Permission</th><th>Viewer</th><th>Editor</th><th>Manager</th><th>Admin</th></tr></thead><tbody>
+        <tr><td>View data</td><td style="color:var(--success)">✓</td><td style="color:var(--success)">✓</td><td style="color:var(--success)">✓</td><td style="color:var(--success)">✓</td></tr>
+        <tr><td>Add / edit records</td><td style="color:var(--danger)">✗</td><td style="color:var(--success)">✓</td><td style="color:var(--success)">✓</td><td style="color:var(--success)">✓</td></tr>
+        <tr><td>Delete records</td><td style="color:var(--danger)">✗</td><td style="color:var(--danger)">✗</td><td style="color:var(--success)">✓</td><td style="color:var(--success)">✓</td></tr>
+        <tr><td>AI Suggestion</td><td style="color:var(--danger)">✗</td><td style="color:var(--danger)">✗</td><td style="color:var(--success)">✓</td><td style="color:var(--success)">✓</td></tr>
+        <tr><td>Configuration / Users</td><td style="color:var(--danger)">✗</td><td style="color:var(--danger)">✗</td><td style="color:var(--danger)">✗</td><td style="color:var(--success)">✓</td></tr>
+      </tbody></table></div>
+    </div>
   </div>
+
+  <!-- ===== ANALYTICS PANE ===== -->
+  <div id="config-pane-analytics" style="display:none;flex-direction:column;gap:1.5rem">
+
+    <!-- KPI row -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem" id="an-kpi-row">
+      <div class="summary-stat" style="align-items:center;text-align:center;border-color:rgba(0,112,214,.25);background:rgba(0,112,214,.03)">
+        <div class="summary-stat-val" id="an-total-visits" style="color:var(--accent2)">0</div>
+        <div class="summary-stat-label">Total Visits</div>
+      </div>
+      <div class="summary-stat" style="align-items:center;text-align:center;border-color:rgba(0,143,116,.25);background:rgba(0,143,116,.03)">
+        <div class="summary-stat-val" id="an-today-visits" style="color:var(--accent)">0</div>
+        <div class="summary-stat-label">Today</div>
+      </div>
+      <div class="summary-stat" style="align-items:center;text-align:center;border-color:rgba(124,58,237,.25);background:rgba(124,58,237,.03)">
+        <div class="summary-stat-val" id="an-unique-days" style="color:var(--accent4)">0</div>
+        <div class="summary-stat-label">Days Active</div>
+      </div>
+      <div class="summary-stat" style="align-items:center;text-align:center;border-color:rgba(217,119,6,.25);background:rgba(217,119,6,.03)">
+        <div class="summary-stat-val" id="an-avg-day" style="color:var(--warning)">0</div>
+        <div class="summary-stat-label">Avg / Day</div>
+      </div>
+    </div>
+
+    <!-- Daily chart + login log side by side -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem">
+
+      <div class="card">
+        <div class="card-header"><div class="card-icon" style="background:rgba(0,112,214,.1)">📅</div><span class="card-title">Visits — Last 14 Days</span>
+          <button class="btn btn-secondary" style="margin-left:auto;padding:4px 10px;font-size:.68rem" onclick="clearVisitLog()">🗑 Clear Log</button>
+        </div>
+        <div id="an-bar-chart" style="display:flex;flex-direction:column;gap:.35rem"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><div class="card-icon" style="background:rgba(0,143,116,.1)">🕐</div><span class="card-title">Recent Access Log</span></div>
+        <div id="an-access-log" style="display:flex;flex-direction:column;gap:.4rem;max-height:340px;overflow-y:auto"></div>
+      </div>
+
+    </div>
+
+    <!-- Peak hours heatmap -->
+    <div class="card">
+      <div class="card-header"><div class="card-icon" style="background:rgba(124,58,237,.1)">🔥</div><span class="card-title">Activity by Hour of Day</span><span style="font-size:.72rem;color:var(--text3);margin-left:auto">Based on all recorded visits</span></div>
+      <div id="an-heatmap" style="display:flex;gap:4px;flex-wrap:wrap;align-items:flex-end;padding:.5rem 0"></div>
+      <div style="display:flex;gap:1rem;margin-top:.6rem;font-size:.7rem;color:var(--text3)">
+        <span>🌙 00:00</span><span>🌅 06:00</span><span>☀ 12:00</span><span>🌆 18:00</span><span>🌙 23:00</span>
+      </div>
+    </div>
+
+  </div>
+
 </section>
 </div>
 
@@ -993,18 +1060,12 @@ function doRegister() {
   if (pass.length<6)       { err.textContent='Password min 6 chars.'; err.style.display='block'; return; }
   if (pass!==pass2)        { err.textContent='Passwords do not match.'; err.style.display='block'; return; }
   if (users.find(u=>u.email===email)){ err.textContent='Email already registered.'; err.style.display='block'; return; }
-  // Save user as pending (active:false) — admin must approve
-  const newId='u_'+Date.now();
-  users.push({id:newId,name,email,password:pass,role:'viewer',active:false,pending:true,created:new Date().toLocaleDateString()});
+  // Save as pending — admin must approve in Config → Users
+  users.push({id:'u_'+Date.now(),name,email,password:pass,role:'viewer',active:false,pending:true,created:new Date().toLocaleDateString()});
   saveUsers();
-  ok.innerHTML=`✓ Access request submitted!<br><small>An approval email has been prepared for the administrator. You will be able to sign in once approved.</small>`;
+  ok.innerHTML=`✓ Account request submitted!<br><small>An administrator will review and approve your access. You can sign in once approved.</small>`;
   ok.style.display='block';
   ['reg-name','reg-email','reg-pass','reg-pass2'].forEach(id=>document.getElementById(id).value='');
-  // Open mailto: to send admin notification
-  const adminEmail=users.find(u=>u.role==='admin')?.email||'admin@processflow.io';
-  const subject=encodeURIComponent(`[ProcessFlow] New access request from ${name}`);
-  const body=encodeURIComponent(`A new user has requested access to ProcessFlow.\n\nName: ${name}\nEmail: ${email}\nRequested: ${new Date().toLocaleString()}\n\nTo approve this user, go to the Users section in ProcessFlow and enable their account.\n\nUser ID: ${newId}`);
-  setTimeout(()=>{ window.location.href=`mailto:${adminEmail}?subject=${subject}&body=${body}`; }, 400);
 }
 function doLogout() {
   currentUser=null; sessionStorage.removeItem('pf_session');
@@ -1022,7 +1083,14 @@ function bootApp() {
   document.getElementById('hdr-name').textContent=currentUser.name;
   const rb=document.getElementById('hdr-role');
   rb.textContent=currentUser.role; rb.style.background=ROLE_BG[currentUser.role]; rb.style.color=ROLE_COLORS[currentUser.role];
-  if (CAN_ADMIN.includes(currentUser.role)) document.getElementById('nav-config').style.display='inline-flex';
+  if (CAN_ADMIN.includes(currentUser.role)) {
+    const navCfg = document.getElementById('nav-config');
+    navCfg.style.display='inline-flex';
+    const pendingCount = users.filter(u=>u.pending).length;
+    navCfg.innerHTML = pendingCount
+      ? `⚙ Config <span style="background:var(--warning);color:#fff;border-radius:10px;padding:1px 6px;font-size:.62rem;font-weight:700;margin-left:4px">${pendingCount}</span>`
+      : '⚙ Config';
+  }
   loadUserData();
   showSection('register', document.querySelector('.nav-btn'));
 }
@@ -1111,7 +1179,7 @@ function showSection(id, btn) {
   if(sec) sec.classList.add('active');
   if(btn) btn.classList.add('active');
   if(id==='diagram')  renderDiagram();
-  if(id==='config')   { renderUserTable(); renderBizTable(); }
+  if(id==='config')   { renderUserTable(); renderBizTable(); renderPendingBanner(); }
   if(id==='graphs')   { populateIshikawaSelect(); renderRAGDashboard(); }
   if(id==='project')  { renderTasks(); renderProjectsTable(); }
   if(id==='feedback') { initFeedbackSection(); renderFeedback(); }
@@ -1120,8 +1188,10 @@ function showSection(id, btn) {
 function switchConfigTab(tab, btn) {
   document.querySelectorAll('#section-config .graph-tab').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  document.getElementById('config-pane-biz').style.display   = tab==='biz'   ? 'flex' : 'none';
-  document.getElementById('config-pane-users').style.display = tab==='users' ? 'flex' : 'none';
+  document.getElementById('config-pane-biz').style.display       = tab==='biz'       ? 'flex' : 'none';
+  document.getElementById('config-pane-users').style.display     = tab==='users'     ? 'flex' : 'none';
+  document.getElementById('config-pane-analytics').style.display = tab==='analytics' ? 'flex' : 'none';
+  if(tab==='analytics') renderAnalytics();
 }
 
 // ============================================================
@@ -2459,6 +2529,37 @@ function renderFeedback() {
 }
 
 // ============================================================
+// PENDING APPROVALS BANNER
+// ============================================================
+function renderPendingBanner() {
+  const banner = document.getElementById('pending-banner'); if(!banner) return;
+  const pending = users.filter(u=>u.pending);
+  if(!pending.length){ banner.style.display='none'; return; }
+  banner.style.display='block';
+  banner.innerHTML=`
+    <div style="background:rgba(217,119,6,.07);border:1px solid rgba(217,119,6,.3);border-radius:var(--radius2);padding:1rem 1.2rem;display:flex;align-items:flex-start;gap:14px">
+      <div style="font-size:1.4rem;flex-shrink:0">⏳</div>
+      <div style="flex:1">
+        <div style="font-weight:700;font-size:.9rem;color:var(--warning);margin-bottom:.4rem">
+          ${pending.length} user${pending.length>1?'s':''} waiting for authorization
+        </div>
+        <div style="display:flex;flex-direction:column;gap:.4rem">
+          ${pending.map(u=>`
+            <div style="display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:.5rem .9rem;flex-wrap:wrap">
+              <div style="width:30px;height:30px;border-radius:50%;background:rgba(217,119,6,.15);border:2px solid rgba(217,119,6,.3);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.78rem;color:var(--warning);flex-shrink:0">${u.name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)}</div>
+              <div style="flex:1;min-width:0">
+                <div style="font-weight:700;font-size:.85rem">${u.name}</div>
+                <div style="font-size:.74rem;color:var(--text3)">${u.email} · Requested ${u.created}</div>
+              </div>
+              <button class="btn" style="padding:6px 16px;font-size:.75rem;background:#16a34a;color:#fff;font-weight:700;flex-shrink:0" onclick="authorizeUser('${u.id}')">✓ Authorize User</button>
+            </div>`).join('')}
+        </div>
+        <div style="font-size:.72rem;color:var(--text3);margin-top:.5rem">Go to <strong style="cursor:pointer;color:var(--accent2)" onclick="switchConfigTab('users',document.getElementById('ctab-users'))">👥 Users</strong> tab to manage all user accounts.</div>
+      </div>
+    </div>`;
+}
+
+// ============================================================
 // USER MANAGEMENT
 // ============================================================
 function adminAddUser(){
@@ -2487,7 +2588,7 @@ function renderUserTable(){
       <td style="font-size:.76rem;color:var(--text3)">${u.created||'—'}</td>
       <td>${u.id!==currentUser?.id
         ?`<div style="display:flex;gap:5px;flex-wrap:wrap">
-            ${u.pending?`<button class="btn btn-primary" style="padding:3px 9px;font-size:.68rem" onclick="approveUser('${u.id}')">✓ Approve</button>`:''}
+            ${u.pending?`<button class="btn btn-primary" style="padding:4px 12px;font-size:.7rem;background:#16a34a;gap:5px" onclick="authorizeUser('${u.id}')">✓ Authorize User</button>`:''}
             <button class="btn btn-secondary" style="padding:3px 9px;font-size:.68rem" onclick="openRoleModal('${u.id}')">✏ Role</button>
             <button class="btn ${u.active?'btn-danger':'btn-blue'}" style="padding:3px 9px;font-size:.68rem" onclick="toggleUserActive('${u.id}')">${u.active?'Disable':'Enable'}</button>
             <button class="btn btn-danger" style="padding:3px 9px;font-size:.68rem" onclick="deleteUser('${u.id}')">✕</button>
@@ -2497,8 +2598,19 @@ function renderUserTable(){
     </tr>`;
   }).join('');
 }
-function toggleUserActive(id){const u=users.find(x=>x.id===id);if(u){u.active=!u.active;if(u.active)u.pending=false;saveUsers();renderUserTable();}}
-function approveUser(id){const u=users.find(x=>x.id===id);if(u){u.active=true;u.pending=false;saveUsers();renderUserTable();alert(`✓ ${u.name} has been approved and can now sign in.`);}}
+function refreshConfigNavBadge(){
+  if(!CAN_ADMIN.includes(currentUser?.role)) return;
+  const navCfg=document.getElementById('nav-config'); if(!navCfg)return;
+  const n=users.filter(u=>u.pending).length;
+  navCfg.innerHTML=n?`⚙ Config <span style="background:var(--warning);color:#fff;border-radius:10px;padding:1px 6px;font-size:.62rem;font-weight:700;margin-left:4px">${n}</span>`:'⚙ Config';
+}
+function toggleUserActive(id){const u=users.find(x=>x.id===id);if(u){u.active=!u.active;if(u.active)u.pending=false;saveUsers();renderUserTable();renderPendingBanner();refreshConfigNavBadge();}}
+function authorizeUser(id){
+  const u=users.find(x=>x.id===id); if(!u)return;
+  u.active=true; u.pending=false;
+  saveUsers(); renderUserTable(); renderPendingBanner(); refreshConfigNavBadge();
+  alert(`✓ ${u.name} has been authorized and can now sign in to ProcessFlow.`);
+}
 function deleteUser(id){if(!confirm('Delete this user?'))return;users=users.filter(u=>u.id!==id);saveUsers();renderUserTable();}
 function openRoleModal(id){const u=users.find(x=>x.id===id);if(!u)return;pendingRoleId=id;document.getElementById('modal-user-name').textContent=u.name;document.getElementById('modal-role').value=u.role;document.getElementById('role-modal').classList.add('open');}
 function closeRoleModal(){document.getElementById('role-modal').classList.remove('open');pendingRoleId=null;}
@@ -2582,9 +2694,105 @@ function renderBizTable() {
 }
 
 // ============================================================
+// VISIT ANALYTICS  (stored globally — not per-user)
+// ============================================================
+const AN_KEY = 'pf_visit_log';
+
+function recordVisit() {
+  const now   = new Date();
+  const today = now.toLocaleDateString();
+  const ts    = now.toLocaleString();
+  const hour  = now.getHours();
+  let log = JSON.parse(localStorage.getItem(AN_KEY) || '[]');
+  log.push({ ts, today, hour });
+  // Keep last 5000 entries to avoid unbounded growth
+  if(log.length > 5000) log = log.slice(-5000);
+  localStorage.setItem(AN_KEY, JSON.stringify(log));
+}
+
+function clearVisitLog() {
+  if(!confirm('Clear all visit analytics data? This cannot be undone.')) return;
+  localStorage.removeItem(AN_KEY);
+  renderAnalytics();
+}
+
+function renderAnalytics() {
+  const log = JSON.parse(localStorage.getItem(AN_KEY) || '[]');
+  const today = new Date().toLocaleDateString();
+
+  // KPIs
+  const totalVisits = log.length;
+  const todayVisits = log.filter(e=>e.today===today).length;
+  const dayMap      = {};
+  log.forEach(e=>{ dayMap[e.today]=(dayMap[e.today]||0)+1; });
+  const uniqueDays  = Object.keys(dayMap).length;
+  const avgDay      = uniqueDays ? Math.round(totalVisits/uniqueDays) : 0;
+
+  document.getElementById('an-total-visits').textContent = totalVisits;
+  document.getElementById('an-today-visits').textContent = todayVisits;
+  document.getElementById('an-unique-days').textContent  = uniqueDays;
+  document.getElementById('an-avg-day').textContent      = avgDay;
+
+  // Last 14 days bar chart
+  const barEl = document.getElementById('an-bar-chart');
+  const days14 = [];
+  for(let i=13;i>=0;i--){
+    const d=new Date(); d.setDate(d.getDate()-i);
+    days14.push(d.toLocaleDateString());
+  }
+  const maxDay = Math.max(...days14.map(d=>dayMap[d]||0), 1);
+  barEl.innerHTML = days14.map(d=>{
+    const count = dayMap[d]||0;
+    const pct   = Math.round(count/maxDay*100);
+    const isToday = d===today;
+    const label = new Date(d).toLocaleDateString(undefined,{month:'short',day:'numeric'});
+    return `<div class="fb-bar-row" style="margin-bottom:0">
+      <span style="font-size:.7rem;color:var(--text3);min-width:54px;font-family:var(--mono)">${label}</span>
+      <div class="fb-bar-bg">
+        <div class="fb-bar-fg" style="width:${pct}%;background:${isToday?'var(--accent)':'var(--accent2)'}"></div>
+      </div>
+      <span style="font-family:var(--mono);font-size:.72rem;font-weight:700;min-width:24px;text-align:right;color:${isToday?'var(--accent)':'var(--text2)'}">${count}</span>
+    </div>`;
+  }).join('');
+
+  // Recent access log (last 30)
+  const logEl = document.getElementById('an-access-log');
+  const recent = [...log].reverse().slice(0,30);
+  if(!recent.length){
+    logEl.innerHTML='<div style="color:var(--text3);font-size:.82rem;text-align:center;padding:1rem">No visits recorded yet.</div>';
+  } else {
+    logEl.innerHTML = recent.map((e,i)=>`
+      <div style="display:flex;align-items:center;gap:8px;padding:.35rem .5rem;border-radius:6px;background:${i===0?'rgba(0,143,116,.05)':'transparent'};border:${i===0?'1px solid rgba(0,143,116,.12)':'1px solid transparent'}">
+        <div style="width:8px;height:8px;border-radius:50%;background:${i===0?'var(--accent)':'var(--border2)'};flex-shrink:0"></div>
+        <span style="font-family:var(--mono);font-size:.72rem;color:var(--text2);flex:1">${e.ts}</span>
+        ${i===0?`<span class="badge badge-teal" style="font-size:.6rem">Latest</span>`:''}
+      </div>`).join('');
+  }
+
+  // Hour-of-day heatmap
+  const hourMap = Array(24).fill(0);
+  log.forEach(e=>{ hourMap[e.hour]++; });
+  const maxHour = Math.max(...hourMap, 1);
+  const heatEl = document.getElementById('an-heatmap');
+  heatEl.innerHTML = hourMap.map((count,h)=>{
+    const intensity = count/maxHour;
+    const bg = intensity===0
+      ? 'var(--surface2)'
+      : `rgba(0,112,214,${0.1+intensity*0.85})`;
+    const height = Math.max(8, Math.round(intensity*80));
+    const label  = `${String(h).padStart(2,'0')}:00`;
+    return `<div title="${label} — ${count} visit${count!==1?'s':''}" style="cursor:default;display:flex;flex-direction:column;align-items:center;gap:3px;flex:1;min-width:0">
+      <div style="width:100%;height:${height}px;background:${bg};border-radius:3px;transition:height .3s"></div>
+      ${h%6===0?`<span style="font-size:.58rem;color:var(--text3);font-family:var(--mono)">${label.slice(0,2)}</span>`:'<span style="height:.75rem"></span>'}
+    </div>`;
+  }).join('');
+}
+
+// ============================================================
 // AUTO-RESTORE SESSION — MUST be last
 // ============================================================
 (function(){
+  recordVisit(); // track every page load
   const s=sessionStorage.getItem('pf_session');
   if(s){ const u=users.find(x=>x.id===s); if(u&&u.active){ currentUser=u; bootApp(); } }
 })();
