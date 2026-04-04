@@ -1045,6 +1045,8 @@ function doLogin() {
   const pass  = document.getElementById('li-pass').value;
   const err   = document.getElementById('login-err');
   err.style.display = 'none';
+  // Always re-read users from storage so pending→active changes are reflected immediately
+  users = JSON.parse(localStorage.getItem('pf_users') || '[]');
   const u = users.find(x => x.email===email && x.password===pass);
   if (!u)        { err.textContent='Invalid email or password.'; err.style.display='block'; return; }
   if (u.pending) { err.textContent='Your account is awaiting administrator authorization. You will be able to sign in once approved.'; err.style.display='block'; return; }
@@ -1059,15 +1061,15 @@ function doRegister() {
   if (!name||!email||!pass){ err.textContent='All fields required.'; err.style.display='block'; return; }
   if (pass.length<6)       { err.textContent='Password min 6 chars.'; err.style.display='block'; return; }
   if (pass!==pass2)        { err.textContent='Passwords do not match.'; err.style.display='block'; return; }
-  // Only block if the email belongs to an active or pending user — a deleted or disabled account frees the email
+  // Re-read from storage to get the freshest user list before duplicate check
+  users = JSON.parse(localStorage.getItem('pf_users') || '[]');
   const existing = users.find(u=>u.email===email);
   if (existing && (existing.active || existing.pending)){
     err.textContent='This email is already registered and active. Please sign in or use a different email.';
     err.style.display='block'; return;
   }
-  // If a disabled account with this email exists, remove it first so the new registration replaces it cleanly
+  // Remove any disabled account with this email so the new registration replaces it cleanly
   if (existing) users = users.filter(u=>u.email!==email);
-  // Save as pending — admin must approve in Config → Users
   users.push({id:'u_'+Date.now(),name,email,password:pass,role:'viewer',active:false,pending:true,created:new Date().toLocaleDateString()});
   saveUsers();
   ok.innerHTML=`✓ Account request submitted!<br><small>An administrator will review and approve your access. You can sign in once approved.</small>`;
@@ -1093,10 +1095,10 @@ function bootApp() {
   if (CAN_ADMIN.includes(currentUser.role)) {
     const navCfg = document.getElementById('nav-config');
     navCfg.style.display='inline-flex';
-    const pendingCount = users.filter(u=>u.pending).length;
-    navCfg.innerHTML = pendingCount
-      ? `⚙ Config <span style="background:var(--warning);color:#fff;border-radius:10px;padding:1px 6px;font-size:.62rem;font-weight:700;margin-left:4px">${pendingCount}</span>`
-      : '⚙ Config';
+    syncUsers(); // get freshest list
+    refreshConfigNavBadge();
+    // Show pending banner immediately so admin notices new registrations on login
+    setTimeout(renderPendingBanner, 300);
   }
   loadUserData();
   showSection('register', document.querySelector('.nav-btn'));
@@ -2535,36 +2537,7 @@ function renderFeedback() {
   }).join('');
 }
 
-// ============================================================
-// PENDING APPROVALS BANNER
-// ============================================================
-function renderPendingBanner() {
-  const banner = document.getElementById('pending-banner'); if(!banner) return;
-  const pending = users.filter(u=>u.pending);
-  if(!pending.length){ banner.style.display='none'; return; }
-  banner.style.display='block';
-  banner.innerHTML=`
-    <div style="background:rgba(217,119,6,.07);border:1px solid rgba(217,119,6,.3);border-radius:var(--radius2);padding:1rem 1.2rem;display:flex;align-items:flex-start;gap:14px">
-      <div style="font-size:1.4rem;flex-shrink:0">⏳</div>
-      <div style="flex:1">
-        <div style="font-weight:700;font-size:.9rem;color:var(--warning);margin-bottom:.4rem">
-          ${pending.length} user${pending.length>1?'s':''} waiting for authorization
-        </div>
-        <div style="display:flex;flex-direction:column;gap:.4rem">
-          ${pending.map(u=>`
-            <div style="display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:.5rem .9rem;flex-wrap:wrap">
-              <div style="width:30px;height:30px;border-radius:50%;background:rgba(217,119,6,.15);border:2px solid rgba(217,119,6,.3);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.78rem;color:var(--warning);flex-shrink:0">${u.name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)}</div>
-              <div style="flex:1;min-width:0">
-                <div style="font-weight:700;font-size:.85rem">${u.name}</div>
-                <div style="font-size:.74rem;color:var(--text3)">${u.email} · Requested ${u.created}</div>
-              </div>
-              <button class="btn" style="padding:6px 16px;font-size:.75rem;background:#16a34a;color:#fff;font-weight:700;flex-shrink:0" onclick="authorizeUser('${u.id}')">✓ Authorize User</button>
-            </div>`).join('')}
-        </div>
-        <div style="font-size:.72rem;color:var(--text3);margin-top:.5rem">Go to <strong style="cursor:pointer;color:var(--accent2)" onclick="switchConfigTab('users',document.getElementById('ctab-users'))">👥 Users</strong> tab to manage all user accounts.</div>
-      </div>
-    </div>`;
-}
+
 
 // ============================================================
 // USER MANAGEMENT
@@ -2586,45 +2559,105 @@ function adminAddUser(){
   document.getElementById('adm-company-id').value='';
   renderUserTable();
 }
+
+function refreshConfigNavBadge(){
+  if(!CAN_ADMIN.includes(currentUser?.role)) return;
+  const navCfg=document.getElementById('nav-config'); if(!navCfg)return;
+  // Always re-read from storage for live count
+  const latest=JSON.parse(localStorage.getItem('pf_users')||'[]');
+  const n=latest.filter(u=>u.pending).length;
+  navCfg.innerHTML=n?`⚙ Config <span style="background:var(--warning);color:#fff;border-radius:10px;padding:1px 6px;font-size:.62rem;font-weight:700;margin-left:4px">${n}</span>`:'⚙ Config';
+}
+function syncUsers(){
+  // Re-read the global user list from localStorage so admin always sees fresh registrations
+  users=JSON.parse(localStorage.getItem('pf_users')||'[]');
+}
 function renderUserTable(){
+  syncUsers(); // pull latest from storage — picks up registrations from other sessions
   const tbody=document.getElementById('users-table-body'); if(!tbody) return;
   tbody.innerHTML=users.map(u=>{
     const co=u.companyId?companies.find(c=>String(c.id)===String(u.companyId)):null;
-    return `<tr>
+    return `<tr style="${u.pending?'background:rgba(217,119,6,.04)':''}">
       <td><strong>${u.name}</strong>${u.id===currentUser?.id?'<span class="badge badge-teal" style="margin-left:6px">You</span>':''}</td>
       <td><span class="badge" style="background:${ROLE_BG[u.role]};color:${ROLE_COLORS[u.role]}">${u.role}</span></td>
       <td>${co?`<span style="font-family:var(--mono);font-size:.7rem;color:var(--accent2);font-weight:700">${co.bizId}</span> <span style="font-size:.78rem;color:var(--text2)">${co.name}</span>`:'<span style="color:var(--text3);font-size:.75rem">All companies</span>'}</td>
       <td><span class="badge ${u.pending?'badge-orange':u.active?'badge-green':'badge-red'}">${u.pending?'⏳ Pending':u.active?'Active':'Disabled'}</span></td>
       <td style="font-size:.76rem;color:var(--text3)">${u.created||'—'}</td>
       <td>${u.id!==currentUser?.id
-        ?`<div style="display:flex;gap:5px;flex-wrap:wrap">
-            ${u.pending?`<button class="btn btn-primary" style="padding:4px 12px;font-size:.7rem;background:#16a34a;gap:5px" onclick="authorizeUser('${u.id}')">✓ Authorize User</button>`:''}
-            <button class="btn btn-secondary" style="padding:3px 9px;font-size:.68rem" onclick="openRoleModal('${u.id}')">✏ Role</button>
-            <button class="btn ${u.active?'btn-danger':'btn-blue'}" style="padding:3px 9px;font-size:.68rem" onclick="toggleUserActive('${u.id}')">${u.active?'Disable':'Enable'}</button>
-            <button class="btn btn-danger" style="padding:3px 9px;font-size:.68rem" onclick="deleteUser('${u.id}')">✕</button>
+        ?`<div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center">
+            ${u.pending
+              ?`<button class="btn" style="padding:4px 12px;font-size:.7rem;background:#16a34a;color:#fff;font-weight:700" onclick="authorizeUser('${u.id}')">✓ Authorize</button>
+                <button class="btn btn-danger" style="padding:4px 10px;font-size:.7rem" onclick="declineUser('${u.id}')">✗ Decline</button>`
+              :`<button class="btn btn-secondary" style="padding:3px 9px;font-size:.68rem" onclick="openRoleModal('${u.id}')">✏ Role</button>
+                <button class="btn ${u.active?'btn-danger':'btn-blue'}" style="padding:3px 9px;font-size:.68rem" onclick="toggleUserActive('${u.id}')">${u.active?'Disable':'Enable'}</button>
+                <button class="btn btn-danger" style="padding:3px 9px;font-size:.68rem" onclick="deleteUser('${u.id}')">✕</button>`}
           </div>`
         :'<span style="color:var(--text3);font-size:.73rem">Current user</span>'}
       </td>
     </tr>`;
   }).join('');
 }
-function refreshConfigNavBadge(){
-  if(!CAN_ADMIN.includes(currentUser?.role)) return;
-  const navCfg=document.getElementById('nav-config'); if(!navCfg)return;
-  const n=users.filter(u=>u.pending).length;
-  navCfg.innerHTML=n?`⚙ Config <span style="background:var(--warning);color:#fff;border-radius:10px;padding:1px 6px;font-size:.62rem;font-weight:700;margin-left:4px">${n}</span>`:'⚙ Config';
+function renderPendingBanner() {
+  syncUsers(); // always fresh
+  const banner = document.getElementById('pending-banner'); if(!banner) return;
+  const pending = users.filter(u=>u.pending);
+  if(!pending.length){ banner.style.display='none'; return; }
+  banner.style.display='block';
+  banner.innerHTML=`
+    <div style="background:rgba(217,119,6,.07);border:1px solid rgba(217,119,6,.3);border-radius:var(--radius2);padding:1rem 1.2rem;display:flex;align-items:flex-start;gap:14px">
+      <div style="font-size:1.4rem;flex-shrink:0">⏳</div>
+      <div style="flex:1">
+        <div style="font-weight:700;font-size:.9rem;color:var(--warning);margin-bottom:.6rem">
+          ${pending.length} registration request${pending.length>1?'s':''} waiting for your decision
+        </div>
+        <div style="display:flex;flex-direction:column;gap:.5rem">
+          ${pending.map(u=>`
+            <div style="display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid rgba(217,119,6,.2);border-radius:var(--radius);padding:.6rem 1rem;flex-wrap:wrap">
+              <div style="width:32px;height:32px;border-radius:50%;background:rgba(217,119,6,.15);border:2px solid rgba(217,119,6,.35);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.8rem;color:var(--warning);flex-shrink:0">${u.name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)}</div>
+              <div style="flex:1;min-width:120px">
+                <div style="font-weight:700;font-size:.87rem">${u.name}</div>
+                <div style="font-size:.73rem;color:var(--text3)">${u.email} · Requested ${u.created}</div>
+              </div>
+              <div style="display:flex;gap:6px;flex-shrink:0">
+                <button class="btn" style="padding:6px 14px;font-size:.74rem;background:#16a34a;color:#fff;font-weight:700" onclick="authorizeUser('${u.id}')">✓ Authorize</button>
+                <button class="btn btn-danger" style="padding:6px 12px;font-size:.74rem" onclick="declineUser('${u.id}')">✗ Decline</button>
+              </div>
+            </div>`).join('')}
+        </div>
+        <div style="font-size:.72rem;color:var(--text3);margin-top:.6rem">
+          ✓ Authorize grants access &nbsp;·&nbsp; ✗ Decline removes the request — the user can re-register with the same email
+        </div>
+      </div>
+    </div>`;
 }
-function toggleUserActive(id){const u=users.find(x=>x.id===id);if(u){u.active=!u.active;if(u.active)u.pending=false;saveUsers();renderUserTable();renderPendingBanner();refreshConfigNavBadge();}}
+function toggleUserActive(id){
+  syncUsers();
+  const u=users.find(x=>x.id===id);
+  if(u){u.active=!u.active;if(u.active)u.pending=false;saveUsers();renderUserTable();renderPendingBanner();refreshConfigNavBadge();}
+}
 function authorizeUser(id){
+  syncUsers();
   const u=users.find(x=>x.id===id); if(!u)return;
   u.active=true; u.pending=false;
   saveUsers(); renderUserTable(); renderPendingBanner(); refreshConfigNavBadge();
-  alert(`✓ ${u.name} has been authorized and can now sign in to ProcessFlow.`);
+  alert(`✓ ${u.name} (${u.email}) has been authorized and can now sign in to ProcessFlow.`);
 }
-function deleteUser(id){if(!confirm('Delete this user?'))return;users=users.filter(u=>u.id!==id);saveUsers();renderUserTable();}
-function openRoleModal(id){const u=users.find(x=>x.id===id);if(!u)return;pendingRoleId=id;document.getElementById('modal-user-name').textContent=u.name;document.getElementById('modal-role').value=u.role;document.getElementById('role-modal').classList.add('open');}
+function declineUser(id){
+  syncUsers();
+  const u=users.find(x=>x.id===id); if(!u)return;
+  if(!confirm(`Decline registration request from ${u.name} (${u.email})?\n\nThe request will be removed. The user can re-register with the same email.`)) return;
+  users=users.filter(x=>x.id!==id);
+  saveUsers(); renderUserTable(); renderPendingBanner(); refreshConfigNavBadge();
+}
+function deleteUser(id){
+  if(!confirm('Delete this user permanently?'))return;
+  syncUsers();
+  users=users.filter(u=>u.id!==id);
+  saveUsers();renderUserTable();renderPendingBanner();refreshConfigNavBadge();
+}
+function openRoleModal(id){syncUsers();const u=users.find(x=>x.id===id);if(!u)return;pendingRoleId=id;document.getElementById('modal-user-name').textContent=u.name;document.getElementById('modal-role').value=u.role;document.getElementById('role-modal').classList.add('open');}
 function closeRoleModal(){document.getElementById('role-modal').classList.remove('open');pendingRoleId=null;}
-function applyRoleChange(){const u=users.find(x=>x.id===pendingRoleId);if(u){u.role=document.getElementById('modal-role').value;saveUsers();renderUserTable();}closeRoleModal();}
+function applyRoleChange(){syncUsers();const u=users.find(x=>x.id===pendingRoleId);if(u){u.role=document.getElementById('modal-role').value;saveUsers();renderUserTable();}closeRoleModal();}
 document.getElementById('role-modal').addEventListener('click',function(e){if(e.target===this)closeRoleModal();});
 document.getElementById('task-modal').addEventListener('click',function(e){if(e.target===this)closeTaskModal();});
 
@@ -2797,6 +2830,43 @@ function renderAnalytics() {
     </div>`;
   }).join('');
 }
+
+// ============================================================
+// LIVE REGISTRATION WATCHER
+// Detects new user registrations written to localStorage by
+// any tab/session and immediately updates the admin UI.
+// ============================================================
+window.addEventListener('storage', function(e) {
+  if (e.key !== 'pf_users') return;
+  // Another tab changed pf_users — sync and refresh if admin is logged in
+  syncUsers();
+  refreshConfigNavBadge();
+  // If admin is currently on the Config section, refresh the banner and table too
+  if (document.getElementById('section-config')?.classList.contains('active')) {
+    renderPendingBanner();
+    renderUserTable();
+  } else {
+    // Flash the banner if there are new pending users
+    renderPendingBanner();
+  }
+});
+
+// Polling fallback: same-tab registrations don't fire 'storage' events,
+// so poll every 4 seconds to catch them too.
+setInterval(function() {
+  if (!currentUser || !CAN_ADMIN.includes(currentUser.role)) return;
+  const freshUsers = JSON.parse(localStorage.getItem('pf_users') || '[]');
+  const pendingCount = freshUsers.filter(u => u.pending).length;
+  const currentCount = users.filter(u => u.pending).length;
+  if (pendingCount !== currentCount) {
+    syncUsers();
+    refreshConfigNavBadge();
+    renderPendingBanner();
+    if (document.getElementById('section-config')?.classList.contains('active')) {
+      renderUserTable();
+    }
+  }
+}, 4000);
 
 // ============================================================
 // AUTO-RESTORE SESSION — MUST be last
