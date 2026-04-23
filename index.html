@@ -1943,8 +1943,20 @@ async function generateAISuggestion(){
   const focus=document.getElementById('ai-focus').value,method=document.getElementById('ai-method').value,ctx=document.getElementById('ai-context').value.trim();
   const prompt=`You are a world-class Business Process Improvement consultant.\n\nPROCESSES:\n${pS||'None.'}\n\nSTEPS:\n${sS||'None.'}\n\nGAPS:\n${gS||'None.'}\n\nMETRICS:\n${mS||'None.'}\n\nFocus:${focus} Methodology:${method} Context:${ctx||'None.'}\n\nDeliver:\n## 1. CURRENT STATE ASSESSMENT\n## 2. GAP ANALYSIS SUMMARY\n## 3. TOP 5 IMPROVEMENT OPPORTUNITIES\n## 4. PROPOSED NEW PROCESS\n## 5. EXPECTED BENEFITS\n## 6. IMPLEMENTATION ROADMAP\n## 7. RISK & CHANGE MANAGEMENT\n\nBe specific and actionable.`;
   try{
-    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]})});
-    const d=await r.json(),t=d.content?.map(b=>b.text||'').join('')||'No response.';
+  const r = await fetch('https://api.openai.com/v1/chat/completions', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer YOUR_OPENAI_API_KEY'
+  },
+  body: JSON.stringify({
+    model: 'gpt-4o',          // or 'gpt-4-turbo', 'gpt-3.5-turbo'
+    max_tokens: 2000,
+    messages: [{ role: 'user', content: prompt }]
+  })
+});
+const d = await r.json(),
+  t = d.choices?.[0]?.message?.content || 'No response.';
     area.innerHTML=`<div class="ai-output"><h3>✦ AI Process Improvement Proposal</h3>${mdHtml(t)}</div><div class="btn-row"><button class="btn btn-purple" onclick="generateAISuggestion()">⟳ Regenerate</button><button class="btn btn-secondary" onclick="copyAI()">⎘ Copy</button></div>`;
   }catch(e){area.innerHTML=`<div class="ai-output"><h3>⚠ Error</h3><p>${e.message}</p></div>`;}
 }
