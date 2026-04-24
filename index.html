@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+ <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script> 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ProcessFlow — Process Improvement System</title>
@@ -231,7 +231,7 @@ tr:hover td{background:var(--surface2);}
     <button class="nav-btn" onclick="showSection('diagram',this)">🗺 Diagram</button>
     <button class="nav-btn" onclick="showSection('gaps',this)">⚠ Gaps</button>
     <button class="nav-btn" onclick="showSection('metrics',this)">📊 Metrics</button>
-    <button class="nav-btn" onclick="showSection('ai',this)">✦ AI</button>
+    <button class="nav-btn" onclick="showSection('ai',this)">🚀 Improve</button>
     <button class="nav-btn" onclick="showSection('graphs',this)">📈 Graphs</button>
     <button class="nav-btn" onclick="showSection('project',this)">🗂 Project</button>
     <button class="nav-btn" onclick="showSection('feedback',this)">💬 Feedback</button>
@@ -442,17 +442,24 @@ tr:hover td{background:var(--surface2);}
   </div>
 </section>
 
-<!-- ==================== AI ==================== -->
+<!-- ==================== AI / IMPROVE ==================== -->
 <section id="section-ai" class="section">
-  <div class="section-hero"><span class="section-hero-icon">✦</span><div><div class="section-hero-title">AI Process Suggestion</div><div class="section-hero-sub">AI analyses all data and proposes improvements</div></div></div>
+  <div class="section-hero"><span class="section-hero-icon">🚀</span><div><div class="section-hero-title">Improve</div><div class="section-hero-sub">AI analyses the selected process and proposes targeted improvements</div></div></div>
   <div class="card">
     <div class="card-header"><div class="card-icon" style="background:rgba(168,85,247,.1)">⚙</div><span class="card-title">Analysis Options</span></div>
     <div class="form-grid">
+      <div class="form-group full">
+        <label>Process to Analyse <span style="color:var(--danger);font-weight:900">*</span></label>
+        <select id="ai-proc-id" style="font-size:.88rem">
+          <option value="">— select a process —</option>
+        </select>
+        <div style="font-size:.72rem;color:var(--text3);margin-top:4px">Select a process to scope the AI analysis. Only steps, gaps and metrics linked to this process will be included.</div>
+      </div>
       <div class="form-group"><label>Focus Area</label><select id="ai-focus"><option value="all">Overall improvement</option><option value="speed">Reduce processing time</option><option value="quality">Improve quality</option><option value="cost">Reduce costs</option><option value="automation">Automation opportunities</option><option value="satisfaction">Customer satisfaction</option></select></div>
       <div class="form-group"><label>Methodology</label><select id="ai-method"><option value="lean">Lean / Waste elimination</option><option value="six-sigma">Six Sigma</option><option value="agile">Agile / Iterative</option><option value="bpm">BPM / Reengineering</option><option value="kaizen">Kaizen</option></select></div>
-      <div class="form-group full"><label>Additional Context</label><textarea id="ai-context" rows="2" placeholder="e.g. Budget limited, must keep current ERP…"></textarea></div>
+      <div class="form-group full"><label>Additional Context <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label><textarea id="ai-context" rows="2" placeholder="e.g. Budget limited, must keep current ERP, regulatory constraints…"></textarea></div>
     </div>
-    <div class="btn-row"><button class="btn btn-purple" onclick="generateAISuggestion()">✦ Generate AI Suggestion</button></div>
+    <div class="btn-row"><button class="btn btn-purple" onclick="generateAISuggestion()">🚀 Generate Improvement Plan</button></div>
   </div>
   <div id="ai-result-area"></div>
 </section>
@@ -1260,7 +1267,7 @@ function populateProcessDropdowns() {
   }).join('');
   const none = '<option value="">— select process —</option>';
   const anyP = '<option value="">All Processes</option>';
-  ['step-proc-id','metric-proc-id','proj-proc-id','gap-proc-id'].forEach(id=>{
+  ['step-proc-id','metric-proc-id','proj-proc-id','gap-proc-id','ai-proc-id'].forEach(id=>{
     const el=document.getElementById(id); if(!el)return;
     const val=el.value; el.innerHTML=none+opts; el.value=val;
   });
@@ -2015,12 +2022,14 @@ async function generateAISuggestion(){
   if(!CAN_AI.includes(currentUser.role)){alert('Manager or Admin role required.');return;}
   const area=document.getElementById('ai-result-area');
 
+  // ── Integration settings ──────────────────────────────────
   const apiKey    = localStorage.getItem('pf_openai_key')||'';
   const model     = localStorage.getItem('pf_openai_model')||'gpt-4o';
   const maxTokens = parseInt(localStorage.getItem('pf_openai_tokens')||'2000');
   const sysPrompt = (localStorage.getItem('pf_openai_system')||'').trim();
   const stylePref = (localStorage.getItem('pf_openai_style')||'').trim();
 
+  // ── Require API key ───────────────────────────────────────
   if(!apiKey){
     area.innerHTML=`<div class="ai-output" style="background:rgba(220,38,38,.06);border-color:rgba(220,38,38,.2)">
       <h3>🔑 API Key Required</h3>
@@ -2028,39 +2037,113 @@ async function generateAISuggestion(){
     </div>`;
     return;
   }
-  if(!processes.length&&!steps.length&&!metrics.length&&!gaps.length){
-    area.innerHTML=`<div class="ai-output"><h3>⚠ Insufficient Data</h3><p>Register at least a process, steps, gaps, or metrics first.</p></div>`;
+
+  // ── Require process selection ─────────────────────────────
+  const procId = document.getElementById('ai-proc-id').value;
+  if(!procId){
+    area.innerHTML=`<div class="ai-output" style="background:rgba(220,38,38,.06);border-color:rgba(220,38,38,.2)">
+      <h3>⚠ No Process Selected</h3>
+      <p>Please select a process from the <strong>"Process to Analyse"</strong> dropdown above before generating an improvement plan. The AI analysis is scoped to a single process so you get precise, actionable recommendations.</p>
+    </div>`;
     return;
   }
 
-  area.innerHTML=`<div class="ai-thinking"><div class="spinner"></div><span>Analysing all data with ${model}…</span></div>`;
+  // ── Scope data to selected process ────────────────────────
+  const proc  = processes.find(p=>String(p.id)===String(procId));
+  const pSteps   = steps.filter(s=>String(s.procId)===String(procId));
+  const pMetrics = metrics.filter(m=>String(m.procId)===String(procId));
+  const pGaps    = gaps.filter(g=>String(g.procId)===String(procId));
 
-  const pS=processes.map(p=>`[${p.procId}] ${p.name}: ${p.desc} | Type:${p.type} Pri:${p.priority} RAG:${p.rag||'N/A'}\nInput:${p.input||'N/A'}→Output:${p.output||'N/A'} Tools:${p.tools||'N/A'} KPIs:${p.kpis||'N/A'}`).join('\n\n');
-  const sS=steps.map((s,i)=>{const proc=processes.find(p=>String(p.id)===String(s.procId));const h=(stepHistory[s.id]||[]).map(x=>`[${x.ts}] ${x.text}`).join('; ');return `[${proc?.procId||'?'}] Step${i+1}:${s.name}(${s.type}) ${s.responsible?'Resp:'+s.responsible:''} Status:${s.status} SLA:${s.sla||'N/A'}\nInput:${s.input||'N/A'}→Output:${s.output||'N/A'} ${s.branchYes?'Y:'+s.branchYes:''} ${s.branchNo?'N:'+s.branchNo:''}\nHistory:${h||'none'}`}).join('\n');
-  const mS=metrics.map(m=>{const proc=processes.find(p=>String(p.id)===String(m.procId));const step=m.stepId?steps.find(s=>String(s.id)===String(m.stepId)):null;return `[${proc?.procId||'?'}]${step?'['+step.name+']':''} ${m.name}:${m.value}${m.unit}${m.target!==null?' Target:'+m.target+m.unit:''} Trend:${m.trend||'?'}`}).join('\n');
-  const gS=gaps.map((g,i)=>`Gap${i+1}:${g.title} Sev:${g.severity} Sta:${g.status}\nCurrent:${g.current}\nDesired:${g.desired||'N/A'} RootCause:${g.rootcause||'N/A'} Impact:${g.impact||'N/A'}`).join('\n\n');
-  const focus=document.getElementById('ai-focus').value, method=document.getElementById('ai-method').value, ctx=document.getElementById('ai-context').value.trim();
+  const co = proc ? companies.find(c=>String(c.id)===String(proc.companyId)) : null;
 
-  const defaultSystem='You are a world-class Business Process Improvement consultant with deep expertise in Lean, Six Sigma, BPM and operational excellence.';
-  const systemContent=[sysPrompt||defaultSystem, stylePref].filter(Boolean).join('\n\n');
-  const userContent=`PROCESSES:\n${pS||'None.'}\n\nSTEPS:\n${sS||'None.'}\n\nGAPS:\n${gS||'None.'}\n\nMETRICS:\n${mS||'None.'}\n\nFocus:${focus} Methodology:${method} Context:${ctx||'None.'}\n\nDeliver:\n## 1. CURRENT STATE ASSESSMENT\n## 2. GAP ANALYSIS SUMMARY\n## 3. TOP 5 IMPROVEMENT OPPORTUNITIES\n## 4. PROPOSED NEW PROCESS\n## 5. EXPECTED BENEFITS\n## 6. IMPLEMENTATION ROADMAP\n## 7. RISK & CHANGE MANAGEMENT\n\nBe specific and actionable.`;
+  area.innerHTML=`<div class="ai-thinking"><div class="spinner"></div><span>Analysing <strong>${proc?.name||'process'}</strong> with ${model}…</span></div>`;
 
+  // ── Build data strings (scoped) ───────────────────────────
+  const pS = proc
+    ? `[${proc.procId}] ${proc.name}${co?' — '+co.name:''}: ${proc.desc}\nType:${proc.type} Priority:${proc.priority} RAG:${proc.rag||'N/A'} Status:${proc.status}\nInput:${proc.input||'N/A'} → Output:${proc.output||'N/A'}\nTools:${proc.tools||'N/A'} KPIs:${proc.kpis||'N/A'}\nRisks:${proc.risks||'N/A'} Stakeholders:${proc.stakeholders||'N/A'}`
+    : 'None.';
+
+  const sS = pSteps.length
+    ? pSteps.map((s,i)=>{
+        const h=(stepHistory[s.id]||[]).map(x=>`[${x.ts}] ${x.text}`).join('; ');
+        return `Step${i+1}: ${s.name} (${s.type}) | Responsible:${s.responsible||'N/A'} Status:${s.status} SLA:${s.sla||'N/A'}\n  Input:${s.input||'N/A'} → Output:${s.output||'N/A'}${s.branchYes?' Y:'+s.branchYes:''}${s.branchNo?' N:'+s.branchNo:''}\n  History:${h||'none'}`;
+      }).join('\n')
+    : 'No steps registered for this process.';
+
+  const mS = pMetrics.length
+    ? pMetrics.map(m=>`${m.name}: ${m.value}${m.unit}${m.target!==null?' (Target:'+m.target+m.unit+')':''} Trend:${m.trend||'?'} ${m.notes||''}`).join('\n')
+    : 'No metrics registered for this process.';
+
+  const gS = pGaps.length
+    ? pGaps.map((g,i)=>{
+        const rcTxt = g.rootCauses?.length
+          ? g.rootCauses.map(r=>`RootCause:${r.cause}${r.consequence?' → '+r.consequence:''}`).join('; ')
+          : (g.rootcause||'N/A');
+        return `Gap${i+1}: ${g.title} | Sev:${g.severity} Status:${g.status.replace(/-/g,' ')}\n  Current:${g.current}\n  Desired:${g.desired||'N/A'}\n  ${rcTxt}\n  Impact:${g.impact||'N/A'} Action:${g.action||'N/A'}`;
+      }).join('\n\n')
+    : 'No gaps registered for this process.';
+
+  const focus  = document.getElementById('ai-focus').value;
+  const method = document.getElementById('ai-method').value;
+  const ctx    = document.getElementById('ai-context').value.trim();
+
+  // ── Build messages ────────────────────────────────────────
+  const defaultSystem = 'You are a world-class Business Process Improvement consultant with deep expertise in Lean, Six Sigma, BPM and operational excellence.';
+  const systemContent = [sysPrompt||defaultSystem, stylePref].filter(Boolean).join('\n\n');
+
+  const userContent = `Analyse the following process and deliver a targeted improvement plan.
+
+PROCESS:
+${pS}
+
+STEPS (${pSteps.length}):
+${sS}
+
+GAPS (${pGaps.length}):
+${gS}
+
+METRICS (${pMetrics.length}):
+${mS}
+
+Focus: ${focus} | Methodology: ${method} | Additional context: ${ctx||'None.'}
+
+Deliver your analysis structured exactly as:
+## 1. CURRENT STATE ASSESSMENT
+## 2. GAP & BOTTLENECK SUMMARY
+## 3. TOP 5 IMPROVEMENT OPPORTUNITIES
+## 4. REDESIGNED PROCESS PROPOSAL
+## 5. EXPECTED BENEFITS & KPI TARGETS
+## 6. IMPLEMENTATION ROADMAP
+## 7. RISKS & CHANGE MANAGEMENT
+
+Be specific to this process — avoid generic advice.`;
+
+  // ── Call OpenAI ───────────────────────────────────────────
   try{
     const r=await fetch('https://api.openai.com/v1/chat/completions',{
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':`Bearer ${apiKey}`},
-      body:JSON.stringify({model, max_tokens:maxTokens, messages:[{role:'system',content:systemContent},{role:'user',content:userContent}]})
+      body:JSON.stringify({model, max_tokens:maxTokens, messages:[
+        {role:'system', content:systemContent},
+        {role:'user',   content:userContent}
+      ]})
     });
     if(!r.ok){const ed=await r.json().catch(()=>({}));throw new Error(ed?.error?.message||`HTTP ${r.status}`);}
     const d=await r.json(), t=d.choices?.[0]?.message?.content||'No response from OpenAI.';
+    const procBadge=`<span style="font-family:var(--mono);font-size:.72rem;background:rgba(0,143,116,.1);color:var(--accent);border-radius:4px;padding:2px 8px;font-weight:700">${proc?.procId} — ${proc?.name}</span>`;
+    const modelBadge=`<span style="font-size:.68rem;background:rgba(124,58,237,.1);color:var(--accent4);border-radius:4px;padding:2px 7px;font-weight:700">${model}</span>`;
     area.innerHTML=`<div class="ai-output">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:.8rem">
-        <h3 style="margin:0">✦ AI Process Improvement Proposal</h3>
-        <span style="font-size:.68rem;background:rgba(124,58,237,.1);color:var(--accent4);border-radius:4px;padding:2px 7px;font-weight:700">${model}</span>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:1rem">
+        <h3 style="margin:0">🚀 Improvement Plan</h3>
+        ${procBadge}${modelBadge}
       </div>
+      <div style="font-size:.75rem;color:var(--text3);margin-bottom:1rem">Scoped to: ${pSteps.length} step(s) · ${pGaps.length} gap(s) · ${pMetrics.length} metric(s)</div>
       ${mdHtml(t)}
     </div>
-    <div class="btn-row"><button class="btn btn-purple" onclick="generateAISuggestion()">⟳ Regenerate</button><button class="btn btn-secondary" onclick="copyAI()">⎘ Copy</button></div>`;
+    <div class="btn-row">
+      <button class="btn btn-purple" onclick="generateAISuggestion()">⟳ Regenerate</button>
+      <button class="btn btn-secondary" onclick="copyAI()">⎘ Copy</button>
+    </div>`;
   }catch(e){
     area.innerHTML=`<div class="ai-output" style="background:rgba(220,38,38,.06);border-color:rgba(220,38,38,.2)">
       <h3>❌ OpenAI Error</h3>
