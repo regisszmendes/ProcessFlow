@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<meta charset="UTF-8">
+<title>ProcessFlow</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script> 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -3281,8 +3283,6 @@ setInterval(function() {
 // ============================================================
 // AUTO-RESTORE SESSION — MUST be last
 // ============================================================
-<script>
-
 // AUTO-RESTORE SESSION
 (function(){
   recordVisit();
@@ -3295,15 +3295,33 @@ setInterval(function() {
     }
   }
 })();
-
-// Supabase client
+// Supabase config
 const SUPABASE_URL = "https://fskbraltrjhxnvlfshqb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_LwV8tmjClKkcVQRvxtUUpg_IH8JkHLc";
-const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Safe init (DO NOT BREAK LOGIN)
+let supabaseClient = null;
+
+try {
+  if (typeof supabase !== "undefined") {
+    supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    console.log("Supabase ready");
+  } else {
+    console.warn("Supabase not loaded");
+  }
+} catch (err) {
+  console.error("Supabase init error:", err);
+}
+
 
 // SAVE FUNCTION
 async function saveProcess() {
   console.log("clicked");
+
+  if (!supabaseClient) {
+    alert("Supabase not ready");
+    return;
+  }
 
   const data = {
     proc_id: document.getElementById('proc-id').value,
@@ -3328,8 +3346,6 @@ async function saveProcess() {
     alert('Process saved!');
   }
 }
-
- 
 </script>
 </body>
 </html>
