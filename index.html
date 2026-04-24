@@ -1943,23 +1943,39 @@ async function generateAISuggestion(){
   const focus=document.getElementById('ai-focus').value,method=document.getElementById('ai-method').value,ctx=document.getElementById('ai-context').value.trim();
   const prompt=`You are a world-class Business Process Improvement consultant.\n\nPROCESSES:\n${pS||'None.'}\n\nSTEPS:\n${sS||'None.'}\n\nGAPS:\n${gS||'None.'}\n\nMETRICS:\n${mS||'None.'}\n\nFocus:${focus} Methodology:${method} Context:${ctx||'None.'}\n\nDeliver:\n## 1. CURRENT STATE ASSESSMENT\n## 2. GAP ANALYSIS SUMMARY\n## 3. TOP 5 IMPROVEMENT OPPORTUNITIES\n## 4. PROPOSED NEW PROCESS\n## 5. EXPECTED BENEFITS\n## 6. IMPLEMENTATION ROADMAP\n## 7. RISK & CHANGE MANAGEMENT\n\nBe specific and actionable.`;
   try{
-  const r = await fetch('https://api.openai.com/v1/chat/completions', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'Authorization': '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'
-  },
-  body: JSON.stringify({
-    model: 'gpt-4o',          // or 'gpt-4-turbo', 'gpt-3.5-turbo'
-    max_tokens: 2000,
-    messages: [{ role: 'user', content: prompt }]
-  })
-});
-const d = await r.json(),
-  t = d.choices?.[0]?.message?.content || 'No response.';
-    area.innerHTML=`<div class="ai-output"><h3>✦ AI Process Improvement Proposal</h3>${mdHtml(t)}</div><div class="btn-row"><button class="btn btn-purple" onclick="generateAISuggestion()">⟳ Regenerate</button><button class="btn btn-secondary" onclick="copyAI()">⎘ Copy</button></div>`;
-  }catch(e){area.innerHTML=`<div class="ai-output"><h3>⚠ Error</h3><p>${e.message}</p></div>`;}
-}
+    // NEW SAFE VERSION
+  const apiKey = localStorage.getItem('pf_openai_key');
+  if (!apiKey) {
+    area.innerHTML = `<div class="ai-output"><h3>⚠ Missing API Key</h3>
+      <p>Go to <strong>⚙ Config</strong> → enter your OpenAI key → refresh page.</p></div>`;
+    return;
+  }
+
+  try {
+    const r = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        max_tokens: 2000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    
+    if (!r.ok) throw new Error(`OpenAI error: ${r.status}`);
+    
+    const d = await r.json(),
+      t = d.choices?.[0]?.message?.content || 'No response from OpenAI.';
+    area.innerHTML = `<div class="ai-output"><h3>✦ AI Process Diagnosis</h3><div style="white-space:pre-wrap;">${t}</div></div>`;
+  } catch(e) {
+    area.innerHTML = `<div class="ai-output" style="background:rgba(220,38,38,.08);border-color:rgba(220,38,38,.3);">
+      <h3>❌ AI Error</h3>
+      <p>Check your API key in ⚙ Config or OpenAI quota.<br>
+      Error: ${e.message}</p></div>`;
+  }
 function mdHtml(t){return t.replace(/^## (.+)$/gm,'<h3 style="color:var(--accent4);font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin:1.1rem 0 .5rem">$1</h3>').replace(/^### (.+)$/gm,'<h4 style="color:var(--text);font-size:.84rem;font-weight:700;margin:.6rem 0 .3rem">$1</h4>').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/^\- (.+)$/gm,'<li>$1</li>').replace(/(<li>.*<\/li>\n?)+/g,m=>'<ul style="margin:.4rem 0 .4rem 1.1rem">'+m+'</ul>').replace(/\n\n/g,'</p><p>');}
 function copyAI(){navigator.clipboard.writeText(document.querySelector('#ai-result-area .ai-output')?.innerText||'').then(()=>alert('Copied!'));}
 
