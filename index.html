@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ProcessFlow — Process Improvement System</title>
@@ -3202,6 +3203,38 @@ setInterval(function() {
   const s=sessionStorage.getItem('pf_session');
   if(s){ const u=users.find(x=>x.id===s); if(u&&u.active){ currentUser=u; bootApp(); } }
 })();
+
+// SAVE BUTTON//
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+async function saveProcess() {
+  console.log("clicked");
+
+  const data = {
+    proc_id: document.getElementById('proc-id').value,
+    proc_name: document.getElementById('proc-name').value,
+    proc_dept: document.getElementById('proc-dept').value,
+    proc_owner: document.getElementById('proc-owner').value,
+    proc_priority: document.getElementById('proc-priority').value,
+    proc_status: document.getElementById('proc-status').value,
+    proc_start: document.getElementById('proc-start').value,
+    proc_end: document.getElementById('proc-end').value,
+    proc_desc: document.getElementById('proc-desc').value
+  };
+
+  console.log("DATA:", data);
+
+  const { error } = await supabase
+    .from('processes')
+    .insert([data]);
+
+  if (error) {
+    console.error("ERROR:", error);
+    alert('Error saving process');
+  } else {
+    alert('Process saved!');
+  }
+}
 </script>
 </body>
 </html>
