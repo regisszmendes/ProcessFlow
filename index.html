@@ -3281,11 +3281,55 @@ setInterval(function() {
 // ============================================================
 // AUTO-RESTORE SESSION — MUST be last
 // ============================================================
+<script>
+
+// AUTO-RESTORE SESSION
 (function(){
-  recordVisit(); // track every page load
-  const s=sessionStorage.getItem('pf_session');
-  if(s){ const u=users.find(x=>x.id===s); if(u&&u.active){ currentUser=u; bootApp(); } }
+  recordVisit();
+  const s = sessionStorage.getItem('pf_session');
+  if (s) {
+    const u = users.find(x => x.id === s);
+    if (u && u.active) {
+      currentUser = u;
+      bootApp();
+    }
+  }
 })();
+
+// Supabase client
+const SUPABASE_URL = "https://fskbraltrjhxnvlfshqb.supabase.co";
+const SUPABASE_KEY = "sb_publishable_LwV8tmjClKkcVQRvxtUUpg_IH8JkHLc";
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// SAVE FUNCTION
+async function saveProcess() {
+  console.log("clicked");
+
+  const data = {
+    proc_id: document.getElementById('proc-id').value,
+    proc_name: document.getElementById('proc-name').value,
+    proc_dept: document.getElementById('proc-dept').value,
+    proc_owner: document.getElementById('proc-owner').value,
+    proc_priority: document.getElementById('proc-priority').value,
+    proc_status: document.getElementById('proc-status').value,
+    proc_start: document.getElementById('proc-start').value,
+    proc_end: document.getElementById('proc-end').value,
+    proc_desc: document.getElementById('proc-desc').value
+  };
+
+  const { error } = await supabaseClient
+    .from('processes')
+    .insert([data]);
+
+  if (error) {
+    console.error("ERROR:", error);
+    alert('Error saving process');
+  } else {
+    alert('Process saved!');
+  }
+}
+
+ 
 </script>
 </body>
 </html>
