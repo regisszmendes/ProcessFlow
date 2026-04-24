@@ -759,9 +759,10 @@ tr:hover td{background:var(--surface2);}
 
   <!-- Sub-tabs -->
   <div style="display:flex;gap:4px;background:var(--surface2);border-radius:var(--radius);padding:4px;border:1px solid var(--border);width:fit-content">
-    <button class="graph-tab active" id="ctab-biz" onclick="switchConfigTab('biz',this)">🏢 Business</button>
-    <button class="graph-tab" id="ctab-users" onclick="switchConfigTab('users',this)">👥 Users</button>
-    <button class="graph-tab" id="ctab-analytics" onclick="switchConfigTab('analytics',this)">📊 Analytics</button>
+    <button class="graph-tab active" id="ctab-biz"         onclick="switchConfigTab('biz',this)">🏢 Business</button>
+    <button class="graph-tab"        id="ctab-users"       onclick="switchConfigTab('users',this)">👥 Users</button>
+    <button class="graph-tab"        id="ctab-analytics"   onclick="switchConfigTab('analytics',this)">📊 Analytics</button>
+    <button class="graph-tab"        id="ctab-integration" onclick="switchConfigTab('integration',this)">🔌 Integration</button>
   </div>
 
   <!-- ===== BUSINESS ===== -->
@@ -902,6 +903,82 @@ tr:hover td{background:var(--surface2);}
       <div style="display:flex;gap:1rem;margin-top:.6rem;font-size:.7rem;color:var(--text3)">
         <span>🌙 00:00</span><span>🌅 06:00</span><span>☀ 12:00</span><span>🌆 18:00</span><span>🌙 23:00</span>
       </div>
+    </div>
+
+  </div>
+
+  <!-- ===== INTEGRATION PANE ===== -->
+  <div id="config-pane-integration" style="display:none;flex-direction:column;gap:1.5rem">
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon" style="background:rgba(124,58,237,.1)">🔑</div>
+        <span class="card-title">OpenAI API Key</span>
+        <span style="font-size:.72rem;color:var(--text3);margin-left:auto">Powers the ✦ AI section · stored locally in your browser only</span>
+      </div>
+      <div class="form-grid">
+        <div class="form-group full">
+          <label>API Key <span style="color:var(--accent);font-weight:900">*</span></label>
+          <div style="display:flex;gap:8px">
+            <input type="password" id="int-api-key" placeholder="sk-…" style="font-family:var(--mono);font-size:.82rem;letter-spacing:.04em" autocomplete="off"/>
+            <button class="btn btn-secondary" style="padding:8px 12px;flex-shrink:0" onclick="toggleApiKeyVisibility()" id="int-key-eye" title="Show/hide key">👁</button>
+          </div>
+          <div style="font-size:.72rem;color:var(--text3);margin-top:4px">Your key is stored only in this browser's localStorage and sent exclusively to OpenAI — never to any other server.</div>
+        </div>
+        <div class="form-group">
+          <label>Model</label>
+          <select id="int-model">
+            <option value="gpt-4o">GPT-4o (recommended)</option>
+            <option value="gpt-4-turbo">GPT-4 Turbo</option>
+            <option value="gpt-4">GPT-4</option>
+            <option value="gpt-3.5-turbo">GPT-3.5 Turbo (faster / cheaper)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Max Response Tokens</label>
+          <select id="int-max-tokens">
+            <option value="1000">1 000 — Quick summary</option>
+            <option value="2000" selected>2 000 — Standard</option>
+            <option value="3000">3 000 — Detailed</option>
+            <option value="4000">4 000 — Full analysis</option>
+          </select>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-purple" onclick="saveIntegration()">💾 Save Settings</button>
+        <button class="btn btn-secondary" onclick="testApiKey()">⚡ Test Connection</button>
+        <button class="btn btn-danger" onclick="clearApiKey()">🗑 Remove Key</button>
+      </div>
+      <div id="int-err" class="login-err" style="margin-top:.8rem"></div>
+      <div id="int-ok"  class="login-ok"  style="margin-top:.8rem"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon" style="background:rgba(0,143,116,.1)">🤖</div>
+        <span class="card-title">Agent Instructions</span>
+        <span style="font-size:.72rem;color:var(--text3);margin-left:auto">Sent to the AI before your process data on every request</span>
+      </div>
+      <div class="form-grid">
+        <div class="form-group full">
+          <label>System Role / Persona</label>
+          <textarea id="int-system-prompt" rows="6" placeholder="e.g. You are a senior Lean Six Sigma Black Belt consultant specialising in healthcare process improvement. Always prioritise patient safety above cost reduction. Structure your responses using the DMAIC framework. Be concise and specific — avoid generic advice."></textarea>
+          <div style="font-size:.72rem;color:var(--text3);margin-top:4px">This becomes the <strong>system message</strong> prepended to every AI suggestion. Leave blank to use the built-in consultant persona.</div>
+        </div>
+        <div class="form-group full">
+          <label>Output Format / Style <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
+          <textarea id="int-style-prompt" rows="3" placeholder="e.g. Always respond in Portuguese. Use bullet points for action items. Limit each section to 3 key points maximum."></textarea>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="saveIntegration()">💾 Save Instructions</button>
+        <button class="btn btn-secondary" onclick="resetSystemPrompt()">↺ Reset to Default</button>
+      </div>
+    </div>
+
+    <div class="card" id="int-status-card" style="background:rgba(124,58,237,.04);border-color:rgba(124,58,237,.15)">
+      <div class="card-header"><div class="card-icon" style="background:rgba(124,58,237,.1)">📋</div><span class="card-title">Integration Status</span></div>
+      <div id="int-status-body" style="font-size:.85rem;line-height:1.8"></div>
     </div>
 
   </div>
@@ -1218,7 +1295,7 @@ function showSection(id, btn) {
   if(sec) sec.classList.add('active');
   if(btn) btn.classList.add('active');
   if(id==='diagram')  renderDiagram();
-  if(id==='config')   { renderUserTable(); renderBizTable(); renderPendingBanner(); }
+  if(id==='config')   { renderUserTable(); renderBizTable(); renderPendingBanner(); loadIntegrationFields(); }
   if(id==='graphs')   { populateIshikawaSelect(); renderRAGDashboard(); }
   if(id==='project')  { renderTasks(); renderProjectsTable(); }
   if(id==='feedback') { initFeedbackSection(); renderFeedback(); }
@@ -1227,10 +1304,12 @@ function showSection(id, btn) {
 function switchConfigTab(tab, btn) {
   document.querySelectorAll('#section-config .graph-tab').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  document.getElementById('config-pane-biz').style.display       = tab==='biz'       ? 'flex' : 'none';
-  document.getElementById('config-pane-users').style.display     = tab==='users'     ? 'flex' : 'none';
-  document.getElementById('config-pane-analytics').style.display = tab==='analytics' ? 'flex' : 'none';
-  if(tab==='analytics') renderAnalytics();
+  document.getElementById('config-pane-biz').style.display         = tab==='biz'         ? 'flex' : 'none';
+  document.getElementById('config-pane-users').style.display       = tab==='users'       ? 'flex' : 'none';
+  document.getElementById('config-pane-analytics').style.display   = tab==='analytics'   ? 'flex' : 'none';
+  document.getElementById('config-pane-integration').style.display = tab==='integration' ? 'flex' : 'none';
+  if(tab==='analytics')   renderAnalytics();
+  if(tab==='integration') { loadIntegrationFields(); renderIntegrationStatus(); }
 }
 
 // ============================================================
@@ -1934,31 +2013,60 @@ function renderMetrics(){
 async function generateAISuggestion(){
   if(!CAN_AI.includes(currentUser.role)){alert('Manager or Admin role required.');return;}
   const area=document.getElementById('ai-result-area');
-  if(!processes.length&&!steps.length&&!metrics.length&&!gaps.length){area.innerHTML=`<div class="ai-output"><h3>⚠ Insufficient Data</h3><p>Register at least a process, steps, gaps, or metrics first.</p></div>`;return;}
-  area.innerHTML=`<div class="ai-thinking"><div class="spinner"></div><span>Analysing all data…</span></div>`;
+
+  const apiKey    = localStorage.getItem('pf_openai_key')||'';
+  const model     = localStorage.getItem('pf_openai_model')||'gpt-4o';
+  const maxTokens = parseInt(localStorage.getItem('pf_openai_tokens')||'2000');
+  const sysPrompt = (localStorage.getItem('pf_openai_system')||'').trim();
+  const stylePref = (localStorage.getItem('pf_openai_style')||'').trim();
+
+  if(!apiKey){
+    area.innerHTML=`<div class="ai-output" style="background:rgba(220,38,38,.06);border-color:rgba(220,38,38,.2)">
+      <h3>🔑 API Key Required</h3>
+      <p>No OpenAI API key configured. Go to <strong>⚙ Config → 🔌 Integration</strong> and paste your key to enable AI suggestions.</p>
+    </div>`;
+    return;
+  }
+  if(!processes.length&&!steps.length&&!metrics.length&&!gaps.length){
+    area.innerHTML=`<div class="ai-output"><h3>⚠ Insufficient Data</h3><p>Register at least a process, steps, gaps, or metrics first.</p></div>`;
+    return;
+  }
+
+  area.innerHTML=`<div class="ai-thinking"><div class="spinner"></div><span>Analysing all data with ${model}…</span></div>`;
+
   const pS=processes.map(p=>`[${p.procId}] ${p.name}: ${p.desc} | Type:${p.type} Pri:${p.priority} RAG:${p.rag||'N/A'}\nInput:${p.input||'N/A'}→Output:${p.output||'N/A'} Tools:${p.tools||'N/A'} KPIs:${p.kpis||'N/A'}`).join('\n\n');
   const sS=steps.map((s,i)=>{const proc=processes.find(p=>String(p.id)===String(s.procId));const h=(stepHistory[s.id]||[]).map(x=>`[${x.ts}] ${x.text}`).join('; ');return `[${proc?.procId||'?'}] Step${i+1}:${s.name}(${s.type}) ${s.responsible?'Resp:'+s.responsible:''} Status:${s.status} SLA:${s.sla||'N/A'}\nInput:${s.input||'N/A'}→Output:${s.output||'N/A'} ${s.branchYes?'Y:'+s.branchYes:''} ${s.branchNo?'N:'+s.branchNo:''}\nHistory:${h||'none'}`}).join('\n');
   const mS=metrics.map(m=>{const proc=processes.find(p=>String(p.id)===String(m.procId));const step=m.stepId?steps.find(s=>String(s.id)===String(m.stepId)):null;return `[${proc?.procId||'?'}]${step?'['+step.name+']':''} ${m.name}:${m.value}${m.unit}${m.target!==null?' Target:'+m.target+m.unit:''} Trend:${m.trend||'?'}`}).join('\n');
   const gS=gaps.map((g,i)=>`Gap${i+1}:${g.title} Sev:${g.severity} Sta:${g.status}\nCurrent:${g.current}\nDesired:${g.desired||'N/A'} RootCause:${g.rootcause||'N/A'} Impact:${g.impact||'N/A'}`).join('\n\n');
-  const focus=document.getElementById('ai-focus').value,method=document.getElementById('ai-method').value,ctx=document.getElementById('ai-context').value.trim();
-  const prompt=`You are a world-class Business Process Improvement consultant.\n\nPROCESSES:\n${pS||'None.'}\n\nSTEPS:\n${sS||'None.'}\n\nGAPS:\n${gS||'None.'}\n\nMETRICS:\n${mS||'None.'}\n\nFocus:${focus} Methodology:${method} Context:${ctx||'None.'}\n\nDeliver:\n## 1. CURRENT STATE ASSESSMENT\n## 2. GAP ANALYSIS SUMMARY\n## 3. TOP 5 IMPROVEMENT OPPORTUNITIES\n## 4. PROPOSED NEW PROCESS\n## 5. EXPECTED BENEFITS\n## 6. IMPLEMENTATION ROADMAP\n## 7. RISK & CHANGE MANAGEMENT\n\nBe specific and actionable.`;
+  const focus=document.getElementById('ai-focus').value, method=document.getElementById('ai-method').value, ctx=document.getElementById('ai-context').value.trim();
+
+  const defaultSystem='You are a world-class Business Process Improvement consultant with deep expertise in Lean, Six Sigma, BPM and operational excellence.';
+  const systemContent=[sysPrompt||defaultSystem, stylePref].filter(Boolean).join('\n\n');
+  const userContent=`PROCESSES:\n${pS||'None.'}\n\nSTEPS:\n${sS||'None.'}\n\nGAPS:\n${gS||'None.'}\n\nMETRICS:\n${mS||'None.'}\n\nFocus:${focus} Methodology:${method} Context:${ctx||'None.'}\n\nDeliver:\n## 1. CURRENT STATE ASSESSMENT\n## 2. GAP ANALYSIS SUMMARY\n## 3. TOP 5 IMPROVEMENT OPPORTUNITIES\n## 4. PROPOSED NEW PROCESS\n## 5. EXPECTED BENEFITS\n## 6. IMPLEMENTATION ROADMAP\n## 7. RISK & CHANGE MANAGEMENT\n\nBe specific and actionable.`;
+
   try{
-  const r = await fetch('https://api.openai.com/v1/chat/completions', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'Authorization': 'Bearer YOUR_OPENAI_API_KEY'
-  },
-  body: JSON.stringify({
-    model: 'gpt-4o',          // or 'gpt-4-turbo', 'gpt-3.5-turbo'
-    max_tokens: 2000,
-    messages: [{ role: 'user', content: prompt }]
-  })
-});
-const d = await r.json(),
-  t = d.choices?.[0]?.message?.content || 'No response.';
-    area.innerHTML=`<div class="ai-output"><h3>✦ AI Process Improvement Proposal</h3>${mdHtml(t)}</div><div class="btn-row"><button class="btn btn-purple" onclick="generateAISuggestion()">⟳ Regenerate</button><button class="btn btn-secondary" onclick="copyAI()">⎘ Copy</button></div>`;
-  }catch(e){area.innerHTML=`<div class="ai-output"><h3>⚠ Error</h3><p>${e.message}</p></div>`;}
+    const r=await fetch('https://api.openai.com/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':`Bearer ${apiKey}`},
+      body:JSON.stringify({model, max_tokens:maxTokens, messages:[{role:'system',content:systemContent},{role:'user',content:userContent}]})
+    });
+    if(!r.ok){const ed=await r.json().catch(()=>({}));throw new Error(ed?.error?.message||`HTTP ${r.status}`);}
+    const d=await r.json(), t=d.choices?.[0]?.message?.content||'No response from OpenAI.';
+    area.innerHTML=`<div class="ai-output">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:.8rem">
+        <h3 style="margin:0">✦ AI Process Improvement Proposal</h3>
+        <span style="font-size:.68rem;background:rgba(124,58,237,.1);color:var(--accent4);border-radius:4px;padding:2px 7px;font-weight:700">${model}</span>
+      </div>
+      ${mdHtml(t)}
+    </div>
+    <div class="btn-row"><button class="btn btn-purple" onclick="generateAISuggestion()">⟳ Regenerate</button><button class="btn btn-secondary" onclick="copyAI()">⎘ Copy</button></div>`;
+  }catch(e){
+    area.innerHTML=`<div class="ai-output" style="background:rgba(220,38,38,.06);border-color:rgba(220,38,38,.2)">
+      <h3>❌ OpenAI Error</h3>
+      <p style="margin-bottom:.5rem">${e.message}</p>
+      <p style="font-size:.8rem;color:var(--text3)">Check your API key and credits in <strong>⚙ Config → 🔌 Integration</strong>.</p>
+    </div>`;
+  }
 }
 function mdHtml(t){return t.replace(/^## (.+)$/gm,'<h3 style="color:var(--accent4);font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin:1.1rem 0 .5rem">$1</h3>').replace(/^### (.+)$/gm,'<h4 style="color:var(--text);font-size:.84rem;font-weight:700;margin:.6rem 0 .3rem">$1</h4>').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/^\- (.+)$/gm,'<li>$1</li>').replace(/(<li>.*<\/li>\n?)+/g,m=>'<ul style="margin:.4rem 0 .4rem 1.1rem">'+m+'</ul>').replace(/\n\n/g,'</p><p>');}
 function copyAI(){navigator.clipboard.writeText(document.querySelector('#ai-result-area .ai-output')?.innerText||'').then(()=>alert('Copied!'));}
@@ -2580,6 +2688,124 @@ function renderFeedback() {
 }
 
 
+
+// ============================================================
+// INTEGRATION — OpenAI key, model, agent instructions
+// ============================================================
+const INT_KEY   = 'pf_openai_key';
+const INT_MODEL = 'pf_openai_model';
+const INT_TOK   = 'pf_openai_tokens';
+const INT_SYS   = 'pf_openai_system';
+const INT_STYLE = 'pf_openai_style';
+
+function loadIntegrationFields() {
+  const key = localStorage.getItem(INT_KEY)||'';
+  if(key) document.getElementById('int-api-key').value = key;
+  const model = localStorage.getItem(INT_MODEL)||'gpt-4o';
+  document.getElementById('int-model').value = model;
+  const tok = localStorage.getItem(INT_TOK)||'2000';
+  document.getElementById('int-max-tokens').value = tok;
+  const sys = localStorage.getItem(INT_SYS)||'';
+  document.getElementById('int-system-prompt').value = sys;
+  const style = localStorage.getItem(INT_STYLE)||'';
+  document.getElementById('int-style-prompt').value = style;
+  renderIntegrationStatus();
+}
+
+function saveIntegration() {
+  const key   = document.getElementById('int-api-key').value.trim();
+  const model = document.getElementById('int-model').value;
+  const tok   = document.getElementById('int-max-tokens').value;
+  const sys   = document.getElementById('int-system-prompt').value.trim();
+  const style = document.getElementById('int-style-prompt').value.trim();
+  const err   = document.getElementById('int-err');
+  const ok    = document.getElementById('int-ok');
+  err.style.display='none'; ok.style.display='none';
+  if(key && !key.startsWith('sk-')){
+    err.textContent='OpenAI API keys start with "sk-". Please check your key.';
+    err.style.display='block'; return;
+  }
+  if(key) localStorage.setItem(INT_KEY, key);
+  localStorage.setItem(INT_MODEL, model);
+  localStorage.setItem(INT_TOK,   tok);
+  localStorage.setItem(INT_SYS,   sys);
+  localStorage.setItem(INT_STYLE, style);
+  ok.textContent='✓ Integration settings saved successfully.';
+  ok.style.display='block';
+  renderIntegrationStatus();
+}
+
+function clearApiKey() {
+  if(!confirm('Remove the stored API key? The AI section will be disabled until a new key is added.')) return;
+  localStorage.removeItem(INT_KEY);
+  document.getElementById('int-api-key').value='';
+  document.getElementById('int-err').style.display='none';
+  document.getElementById('int-ok').style.display='none';
+  renderIntegrationStatus();
+}
+
+function resetSystemPrompt() {
+  document.getElementById('int-system-prompt').value='';
+  document.getElementById('int-style-prompt').value='';
+  localStorage.removeItem(INT_SYS);
+  localStorage.removeItem(INT_STYLE);
+  const ok=document.getElementById('int-ok');
+  ok.textContent='↺ Agent instructions reset to default.';
+  ok.style.display='block';
+}
+
+function toggleApiKeyVisibility() {
+  const inp = document.getElementById('int-api-key');
+  const btn = document.getElementById('int-key-eye');
+  if(inp.type==='password'){inp.type='text'; btn.textContent='🙈';}
+  else{inp.type='password'; btn.textContent='👁';}
+}
+
+async function testApiKey() {
+  const key = document.getElementById('int-api-key').value.trim() || localStorage.getItem(INT_KEY)||'';
+  const model = document.getElementById('int-model').value;
+  const err = document.getElementById('int-err');
+  const ok  = document.getElementById('int-ok');
+  err.style.display='none'; ok.style.display='none';
+  if(!key){ err.textContent='Enter an API key first.'; err.style.display='block'; return; }
+  ok.textContent='⏳ Testing connection…'; ok.style.display='block';
+  try {
+    const r = await fetch('https://api.openai.com/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':`Bearer ${key}`},
+      body: JSON.stringify({model, max_tokens:5, messages:[{role:'user',content:'Hi'}]})
+    });
+    if(!r.ok){const d=await r.json().catch(()=>({}));throw new Error(d?.error?.message||`HTTP ${r.status}`);}
+    ok.textContent=`✓ Connection successful! Model "${model}" is ready.`;
+    ok.style.display='block';
+  } catch(e){
+    err.textContent=`✗ Connection failed: ${e.message}`;
+    err.style.display='block';
+    ok.style.display='none';
+  }
+}
+
+function renderIntegrationStatus() {
+  const body = document.getElementById('int-status-body'); if(!body) return;
+  const key   = localStorage.getItem(INT_KEY)||'';
+  const model = localStorage.getItem(INT_MODEL)||'gpt-4o';
+  const tok   = localStorage.getItem(INT_TOK)||'2000';
+  const sys   = localStorage.getItem(INT_SYS)||'';
+  const style = localStorage.getItem(INT_STYLE)||'';
+  const masked = key ? `${key.slice(0,7)}${'•'.repeat(16)}${key.slice(-4)}` : '—';
+  const statusDot = key
+    ? '<span style="color:var(--success);font-weight:700">● Configured</span>'
+    : '<span style="color:var(--danger);font-weight:700">● Not set — AI section disabled</span>';
+  body.innerHTML=`
+    <div style="display:grid;grid-template-columns:160px 1fr;gap:.4rem .8rem;font-size:.84rem">
+      <span style="color:var(--text3)">Status</span><span>${statusDot}</span>
+      <span style="color:var(--text3)">API Key</span><span style="font-family:var(--mono);font-size:.78rem">${masked}</span>
+      <span style="color:var(--text3)">Model</span><span style="font-family:var(--mono)">${model}</span>
+      <span style="color:var(--text3)">Max Tokens</span><span style="font-family:var(--mono)">${tok}</span>
+      <span style="color:var(--text3)">System Prompt</span><span>${sys?`<span class="badge badge-green">Custom (${sys.length} chars)</span>`:'<span class="badge badge-gray">Default persona</span>'}</span>
+      <span style="color:var(--text3)">Style Prefs</span><span>${style?`<span class="badge badge-blue">Set (${style.length} chars)</span>`:'<span class="badge badge-gray">None</span>'}</span>
+    </div>`;
+}
 
 // ============================================================
 // USER MANAGEMENT
