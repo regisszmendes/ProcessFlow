@@ -752,7 +752,44 @@ tr:hover td{background:var(--surface2);}
 
 <!-- ==================== CONFIGURATION ==================== -->
 <section id="section-config" class="section">
-  <div class="section-hero"><span class="section-hero-icon">⚙</span><div><div class="section-hero-title">Configuration</div><div class="section-hero-sub">System parameters — Business registration and User management</div></div></div>
+
+  <!-- ==================== New section for API ==================== -->
+  <div class="card" id="config-pane-integration" style="display:none">
+    <div class="card-header">
+      <div class="card-icon" style="background:rgba(124,58,237,.1)">🔌</div>
+      <span class="card-title">Integration</span>
+    </div>
+
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>OpenAI API Key</label>
+        <input
+          type="password"
+          id="cfg-openai-key"
+          placeholder="Paste your OpenAI API key"
+          onchange="localStorage.setItem('pf_openai_key', this.value)"
+        />
+      </div>
+
+      <div class="form-group full">
+        <label>Agent Instructions</label>
+        <textarea
+          id="cfg-agent-instructions"
+          rows="4"
+          placeholder="Write the behavior, tone, rules, and goals for the AI agent"
+          onchange="localStorage.setItem('pf_agent_instructions', this.value)"
+        ></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-hero">
+    <span class="section-hero-icon">⚙</span>
+    <div>
+      <div class="section-hero-title">Configuration</div>
+      <div class="section-hero-sub">System parameters — Business registration and User management</div>
+    </div>
+  </div>
 
   <!-- Pending approvals alert — shown only when there are pending users -->
   <div id="pending-banner" style="display:none"></div>
@@ -763,6 +800,7 @@ tr:hover td{background:var(--surface2);}
     <button class="graph-tab" id="ctab-users" onclick="switchConfigTab('users',this)">👥 Users</button>
     <button class="graph-tab" id="ctab-analytics" onclick="switchConfigTab('analytics',this)">📊 Analytics</button>
   </div>
+</section>
 
   <!-- ===== BUSINESS ===== -->
   <div id="config-pane-biz" style="display:flex;flex-direction:column;gap:1.5rem">
