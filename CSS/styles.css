@@ -1,4 +1,3 @@
-<style>
 :root{--bg:#f5f6f8;--surface:#ffffff;--surface2:#f0f2f5;--surface3:#e8eaed;--border:#dde1e8;--border2:#c8cdd6;--accent:#008f74;--accent2:#0070d6;--accent3:#d94f00;--accent4:#7c3aed;--text:#1a1d23;--text2:#4b5563;--text3:#6b7280;--danger:#dc2626;--success:#16a34a;--warning:#d97706;--mono:'Space Mono',monospace;--sans:'Outfit',sans-serif;--radius:8px;--radius2:12px;}
 *{margin:0;padding:0;box-sizing:border-box;}
 body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;overflow-x:hidden;}
@@ -181,4 +180,3 @@ tr:hover td{background:var(--surface2);}
 @media(max-width:780px){#fb-layout{grid-template-columns:1fr!important;}}
 /* GRAPH TABS */
 @media(max-width:600px){.section{padding:1rem;}.form-grid{grid-template-columns:1fr;}nav{gap:1px;}.nav-btn{padding:5px 7px;font-size:.62rem;}#rag-charts-row{grid-template-columns:1fr!important;}}
-</style>
