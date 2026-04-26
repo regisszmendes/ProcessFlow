@@ -963,8 +963,6 @@ function fillDemo(type) {
   document.getElementById('li-email').value = type==='admin' ? 'admin@processflow.io' : 'user@processflow.io';
   document.getElementById('li-pass').value  = 'demo123';
 }
-  // Remove any old disabled/pending record with this email
-  if (existing) users = users.filter(u => u.email!==email);
   // Create account as active manager — can insert, edit and delete
   const newUser = {
     id:      'u_'+Date.now(),
