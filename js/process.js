@@ -1,5 +1,5 @@
 // SAVE FUNCTION
-async function saveProcess() {
+window.saveProcess = async function() {
   console.log("clicked");
 
   if (!window.supabaseClient) {
