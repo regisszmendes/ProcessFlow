@@ -2685,7 +2685,6 @@ function adminAddUser(){
   if(!name||!email||!pass){err.textContent='All fields required.';err.style.display='block';return;}
   if(pass.length<6){err.textContent='Password min 6 chars.';err.style.display='block';return;}
   const existing=users.find(u=>u.email===email);
-  if(existing && existing.active){err.textContent='This email already belongs to an active account.';err.style.display='block';return;}
   // Remove any disabled account with the same email before creating the new one
   if(existing) users=users.filter(u=>u.email!==email);
   users.push({id:'u_'+Date.now(),name,email,password:pass,role,companyId,active:true,created:new Date().toLocaleDateString()});
