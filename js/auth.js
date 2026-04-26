@@ -7,7 +7,7 @@ window.doLogin = function() {
   const u = users.find(x => x.email===email && x.password===pass);
   if (!u)       { err.textContent='Invalid email or password.'; err.style.display='block'; return; }
   if (!u.active){ err.textContent='Your account has been disabled. Contact an administrator.'; err.style.display='block'; return; }
-  currentUser = u; sessionStorage.setItem('pf_session', u.id); bootApp();
+  currentUser = u; sessionStorage.setItem('pf_session', u.id); bootApp();}
 }
 window.doRegister = function() {
   const name  = document.getElementById('reg-name').value.trim();
@@ -26,6 +26,7 @@ window.doRegister = function() {
   if (existing && existing.active){
     err.textContent='This email is already registered. Please sign in.';
     err.style.display='block'; return;
+ }
 }
 window.doLogout = function() {
   currentUser=null; sessionStorage.removeItem('pf_session');
