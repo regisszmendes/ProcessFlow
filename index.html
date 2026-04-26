@@ -981,7 +981,7 @@ function fillDemo(type) {
   sessionStorage.setItem('pf_session', newUser.id);
   bootApp();
 }
-function bootApp() {
+window.bootApp = function() {
   document.getElementById('login-screen').style.display='none';
   document.getElementById('main-header').style.display='flex';
   document.getElementById('main-app').classList.add('visible');
