@@ -981,12 +981,6 @@ function fillDemo(type) {
   sessionStorage.setItem('pf_session', newUser.id);
   bootApp();
 }
-function doLogout() {
-  currentUser=null; sessionStorage.removeItem('pf_session');
-  document.getElementById('login-screen').style.display='flex';
-  document.getElementById('main-header').style.display='none';
-  document.getElementById('main-app').classList.remove('visible');
-}
 function bootApp() {
   document.getElementById('login-screen').style.display='none';
   document.getElementById('main-header').style.display='flex';
