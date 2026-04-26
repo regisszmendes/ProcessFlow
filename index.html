@@ -963,20 +963,6 @@ function fillDemo(type) {
   document.getElementById('li-email').value = type==='admin' ? 'admin@processflow.io' : 'user@processflow.io';
   document.getElementById('li-pass').value  = 'demo123';
 }
-  // Create account as active manager — can insert, edit and delete
-  const newUser = {
-    id:      'u_'+Date.now(),
-    name, email, password: pass,
-    role:    'manager',
-    active:  true,
-    pending: false,
-    created: new Date().toLocaleDateString()
-  };
-  users.push(newUser);
-  saveUsers();
-  // Auto-login immediately
-  currentUser = newUser;
-  sessionStorage.setItem('pf_session', newUser.id);
   //bootApp();
 window.bootApp = function() {
   document.getElementById('login-screen').style.display='none';
