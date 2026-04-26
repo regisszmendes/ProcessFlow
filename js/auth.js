@@ -27,6 +27,21 @@ window.doRegister = function() {
     err.textContent='This email is already registered. Please sign in.';
     err.style.display='block'; return;
  }
+users.push({
+  id: Date.now().toString(),
+  name,
+  email,
+  password: pass,
+  active: true,
+  role: 'manager',
+  pending: false,
+  created: new Date().toLocaleDateString()
+});
+
+localStorage.setItem('pf_users', JSON.stringify(users));
+
+ok.textContent = 'Account created successfully!';
+ok.style.display = 'block';
 }
 window.doLogout = function() {
   currentUser=null; sessionStorage.removeItem('pf_session');
