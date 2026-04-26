@@ -1,4 +1,4 @@
-function doLogin() {
+window.doLogin = function() {
   const email = document.getElementById('li-email').value.trim().toLowerCase();
   const pass  = document.getElementById('li-pass').value;
   const err   = document.getElementById('login-err');
