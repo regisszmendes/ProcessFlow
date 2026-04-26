@@ -27,3 +27,9 @@ window.doRegister = function() {
     err.textContent='This email is already registered. Please sign in.';
     err.style.display='block'; return;
   }
+window.doLogout = function() {
+  currentUser=null; sessionStorage.removeItem('pf_session');
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('main-header').style.display='none';
+  document.getElementById('main-app').classList.remove('visible');
+}
