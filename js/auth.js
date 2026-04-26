@@ -32,16 +32,19 @@ users.push({
   name,
   email,
   password: pass,
-  active: true,
   role: 'manager',
+  active: true,
   pending: false,
   created: new Date().toLocaleDateString()
 });
 
 localStorage.setItem('pf_users', JSON.stringify(users));
 
-ok.textContent = 'Account created successfully!';
-ok.style.display = 'block';
+// ✅ auto login (same behavior as before)
+currentUser = users[users.length - 1];
+sessionStorage.setItem('pf_session', currentUser.id);
+
+bootApp();
 }
 window.doLogout = function() {
   currentUser=null; sessionStorage.removeItem('pf_session');
