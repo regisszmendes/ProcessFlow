@@ -7,7 +7,7 @@ window.doLogin = function() {
   const u = users.find(x => x.email===email && x.password===pass);
   if (!u)       { err.textContent='Invalid email or password.'; err.style.display='block'; return; }
   if (!u.active){ err.textContent='Your account has been disabled. Contact an administrator.'; err.style.display='block'; return; }
-  currentUser = u; sessionStorage.setItem('pf_session', u.id); bootApp();}
+  currentUser = u; sessionStorage.setItem('pf_session', u.id); bootApp();
 }
 window.doRegister = function() {
   const name  = document.getElementById('reg-name').value.trim();
