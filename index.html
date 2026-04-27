@@ -3014,24 +3014,6 @@ window.addEventListener('storage', function(e) {
     renderPendingBanner();
   }
 });
-
-// Polling fallback: same-tab registrations don't fire 'storage' events,
-// so poll every 4 seconds to catch them too.
-setInterval(function() {
-  if (!currentUser || !CAN_ADMIN.includes(currentUser.role)) return;
-  const freshUsers = JSON.parse(localStorage.getItem('pf_users') || '[]');
-  const pendingCount = freshUsers.filter(u => u.pending).length;
-  const currentCount = users.filter(u => u.pending).length;
-  if (pendingCount !== currentCount) {
-    syncUsers();
-    refreshConfigNavBadge();
-    renderPendingBanner();
-    if (document.getElementById('section-config')?.classList.contains('active')) {
-      renderUserTable();
-    }
-  }
-}, 4000);
-</script>
 <script src="./js/config.js"></script>
 <script src="./js/auth.js"></script>
 <script src="./js/process.js"></script>
