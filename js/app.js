@@ -1,6 +1,7 @@
 let currentUser = null;
-let window.CAN_EDIT = ['editor', 'manager', 'admin'];
-let window.CAN_ADMIN = ['admin'];
+let currentUser = null;
+window.CAN_EDIT = ['editor', 'manager', 'admin'];        //
+window.CAN_ADMIN = ['admin'];                             //
 // =========================
 // VISIT LOGGER
 // =========================
