@@ -2917,18 +2917,6 @@ function renderBizTable() {
 // ============================================================
 const AN_KEY = 'pf_visit_log';
 
-function recordVisit() {
-  const now   = new Date();
-  const today = now.toLocaleDateString();
-  const ts    = now.toLocaleString();
-  const hour  = now.getHours();
-  let log = JSON.parse(localStorage.getItem(AN_KEY) || '[]');
-  log.push({ ts, today, hour });
-  // Keep last 5000 entries to avoid unbounded growth
-  if(log.length > 5000) log = log.slice(-5000);
-  localStorage.setItem(AN_KEY, JSON.stringify(log));
-}
-
 function clearVisitLog() {
   if(!confirm('Clear all visit analytics data? This cannot be undone.')) return;
   localStorage.removeItem(AN_KEY);
