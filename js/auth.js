@@ -72,6 +72,7 @@ window.doLogin = async function () {
 // =========================
 // REGISTER
 // =========================
+let isSubmitting = false;
 window.doRegister = async function () {
   const nameInput = document.getElementById('reg-name');
   const emailInput = document.getElementById('reg-email');
