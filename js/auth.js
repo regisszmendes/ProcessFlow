@@ -258,3 +258,25 @@ window.addEventListener('DOMContentLoaded', async () => {
     console.error('Unexpected session restore error:', e);
   }
 });
+//Login temporary
+async function seedAdmin() {
+  const { data, error } = await supabase.auth.signUp({
+    email: "admin@admin.com",
+    password: "123456"
+  });
+
+  if (error) {
+    console.log("Admin may already exist");
+    return;
+  }
+
+  await supabase.from("users").insert([
+    {
+      id: data.user.id,
+      email: "admin@admin.com",
+      role: "admin"
+    }
+  ]);
+
+  console.log("Admin created");
+}
