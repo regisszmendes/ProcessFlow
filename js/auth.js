@@ -1,35 +1,92 @@
-window.doLogin = function() {
+window.doLogin = async function() {
   const email = document.getElementById('li-email').value.trim().toLowerCase();
   const pass  = document.getElementById('li-pass').value;
   const err   = document.getElementById('login-err');
+
   err.style.display = 'none';
-  users = JSON.parse(localStorage.getItem('pf_users') || '[]');
-  const u = users.find(x => x.email===email && x.password===pass);
-  if (!u)       { err.textContent='Invalid email or password.'; err.style.display='block'; return; }
-  if (!u.active){ err.textContent='Your account has been disabled. Contact an administrator.'; err.style.display='block'; return; }
-  currentUser = u; sessionStorage.setItem('pf_session', u.id); bootApp();
-}
-window.doRegister = function() {
+
+  const { data: users, error } = await window.supabaseClient
+    .from('users')
+    .select('*')
+    .eq('email', email)
+    .eq('password', pass);
+
+  if (error) {
+    console.error(error);
+    err.textContent = 'Error logging in';
+    err.style.display = 'block';
+    return;
+  }
+
+  const u = users[0];
+
+  if (!u) {
+    err.textContent = 'Invalid email or password.';
+    err.style.display = 'block';
+    return;
+  }
+
+  if (!u.active) {
+    err.textContent = 'Your account has been disabled.';
+    err.style.display = 'block';
+    return;
+  }
+
+  currentUser = u;
+  sessionStorage.setItem('pf_session', u.id);
+
+  bootApp();
+};
+window.doRegister = async function() {
   const name  = document.getElementById('reg-name').value.trim();
   const email = document.getElementById('reg-email').value.trim().toLowerCase();
   const pass  = document.getElementById('reg-pass').value;
   const pass2 = document.getElementById('reg-pass2').value;
   const err   = document.getElementById('reg-err');
   const ok    = document.getElementById('reg-ok');
-  err.style.display='none'; ok.style.display='none';
-  if (!name||!email||!pass){ err.textContent='All fields required.'; err.style.display='block'; return; }
-  if (pass.length<6)       { err.textContent='Password must be at least 6 characters.'; err.style.display='block'; return; }
-  if (pass!==pass2)        { err.textContent='Passwords do not match.'; err.style.display='block'; return; }
-  // Re-read from storage to get the freshest list before duplicate check
-  users = JSON.parse(localStorage.getItem('pf_users') || '[]');
-  const existing = users.find(u => u.email===email);
-  if (existing && existing.active){
-    err.textContent='This email is already registered. Please sign in.';
-    err.style.display='block'; return;
- }
-const { error } = await window.supabaseClient
-  .from('users')
-  .insert([{
+
+  err.style.display = 'none';
+  ok.style.display = 'none';
+
+  if (!name || !email || !pass) {
+    err.textContent = 'All fields required.';
+    err.style.display = 'block';
+    return;
+  }
+
+  if (pass.length < 6) {
+    err.textContent = 'Password must be at least 6 characters.';
+    err.style.display = 'block';
+    return;
+  }
+
+  if (pass !== pass2) {
+    err.textContent = 'Passwords do not match.';
+    err.style.display = 'block';
+    return;
+  }
+
+  // 🔍 Check if user already exists in Supabase
+  const { data: existingUsers, error: checkError } = await window.supabaseClient
+    .from('users')
+    .select('*')
+    .eq('email', email);
+
+  if (checkError) {
+    console.error(checkError);
+    err.textContent = 'Error checking user';
+    err.style.display = 'block';
+    return;
+  }
+
+  if (existingUsers.length > 0) {
+    err.textContent = 'This email is already registered.';
+    err.style.display = 'block';
+    return;
+  }
+
+  // 🆕 Create user
+  const newUser = {
     id: Date.now().toString(),
     name,
     email,
@@ -38,20 +95,22 @@ const { error } = await window.supabaseClient
     active: true,
     pending: false,
     created: new Date().toLocaleDateString()
-  }]);
+  };
 
-if (error) {
-  console.error(error);
-  err.textContent = 'Error creating user';
-  err.style.display = 'block';
-  return;
-}
+  const { error } = await window.supabaseClient
+    .from('users')
+    .insert([newUser]);
 
-localStorage.setItem('pf_users', JSON.stringify(users));
+  if (error) {
+    console.error(error);
+    err.textContent = 'Error creating user';
+    err.style.display = 'block';
+    return;
+  }
 
-// ✅ auto login (same behavior as before)
-currentUser = users[users.length - 1];
-sessionStorage.setItem('pf_session', currentUser.id);
+  // ✅ Auto login
+  currentUser = newUser;
+  sessionStorage.setItem('pf_session', newUser.id);
 
 bootApp();
 }
