@@ -4,11 +4,11 @@
 function showError(el, message) {
   el.textContent = message;
   el.style.display = 'block';
-}
+}//
 
 function clearMessages(...elements) {
   elements.forEach(el => el.style.display = 'none');
-}
+}//
 // =========================
 // LOGIN
 // =========================
