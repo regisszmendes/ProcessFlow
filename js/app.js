@@ -36,14 +36,24 @@ window.addEventListener('DOMContentLoaded', async function () {
     bootApp();
   }
 });
-setInterval(function() {
+setInterval(async function() {
   if (!currentUser || !CAN_ADMIN.includes(currentUser.role)) return;
 
-  const freshUsers = JSON.parse(localStorage.getItem('pf_users') || '[]');
-  const pendingCount = freshUsers.filter(u => u.pending).length;
-  const currentCount = users.filter(u => u.pending).length;
+  const { data: users, error } = await window.supabaseClient
+    .from('users')
+    .select('*');
 
-  if (pendingCount !== currentCount) {
+  if (error) {
+    console.error(error);
+    return;
+  }
+
+  const pendingCount = users.filter(u => u.pending).length;
+
+  // You’ll need a stored previous count
+  if (window._lastPendingCount !== pendingCount) {
+    window._lastPendingCount = pendingCount;
+
     syncUsers();
     refreshConfigNavBadge();
     renderPendingBanner();
