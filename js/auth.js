@@ -140,3 +140,13 @@ window.doLogout = function() {
   document.getElementById('reg-err').style.display = 'none';
   document.getElementById('reg-ok').style.display = 'none';
 };
+window.switchLoginTab = function(tab, btn) {
+  document.querySelectorAll('.login-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  document.getElementById('tab-login').style.display =
+    tab === 'login' ? 'block' : 'none';
+
+  document.getElementById('tab-register').style.display =
+    tab === 'register' ? 'block' : 'none';
+};
