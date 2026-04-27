@@ -1,53 +1,66 @@
-window.doLogin = async function() {
+// =========================
+// LOGIN
+// =========================
+window.doLogin = async function () {
   const email = document.getElementById('li-email').value.trim().toLowerCase();
-  const pass  = document.getElementById('li-pass').value;
-  const err   = document.getElementById('login-err');
+  const pass = document.getElementById('li-pass').value;
+  const err = document.getElementById('login-err');
 
   err.style.display = 'none';
 
-  const { data: users, error } = await window.supabaseClient
-    .from('users')
-    .select('*')
-    .eq('email', email)
-    .eq('password', pass);
+  const { data, error } = await supabaseClient.auth.signInWithPassword({
+    email,
+    password: pass
+  });
 
   if (error) {
     console.error(error);
-    err.textContent = 'Error logging in';
-    err.style.display = 'block';
-    return;
-  }
-
-  if (!users || users.length === 0) {
     err.textContent = 'Invalid email or password.';
     err.style.display = 'block';
     return;
   }
 
-  const u = users[0];
+  // Fetch user profile from DB
+  const { data: userProfile, error: profileError } = await supabaseClient
+    .from('users')
+    .select('*')
+    .eq('id', data.user.id)
+    .single();
 
-  if (!u.active) {
+  if (profileError || !userProfile) {
+    err.textContent = 'User profile not found.';
+    err.style.display = 'block';
+    return;
+  }
+
+  if (!userProfile.active) {
     err.textContent = 'Your account has been disabled.';
     err.style.display = 'block';
     return;
   }
 
-  currentUser = u;
-  sessionStorage.setItem('pf_session', u.id);
+  currentUser = userProfile;
 
   bootApp();
 };
-window.doRegister = async function() {
-  const name  = document.getElementById('reg-name').value.trim();
+
+
+// =========================
+// REGISTER
+// =========================
+window.doRegister = async function () {
+  const name = document.getElementById('reg-name').value.trim();
   const email = document.getElementById('reg-email').value.trim().toLowerCase();
-  const pass  = document.getElementById('reg-pass').value;
+  const pass = document.getElementById('reg-pass').value;
   const pass2 = document.getElementById('reg-pass2').value;
-  const err   = document.getElementById('reg-err');
-  const ok    = document.getElementById('reg-ok');
+
+  const err = document.getElementById('reg-err');
+  const ok = document.getElementById('reg-ok');
 
   err.style.display = 'none';
   ok.style.display = 'none';
 
+  // Validation
   if (!name || !email || !pass) {
     err.textContent = 'All fields required.';
     err.style.display = 'block';
@@ -66,67 +79,65 @@ window.doRegister = async function() {
     return;
   }
 
-  // 🔍 Check if user already exists in Supabase
-  const { data: existingUsers, error: checkError } = await window.supabaseClient
-    .from('users')
-    .select('*')
-    .eq('email', email);
+  // Create Auth user
+  const { data, error: signUpError } = await supabaseClient.auth.signUp({
+    email,
+    password: pass
+  });
 
-  if (checkError) {
-    console.error(checkError);
-    err.textContent = 'Error checking user';
+  if (signUpError) {
+    console.error(signUpError);
+    err.textContent = signUpError.message;
     err.style.display = 'block';
     return;
   }
 
-  if (existingUsers.length > 0) {
-    err.textContent = 'This email is already registered.';
-    err.style.display = 'block';
-    return;
-  }
-
-  // 🆕 Create user
+  // Create profile (NO PASSWORD HERE)
   const newUser = {
-    id: Date.now().toString(),
+    id: data.user.id,
     name,
     email,
-    password: pass,
     role: 'manager',
     active: true,
-    pending: false,
-    created: new Date().toLocaleDateString()
+    created: new Date().toISOString()
   };
 
-  const { error } = await window.supabaseClient
+  const { error: insertError } = await supabaseClient
     .from('users')
     .insert([newUser]);
 
-  if (error) {
-    console.error(error);
-    err.textContent = 'Error creating user';
+  if (insertError) {
+    console.error(insertError);
+    err.textContent = 'Error creating user profile.';
     err.style.display = 'block';
     return;
   }
 
-  // ✅ Auto login
   currentUser = newUser;
-  sessionStorage.setItem('pf_session', newUser.id);
 
-bootApp();
-}
-window.doLogout = function() {
-  // 1. Clear session
+  ok.textContent = 'Account created successfully!';
+  ok.style.display = 'block';
+
+  bootApp();
+};
+
+
+// =========================
+// LOGOUT
+// =========================
+window.doLogout = async function () {
+  await supabaseClient.auth.signOut();
+
   currentUser = null;
-  sessionStorage.removeItem('pf_session');
 
-  // 2. Hide app
+  // Hide app
   document.getElementById('main-app').classList.remove('visible');
   document.getElementById('main-header').style.display = 'none';
 
-  // 3. Show login screen
+  // Show login
   document.getElementById('login-screen').style.display = 'flex';
 
-  // 4. Reset forms (THIS is what you're missing)
+  // Reset forms
   document.getElementById('li-email').value = '';
   document.getElementById('li-pass').value = '';
 
@@ -135,12 +146,17 @@ window.doLogout = function() {
   document.getElementById('reg-pass').value = '';
   document.getElementById('reg-pass2').value = '';
 
-  // 5. Hide messages
+  // Hide messages
   document.getElementById('login-err').style.display = 'none';
   document.getElementById('reg-err').style.display = 'none';
   document.getElementById('reg-ok').style.display = 'none';
 };
-window.switchLoginTab = function(tab, btn) {
+
+
+// =========================
+// TAB SWITCH
+// =========================
+window.switchLoginTab = function (tab, btn) {
   document.querySelectorAll('.login-tab')
     .forEach(b => b.classList.remove('active'));
 
@@ -152,3 +168,24 @@ window.switchLoginTab = function(tab, btn) {
   document.getElementById('tab-register').style.display =
     tab === 'register' ? 'block' : 'none';
 };
+
+
+// =========================
+// SESSION AUTO-RESTORE
+// =========================
+window.addEventListener('DOMContentLoaded', async () => {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+
+  if (session) {
+    const { data: userProfile } = await supabaseClient
+      .from('users')
+      .select('*')
+      .eq('id', session.user.id)
+      .single();
+
+    if (userProfile && userProfile.active) {
+      currentUser = userProfile;
+      bootApp();
+    }
+  }
+});
