@@ -259,23 +259,46 @@ window.addEventListener('DOMContentLoaded', async () => {
 });
 //Login temporary
 async function seedAdmin() {
+  const email = "admin@admin.com";
+  const password = "123456";
+
+  // Try to sign up
   const { data, error } = await supabase.auth.signUp({
-    email: "admin@admin.com",
-    password: "123456"
+    email,
+    password
   });
 
+  let userId;
+
   if (error) {
-    console.log("Admin may already exist");
-    return;
+    console.log("User may already exist, trying to fetch...");
+
+    // 👉 LOGIN instead to get the user
+    const { data: loginData, error: loginError } =
+      await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+    if (loginError) {
+      console.error("Cannot login:", loginError.message);
+      return;
+    }
+
+    userId = loginData.user.id;
+
+  } else {
+    userId = data.user.id;
   }
 
+  // 👉 Now ALWAYS insert into users table
   await supabase.from("users").insert([
     {
-      id: data.user.id,
-      email: "admin@admin.com",
+      id: userId,
+      email: email,
       role: "admin"
     }
   ]);
 
-  console.log("Admin created");
+  console.log("Admin ensured");
 }
