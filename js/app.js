@@ -19,7 +19,7 @@ window.addEventListener('DOMContentLoaded', async function () {
 
   if (!sessionId) return;
 
-  const { data: users, error } = await window.supabaseClient
+  const { data: dbusers, error } = await window.supabaseClient
     .from('users')
     .select('*')
     .eq('id', sessionId);
@@ -29,7 +29,7 @@ window.addEventListener('DOMContentLoaded', async function () {
     return;
   }
 
-  const u = users[0];
+  const u = dbusers[0];
 
   if (u && u.active) {
     currentUser = u;
@@ -37,7 +37,7 @@ window.addEventListener('DOMContentLoaded', async function () {
   }
 });
 setInterval(async function() {
-  if (!currentUser || !CAN_ADMIN.includes(currentUser.role)) return;
+  if (!currentUser || !window.CAN_ADMIN?.includes(currentUser.role)) return;
 
   const { data: users, error } = await window.supabaseClient
     .from('users')
@@ -48,9 +48,17 @@ setInterval(async function() {
     return;
   }
 
+  if (!users) return;
+
   const pendingCount = users.filter(u => u.pending).length;
 
-  // You’ll need a stored previous count
+  // First run setup
+  if (window._lastPendingCount === undefined) {
+    window._lastPendingCount = pendingCount;
+    return;
+  }
+
+  // ✅ ONLY run when it changes
   if (window._lastPendingCount !== pendingCount) {
     window._lastPendingCount = pendingCount;
 
@@ -62,4 +70,5 @@ setInterval(async function() {
       renderUserTable();
     }
   }
+
 }, 4000);
