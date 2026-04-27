@@ -246,3 +246,20 @@ window.addEventListener('DOMContentLoaded', async () => {
     console.error('Unexpected session restore error:', e);
   }
 });
+// ALWAYS create profile
+const newUser = {
+  id: data.user.id,
+  name,
+  email,
+  role: 'manager',
+  active: true,
+  created: new Date().toISOString()
+};
+
+await supabaseClient.from('users').upsert([newUser]);
+
+// THEN handle session
+if (!data.session) {
+  ok.textContent = 'Check your email...';
+  return;
+}
