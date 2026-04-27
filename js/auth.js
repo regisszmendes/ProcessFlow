@@ -138,7 +138,6 @@ window.doRegister = async function () {
       email,
       role: 'manager',
       active: true,
-      created: new Date().toISOString()
     };
 
     const { error: insertError } = await supabaseClient
