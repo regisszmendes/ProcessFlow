@@ -27,16 +27,25 @@ window.doRegister = function() {
     err.textContent='This email is already registered. Please sign in.';
     err.style.display='block'; return;
  }
-users.push({
-  id: Date.now().toString(),
-  name,
-  email,
-  password: pass,
-  role: 'manager',
-  active: true,
-  pending: false,
-  created: new Date().toLocaleDateString()
-});
+const { error } = await window.supabaseClient
+  .from('users')
+  .insert([{
+    id: Date.now().toString(),
+    name,
+    email,
+    password: pass,
+    role: 'manager',
+    active: true,
+    pending: false,
+    created: new Date().toLocaleDateString()
+  }]);
+
+if (error) {
+  console.error(error);
+  err.textContent = 'Error creating user';
+  err.style.display = 'block';
+  return;
+}
 
 localStorage.setItem('pf_users', JSON.stringify(users));
 
