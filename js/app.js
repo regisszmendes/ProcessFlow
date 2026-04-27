@@ -1,5 +1,4 @@
 let currentUser = null;
-let currentUser = null;
 window.CAN_EDIT = ['editor', 'manager', 'admin'];        
 window.CAN_ADMIN = ['admin'];                             
 // =========================
