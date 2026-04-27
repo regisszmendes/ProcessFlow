@@ -9,8 +9,6 @@ function showError(el, message) {
 function clearMessages(...elements) {
   elements.forEach(el => el.style.display = 'none');
 }
-
-
 // =========================
 // LOGIN
 // =========================
