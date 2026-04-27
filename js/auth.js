@@ -1,47 +1,73 @@
 // =========================
+// HELPERS
+// =========================
+function showError(el, message) {
+  el.textContent = message;
+  el.style.display = 'block';
+}
+
+function clearMessages(...elements) {
+  elements.forEach(el => el.style.display = 'none');
+}
+
+
+// =========================
 // LOGIN
 // =========================
 window.doLogin = async function () {
-  const email = document.getElementById('li-email').value.trim().toLowerCase();
-  const pass = document.getElementById('li-pass').value;
+  const emailInput = document.getElementById('li-email');
+  const passInput = document.getElementById('li-pass');
   const err = document.getElementById('login-err');
+  const btn = document.getElementById('login-btn');
 
-  err.style.display = 'none';
+  const email = emailInput.value.trim().toLowerCase();
+  const pass = passInput.value;
 
-  const { data, error } = await supabaseClient.auth.signInWithPassword({
-    email,
-    password: pass
-  });
+  clearMessages(err);
 
-  if (error) {
-    console.error(error);
-    err.textContent = 'Invalid email or password.';
-    err.style.display = 'block';
-    return;
+  // loading state
+  btn.disabled = true;
+  btn.textContent = 'Logging in...';
+
+  try {
+    const { data, error } = await supabaseClient.auth.signInWithPassword({
+      email,
+      password: pass
+    });
+
+    if (error || !data?.user) {
+      console.error(error);
+      showError(err, 'Invalid email or password.');
+      return;
+    }
+
+    const { data: userProfile, error: profileError } = await supabaseClient
+      .from('users')
+      .select('*')
+      .eq('id', data.user.id)
+      .single();
+
+    if (profileError || !userProfile) {
+      console.error(profileError);
+      showError(err, 'User profile not found.');
+      return;
+    }
+
+    if (!userProfile.active) {
+      showError(err, 'Your account has been disabled.');
+      return;
+    }
+
+    currentUser = userProfile;
+    bootApp();
+
+  } catch (e) {
+    console.error(e);
+    showError(err, 'Unexpected error during login.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Login';
   }
-
-  // Fetch user profile from DB
-  const { data: userProfile, error: profileError } = await supabaseClient
-    .from('users')
-    .select('*')
-    .eq('id', data.user.id)
-    .single();
-
-  if (profileError || !userProfile) {
-    err.textContent = 'User profile not found.';
-    err.style.display = 'block';
-    return;
-  }
-
-  if (!userProfile.active) {
-    err.textContent = 'Your account has been disabled.';
-    err.style.display = 'block';
-    return;
-  }
-
-  currentUser = userProfile;
-
-  bootApp();
 };
 
 
@@ -49,76 +75,94 @@ window.doLogin = async function () {
 // REGISTER
 // =========================
 window.doRegister = async function () {
-  const name = document.getElementById('reg-name').value.trim();
-  const email = document.getElementById('reg-email').value.trim().toLowerCase();
-  const pass = document.getElementById('reg-pass').value;
-  const pass2 = document.getElementById('reg-pass2').value;
+  const nameInput = document.getElementById('reg-name');
+  const emailInput = document.getElementById('reg-email');
+  const passInput = document.getElementById('reg-pass');
+  const pass2Input = document.getElementById('reg-pass2');
 
   const err = document.getElementById('reg-err');
   const ok = document.getElementById('reg-ok');
+  const btn = document.getElementById('register-btn');
 
-  err.style.display = 'none';
-  ok.style.display = 'none';
+  const name = nameInput.value.trim();
+  const email = emailInput.value.trim().toLowerCase();
+  const pass = passInput.value;
+  const pass2 = pass2Input.value;
 
-  // Validation
+  clearMessages(err, ok);
+
+  // validation
   if (!name || !email || !pass) {
-    err.textContent = 'All fields required.';
-    err.style.display = 'block';
+    showError(err, 'All fields required.');
     return;
   }
 
   if (pass.length < 6) {
-    err.textContent = 'Password must be at least 6 characters.';
-    err.style.display = 'block';
+    showError(err, 'Password must be at least 6 characters.');
     return;
   }
 
   if (pass !== pass2) {
-    err.textContent = 'Passwords do not match.';
-    err.style.display = 'block';
+    showError(err, 'Passwords do not match.');
     return;
   }
 
-  // Create Auth user
-  const { data, error: signUpError } = await supabaseClient.auth.signUp({
-    email,
-    password: pass
-  });
+  // loading state
+  btn.disabled = true;
+  btn.textContent = 'Creating account...';
 
-  if (signUpError) {
-    console.error(signUpError);
-    err.textContent = signUpError.message;
-    err.style.display = 'block';
-    return;
+  try {
+    const { data, error: signUpError } = await supabaseClient.auth.signUp({
+      email,
+      password: pass
+    });
+
+    if (signUpError || !data?.user) {
+      console.error(signUpError);
+      showError(err, signUpError?.message || 'Error creating account.');
+      return;
+    }
+
+    // email confirmation flow
+    if (!data.session) {
+      ok.textContent = 'Check your email to confirm your account.';
+      ok.style.display = 'block';
+      return;
+    }
+
+    const newUser = {
+      id: data.user.id,
+      name,
+      email: email.toLowerCase(),
+      role: 'manager',
+      active: true,
+      created: new Date().toISOString()
+    };
+
+    const { error: insertError } = await supabaseClient
+      .from('users')
+      .upsert([newUser]);
+
+    if (insertError) {
+      console.error(insertError);
+      showError(err, 'Error creating user profile.');
+      return;
+    }
+
+    currentUser = newUser;
+
+    ok.textContent = 'Account created successfully!';
+    ok.style.display = 'block';
+
+    bootApp();
+
+  } catch (e) {
+    console.error(e);
+    showError(err, 'Unexpected error during registration.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Register';
   }
-
-  // Create profile (NO PASSWORD HERE)
-  const newUser = {
-    id: data.user.id,
-    name,
-    email,
-    role: 'manager',
-    active: true,
-    created: new Date().toISOString()
-  };
-
-  const { error: insertError } = await supabaseClient
-    .from('users')
-    .insert([newUser]);
-
-  if (insertError) {
-    console.error(insertError);
-    err.textContent = 'Error creating user profile.';
-    err.style.display = 'block';
-    return;
-  }
-
-  currentUser = newUser;
-
-  ok.textContent = 'Account created successfully!';
-  ok.style.display = 'block';
-
-  bootApp();
 };
 
 
@@ -126,18 +170,19 @@ window.doRegister = async function () {
 // LOGOUT
 // =========================
 window.doLogout = async function () {
-  await supabaseClient.auth.signOut();
+  try {
+    await supabaseClient.auth.signOut();
+  } catch (e) {
+    console.error('Logout error:', e);
+  }
 
   currentUser = null;
 
-  // Hide app
   document.getElementById('main-app').classList.remove('visible');
   document.getElementById('main-header').style.display = 'none';
-
-  // Show login
   document.getElementById('login-screen').style.display = 'flex';
 
-  // Reset forms
+  // reset forms
   document.getElementById('li-email').value = '';
   document.getElementById('li-pass').value = '';
 
@@ -146,10 +191,12 @@ window.doLogout = async function () {
   document.getElementById('reg-pass').value = '';
   document.getElementById('reg-pass2').value = '';
 
-  // Hide messages
-  document.getElementById('login-err').style.display = 'none';
-  document.getElementById('reg-err').style.display = 'none';
-  document.getElementById('reg-ok').style.display = 'none';
+  // hide messages
+  clearMessages(
+    document.getElementById('login-err'),
+    document.getElementById('reg-err'),
+    document.getElementById('reg-ok')
+  );
 };
 
 
@@ -174,18 +221,28 @@ window.switchLoginTab = function (tab, btn) {
 // SESSION AUTO-RESTORE
 // =========================
 window.addEventListener('DOMContentLoaded', async () => {
-  const { data: { session } } = await supabaseClient.auth.getSession();
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
 
-  if (session) {
-    const { data: userProfile } = await supabaseClient
+    if (!session?.user) return;
+
+    const { data: userProfile, error } = await supabaseClient
       .from('users')
       .select('*')
       .eq('id', session.user.id)
       .single();
 
-    if (userProfile && userProfile.active) {
+    if (error) {
+      console.error('Session restore error:', error);
+      return;
+    }
+
+    if (userProfile?.active) {
       currentUser = userProfile;
       bootApp();
     }
+
+  } catch (e) {
+    console.error('Unexpected session restore error:', e);
   }
 });
