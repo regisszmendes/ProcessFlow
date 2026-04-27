@@ -18,13 +18,13 @@ window.doLogin = async function() {
     return;
   }
 
-  const u = users[0];
-
-  if (!u) {
+  if (!users || users.length === 0) {
     err.textContent = 'Invalid email or password.';
     err.style.display = 'block';
     return;
   }
+
+  const u = users[0];
 
   if (!u.active) {
     err.textContent = 'Your account has been disabled.';
@@ -141,7 +141,9 @@ window.doLogout = function() {
   document.getElementById('reg-ok').style.display = 'none';
 };
 window.switchLoginTab = function(tab, btn) {
-  document.querySelectorAll('.login-tab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.login-tab')
+    .forEach(b => b.classList.remove('active'));
+
   btn.classList.add('active');
 
   document.getElementById('tab-login').style.display =
