@@ -120,7 +120,24 @@ window.doRegister = async function () {
       showError(err, signUpError?.message || 'Error creating account.');
       return;
     }
+  // ALWAYS create profile
+const newUser = {
+  id: data.user.id,
+  name,
+  email,
+   role: 'manager',
+  active: true,
+  created: new Date().toISOString()
+};
 
+ await supabaseClient.from('users').upsert([newUser]);
+
+// THEN handle session
+if (!data.session) {
+  ok.textContent = 'Check your email...';
+  return;
+}
+    
     // email confirmation flow
     if (!data.session) {
       ok.textContent = 'Check your email to confirm your account.';
@@ -244,20 +261,3 @@ window.addEventListener('DOMContentLoaded', async () => {
     console.error('Unexpected session restore error:', e);
   }
 });
-// ALWAYS create profile
-const newUser = {
-  id: data.user.id,
-  name,
-  email,
-  role: 'manager',
-  active: true,
-  created: new Date().toISOString()
-};
-
-await supabaseClient.from('users').upsert([newUser]);
-
-// THEN handle session
-if (!data.session) {
-  ok.textContent = 'Check your email...';
-  return;
-}
