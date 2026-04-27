@@ -28,7 +28,7 @@ window.doLogin = async function () {
   btn.textContent = 'Logging in...';
 
   try {
-    const { data, error } = await supabaseClient.auth.signInWithPassword({
+    const { data, error } = await window.supabaseClient.auth.signInWithPassword({
       email,
       password: pass
     });
@@ -117,7 +117,7 @@ window.doRegister = async function () {
     // =========================
     // CREATE AUTH USER
     // =========================
-    const { data, error: signUpError } = await supabaseClient.auth.signUp({
+    const { data, error: signUpError } = await window.supabaseClient.auth.signUp({
       email,
       password: pass
     });
@@ -182,7 +182,7 @@ window.doRegister = async function () {
 // =========================
 window.doLogout = async function () {
   try {
-    await supabaseClient.auth.signOut();
+    await window.supabaseClient.auth.signOut();
   } catch (e) {
     console.error('Logout error:', e);
   }
@@ -233,7 +233,7 @@ window.switchLoginTab = function (tab, btn) {
 // =========================
 window.addEventListener('DOMContentLoaded', async () => {
   try {
-    const { data: { session } } = await supabaseClient.auth.getSession();
+    const { data: { session } } = await window.supabaseClient.auth.getSession();
 
     if (!session?.user) return;
 
