@@ -36,3 +36,20 @@ window.addEventListener('DOMContentLoaded', async function () {
     bootApp();
   }
 });
+setInterval(function() {
+  if (!currentUser || !CAN_ADMIN.includes(currentUser.role)) return;
+
+  const freshUsers = JSON.parse(localStorage.getItem('pf_users') || '[]');
+  const pendingCount = freshUsers.filter(u => u.pending).length;
+  const currentCount = users.filter(u => u.pending).length;
+
+  if (pendingCount !== currentCount) {
+    syncUsers();
+    refreshConfigNavBadge();
+    renderPendingBanner();
+
+    if (document.getElementById('section-config')?.classList.contains('active')) {
+      renderUserTable();
+    }
+  }
+}, 4000);
