@@ -13,26 +13,25 @@ function recordVisit() {
 window.addEventListener('DOMContentLoaded', async function () {
   console.log("App initialized");
 
-  recordVisit(); // ✅ now it runs
+  recordVisit();
 
-  const sessionId = sessionStorage.getItem('pf_session');
+  const { data: { session } } = await window.supabaseClient.auth.getSession();
 
-  if (!sessionId) return;
+  if (!session?.user) return;
 
-  const { data: dbusers, error } = await window.supabaseClient
+  const { data: userProfile, error } = await window.supabaseClient
     .from('users')
     .select('*')
-    .eq('id', sessionId);
+    .eq('id', session.user.id)
+    .single();
 
   if (error) {
     console.error(error);
     return;
   }
 
-  const u = dbusers[0];
-
-  if (u && u.active) {
-    currentUser = u;
+  if (userProfile?.active) {
+    currentUser = userProfile;
     bootApp();
   }
 });
