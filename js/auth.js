@@ -89,7 +89,9 @@ window.doRegister = async function () {
 
   clearMessages(err, ok);
 
-  // validation
+  // =========================
+  // VALIDATION
+  // =========================
   if (!name || !email || !pass) {
     showError(err, 'All fields required.');
     return;
@@ -105,11 +107,16 @@ window.doRegister = async function () {
     return;
   }
 
-  // loading state
+  // =========================
+  // LOADING STATE
+  // =========================
   btn.disabled = true;
   btn.textContent = 'Creating account...';
 
   try {
+    // =========================
+    // CREATE AUTH USER
+    // =========================
     const { data, error: signUpError } = await supabaseClient.auth.signUp({
       email,
       password: pass
@@ -120,35 +127,14 @@ window.doRegister = async function () {
       showError(err, signUpError?.message || 'Error creating account.');
       return;
     }
-  // ALWAYS create profile
-const newUser = {
-  id: data.user.id,
-  name,
-  email,
-   role: 'manager',
-  active: true,
-  created: new Date().toISOString()
-};
 
- await supabaseClient.from('users').upsert([newUser]);
-
-// THEN handle session
-if (!data.session) {
-  ok.textContent = 'Check your email...';
-  return;
-}
-    
-    // email confirmation flow
-    if (!data.session) {
-      ok.textContent = 'Check your email to confirm your account.';
-      ok.style.display = 'block';
-      return;
-    }
-
+    // =========================
+    // CREATE USER PROFILE (DB)
+    // =========================
     const newUser = {
       id: data.user.id,
       name,
-      email: email.toLowerCase(),
+      email,
       role: 'manager',
       active: true,
       created: new Date().toISOString()
@@ -164,6 +150,18 @@ if (!data.session) {
       return;
     }
 
+    // =========================
+    // EMAIL CONFIRMATION FLOW
+    // =========================
+    if (!data.session) {
+      ok.textContent = 'Check your email to confirm your account.';
+      ok.style.display = 'block';
+      return;
+    }
+
+    // =========================
+    // AUTO LOGIN
+    // =========================
     currentUser = newUser;
 
     ok.textContent = 'Account created successfully!';
@@ -179,8 +177,6 @@ if (!data.session) {
     btn.textContent = 'Register';
   }
 };
-
-
 // =========================
 // LOGOUT
 // =========================
