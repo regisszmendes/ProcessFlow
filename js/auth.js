@@ -1,5 +1,7 @@
-// Make currentUser accessible globally
-window.currentUser = null;
+// =========================
+// GLOBAL CURRENT USER
+// =========================
+let currentUser = null;
 // =========================
 // HELPERS
 // =========================
