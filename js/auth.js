@@ -58,7 +58,7 @@ window.doLogin = async function () {
       return;
     }
 
-    currentUser = userProfile;
+    window.currentUser = userProfile;
     bootApp();
 
   } catch (e) {
@@ -164,7 +164,7 @@ window.doRegister = async function () {
     // =========================
     // AUTO LOGIN
     // =========================
-    currentUser = newUser;
+    window.currentUser = newUser;
 
     ok.textContent = 'Account created successfully!';
     ok.style.display = 'block';
@@ -189,7 +189,7 @@ window.doLogout = async function () {
     console.error('Logout error:', e);
   }
 
-  currentUser = null;
+  window.currentUser = null;
 
   document.getElementById('main-app').classList.remove('visible');
   document.getElementById('main-header').style.display = 'none';
@@ -251,7 +251,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
 
     if (userProfile?.active) {
-      currentUser = userProfile;
+      window.currentUser = userProfile;
       bootApp();
     }
 
