@@ -1,0 +1,1429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ProcessFlow — Process Improvement System</title>
+  <!-- ✅ CSS -->
+  <link rel="stylesheet" href="./CSS/styles.css">
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Outfit:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo"><div class="login-logo-dot"></div>ProcessFlow</div>
+    <div class="login-title">Welcome back</div>
+    <div class="login-sub">Sign in to your workspace</div>
+    <div class="login-tabs">
+      <button class="login-tab active" onclick="switchLoginTab('login',this)">Sign In</button>
+      <button class="login-tab" onclick="switchLoginTab('register',this)">Register</button>
+    </div>
+    <div id="tab-login" class="login-form">
+      <div id="login-err" class="login-err"></div>
+      <div class="form-group"><label>Email</label><input type="email" id="li-email" placeholder="you@company.com"/></div>
+      <div class="form-group"><label>Password</label><input type="password" id="li-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/></div>
+      <button id="login-btn" class="btn btn-primary" style="width:100%;justify-content:center" onclick="doLogin()">→ Sign In</button>
+    </div>
+    <div id="tab-register" class="login-form" style="display:none">
+      <div id="reg-err" class="login-err"></div>
+      <div id="reg-ok" class="login-ok"></div>
+      <div class="form-group"><label>Full Name</label><input type="text" id="reg-name" placeholder="Your name"/></div>
+      <div class="form-group"><label>Email</label><input type="email" id="reg-email" placeholder="you@company.com"/></div>
+      <div class="form-group"><label>Password</label><input type="password" id="reg-pass" placeholder="Min. 6 characters"/></div>
+      <div class="form-group"><label>Confirm Password</label><input type="password" id="reg-pass2" placeholder="Repeat password" onkeydown="if(event.key==='Enter')doRegister()"/></div>
+      <button id="register-btn" class="btn btn-blue" style="width:100%;justify-content:center" onclick="doRegister()">✦ Create Account</button>
+      <div class="demo-hint" style="margin-top:.6rem;line-height:1.6">Your account will be created immediately and you can sign in right away.</div>
+    </div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header id="main-header" style="display:none">
+  <div class="logo"><div class="logo-dot"></div>ProcessFlow</div>
+  <nav>
+    <button class="nav-btn active" onclick="showSection('register',this)">⚙ Register</button>
+    <button class="nav-btn" onclick="showSection('steps',this)">📋 Steps</button>
+    <button class="nav-btn" onclick="showSection('diagram',this)">🗺 Diagram</button>
+    <button class="nav-btn" onclick="showSection('gaps',this)">⚠ Gaps</button>
+    <button class="nav-btn" onclick="showSection('metrics',this)">📊 Metrics</button>
+    <button class="nav-btn" onclick="showSection('ai',this)">🚀 Improve</button>
+    <button class="nav-btn" onclick="showSection('graphs',this)">📈 Graphs</button>
+    <button class="nav-btn" onclick="showSection('project',this)">🗂 Project</button>
+    <button class="nav-btn" onclick="showSection('change',this)">🔄 Change</button>
+    <button class="nav-btn" onclick="showSection('feedback',this)">💬 Feedback</button>
+    <button class="nav-btn" id="nav-config" style="display:none;color:var(--accent4)" onclick="showSection('config',this)">⚙ Config</button>
+  </nav>
+  <div class="header-user">
+    <div class="user-avatar" id="hdr-avatar"></div>
+    <div style="line-height:1.3"><div class="user-name" id="hdr-name"></div><span class="user-role-badge" id="hdr-role"></span></div>
+    <button class="btn btn-secondary" style="padding:6px 11px;font-size:.7rem" onclick="doLogout()">↩ Logout</button>
+  </div>
+</header>
+
+<div id="main-app">
+
+<!-- ==================== REGISTER ==================== -->
+<section id="section-register" class="section active">
+  <div class="section-hero"><span class="section-hero-icon">⚙</span><div><div class="section-hero-title">Process Registration</div><div class="section-hero-sub">Define and register your process with a unique ID</div></div></div>
+  <div class="card">
+    <div class="card-header"><div class="card-icon" style="background:rgba(0,212,170,.1)">🏷</div><span class="card-title">Basic Information</span></div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Company <span style="color:var(--accent);font-weight:900">*</span></label>
+        <select id="proc-company-id" onchange="generateProcId()">
+          <option value="">— select company —</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Process ID <span style="color:var(--accent);font-weight:900">*</span></label>
+        <div style="display:flex;gap:6px">
+          <input type="text" id="proc-id" placeholder="e.g. ACME-PRC-001" style="font-family:var(--mono);font-size:.82rem"/>
+          <button class="btn btn-secondary" style="padding:8px 12px;flex-shrink:0" onclick="generateProcId()" title="Auto-generate ID">⚡</button>
+        </div>
+      </div>
+      <div class="form-group"><label>Process Name *</label><input type="text" id="proc-name" placeholder="e.g. Customer Onboarding"/></div>
+      <div class="form-group"><label>Department</label><input type="text" id="proc-dept" placeholder="e.g. Sales, Operations"/></div>
+      <div class="form-group"><label>Process Owner</label><input type="text" id="proc-owner" placeholder="Name or role"/></div>
+      <div class="form-group"><label>Version</label><input type="text" id="proc-version" placeholder="e.g. 1.0"/></div>
+      <div class="form-group"><label>Status</label><select id="proc-status"><option value="draft">Draft</option><option value="active">Active</option><option value="under-review">Under Review</option><option value="deprecated">Deprecated</option></select></div>
+      <div class="form-group"><label>Start Date</label><input type="date" id="proc-start"/></div>
+      <div class="form-group"><label>Target End Date</label><input type="date" id="proc-end"/></div>
+      <div class="form-group full"><label>Process Description *</label><textarea id="proc-desc" rows="3" placeholder="Describe the purpose and scope…"></textarea></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><div class="card-icon" style="background:rgba(0,136,255,.1)">🎯</div><span class="card-title">Parameters & Scope</span></div>
+    <div class="form-grid">
+      <div class="form-group"><label>Priority</label><select id="proc-priority"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option><option value="critical">Critical</option></select></div>
+      <div class="form-group"><label>Process Type</label><select id="proc-type"><option value="operational">Operational</option><option value="administrative">Administrative</option><option value="strategic">Strategic</option><option value="support">Support</option><option value="compliance">Compliance</option></select></div>
+      <div class="form-group"><label>Expected Duration</label><input type="text" id="proc-duration" placeholder="e.g. 2 hours, 3 days"/></div>
+      <div class="form-group"><label>Frequency</label><select id="proc-frequency"><option value="">Select…</option><option value="on-demand">On Demand</option><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option><option value="quarterly">Quarterly</option><option value="annually">Annually</option></select></div>
+      <div class="form-group full"><label>Input (trigger)</label><input type="text" id="proc-input" placeholder="e.g. Customer request…"/></div>
+      <div class="form-group full"><label>Output (result)</label><input type="text" id="proc-output" placeholder="e.g. Report, approval…"/></div>
+      <div class="form-group full"><label>Stakeholders</label><input type="text" id="proc-stakeholders" placeholder="e.g. Sales team, IT, Finance…"/></div>
+      <div class="form-group full"><label>Tools & Systems</label><input type="text" id="proc-tools" placeholder="e.g. Salesforce, SAP, Excel…"/></div>
+      <div class="form-group full"><label>KPIs / Success Criteria</label><textarea id="proc-kpis" rows="2" placeholder="e.g. Processing time < 4h…"></textarea></div>
+      <div class="form-group full"><label>Risks & Pain Points</label><textarea id="proc-risks" rows="2" placeholder="e.g. Manual handoffs, data silos…"></textarea></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><div class="card-icon" style="background:rgba(34,197,94,.1)">🚦</div><span class="card-title">RAG Status</span><span style="font-size:.72rem;color:var(--text3);margin-left:auto">Red · Amber · Green health indicator</span></div>
+    <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1.2rem">
+      <div class="rag-option" id="rag-green" onclick="selectRAG('green')"><div class="rag-circle" style="background:#22c55e">G</div><div class="rag-label">Green</div><div class="rag-sub">On track</div></div>
+      <div class="rag-option" id="rag-amber" onclick="selectRAG('amber')"><div class="rag-circle" style="background:#f59e0b">A</div><div class="rag-label">Amber</div><div class="rag-sub">At risk</div></div>
+      <div class="rag-option" id="rag-red"   onclick="selectRAG('red')"  ><div class="rag-circle" style="background:#ef4444">R</div><div class="rag-label">Red</div><div class="rag-sub">Off track</div></div>
+    </div>
+    <div class="form-grid">
+      <div class="form-group full"><label>RAG Justification</label><textarea id="proc-rag-notes" rows="2" placeholder="Explain the current health status…"></textarea></div>
+      <div class="form-group"><label>Last Reviewed</label><input type="date" id="proc-rag-date"/></div>
+      <div class="form-group"><label>Reviewed By</label><input type="text" id="proc-rag-by" placeholder="Name or role"/></div>
+    </div>
+  </div>
+  <div class="btn-row"><button class="btn btn-primary" onclick="saveProcess()">✓ Save Process</button><button class="btn btn-secondary" onclick="clearProcessForm()">↺ Clear</button></div>
+  <div class="card" id="process-table-card" style="display:none">
+    <div class="card-header"><div class="card-icon" style="background:rgba(168,85,247,.1)">📄</div><span class="card-title">Registered Processes</span></div>
+    <div style="overflow-x:auto"><table><thead><tr><th>Company</th><th>Process ID</th><th>Name</th><th>Dept</th><th>Owner</th><th>Priority</th><th>Status</th><th>RAG</th><th></th></tr></thead><tbody id="process-table-body"></tbody></table></div>
+  </div>
+</section>
+
+<!-- ==================== STEPS ==================== -->
+<section id="section-steps" class="section">
+  <div class="section-hero"><span class="section-hero-icon">📋</span><div><div class="section-hero-title">Process Steps</div><div class="section-hero-sub">Add steps linked to a specific registered process</div></div></div>
+  <div class="card">
+    <div class="card-header"><div class="card-icon" style="background:rgba(0,212,170,.1)">➕</div><span class="card-title">Add New Step</span></div>
+    <div class="form-grid">
+      <div class="form-group"><label>Linked Process *</label><select id="step-proc-id" onchange="refreshPrevStepDropdown()"><option value="">— select process —</option></select></div>
+      <div class="form-group"><label>Step Name *</label><input type="text" id="step-name" placeholder="e.g. Validate Document"/></div>
+      <div class="form-group"><label>Responsible</label><input type="text" id="step-responsible" placeholder="Name or role"/></div>
+      <div class="form-group"><label>Step Type</label><select id="step-type" onchange="toggleDecisionFields()"><option value="task">Task</option><option value="decision">Decision</option><option value="approval">Approval</option><option value="automated">Automated</option><option value="review">Review</option><option value="notification">Notification</option></select></div>
+      <div class="form-group"><label>System / Tool</label><input type="text" id="step-system" placeholder="e.g. ERP, email, manual"/></div>
+      <div class="form-group"><label>SLA / Target Duration</label><input type="text" id="step-sla" placeholder="e.g. 30 min, 2 hours"/></div>
+      <div class="form-group"><label>Status</label><select id="step-status"><option value="not-started">Not Started</option><option value="in-progress">In Progress</option><option value="completed">Completed</option><option value="blocked">Blocked</option><option value="skipped">Skipped</option></select></div>
+      <div class="form-group" style="align-self:end">
+        <label>Flow Signals</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:2px">
+          <label class="signal-toggle"><input type="checkbox" id="step-is-start" onchange="onSignalChange('start')"/><span class="signal-btn signal-start">▶ Start</span></label>
+          <label class="signal-toggle"><input type="checkbox" id="step-is-end"   onchange="onSignalChange('end')"/><span class="signal-btn signal-end">■ End</span></label>
+        </div>
+      </div>
+      <div class="form-group" id="prev-step-group">
+        <label>Previous Step <span style="color:var(--danger);font-size:.8rem">*</span> <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(required if not Start)</span></label>
+        <select id="step-prev-id"><option value="">— none / first step —</option></select>
+      </div>
+      <div class="form-group full" id="branch-fields" style="display:none">
+        <label>Decision Branches</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.7rem;margin-top:4px">
+          <div class="form-group"><label style="color:var(--success)">✓ Yes / True branch</label><input type="text" id="step-branch-yes" placeholder="e.g. Approve & continue"/></div>
+          <div class="form-group"><label style="color:var(--danger)">✗ No / False branch</label><input type="text" id="step-branch-no"  placeholder="e.g. Reject & notify"/></div>
+        </div>
+      </div>
+      <div class="form-group full"><label>Step Description</label><textarea id="step-desc" rows="2" placeholder="What happens in this step…"></textarea></div>
+      <div class="form-group full"><label>Input / Trigger</label><input type="text" id="step-input" placeholder="What is needed to start?"/></div>
+      <div class="form-group full"><label>Output / Result</label><input type="text" id="step-output" placeholder="What is produced?"/></div>
+    </div>
+    <div class="btn-row"><button class="btn btn-primary" onclick="addStep()">➕ Add Step</button><button class="btn btn-secondary" onclick="clearStepForm()">↺ Clear</button></div>
+  </div>
+  <div style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:center">
+    <label style="font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text3)">Filter by Process:</label>
+    <select id="step-filter-proc" onchange="renderSteps()" style="max-width:240px;padding:7px 10px;font-size:.82rem"><option value="">All Processes</option></select>
+  </div>
+  <div id="steps-summary-bar" style="display:none"><div class="summary-bar" id="summary-bar-inner"></div></div>
+  <div id="steps-list"><div class="empty-state"><div class="es-icon">📋</div><div class="es-text">No steps added yet.</div></div></div>
+</section>
+
+<!-- ==================== DIAGRAM ==================== -->
+<section id="section-diagram" class="section">
+  <div class="section-hero"><span class="section-hero-icon">🗺</span><div><div class="section-hero-title">Process Diagram</div><div class="section-hero-sub">Visual flow generated from your steps</div></div></div>
+  <div style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:center">
+    <label style="font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text3)">Process:</label>
+    <select id="diagram-filter-proc" style="max-width:260px;padding:7px 10px;font-size:.82rem"><option value="">All Steps</option></select>
+    <button class="btn btn-primary" onclick="renderDiagram()">⟳ Refresh</button>
+    <button class="btn btn-secondary" onclick="exportDiagram()">↓ Export SVG</button>
+  </div>
+  <div id="diagram-canvas"><div class="empty-state"><div class="es-icon">🗺</div><div class="es-text">Add steps then click Refresh.</div></div></div>
+  <div class="card" id="diagram-legend" style="display:none">
+    <div class="card-header"><div class="card-icon" style="background:rgba(0,212,170,.1)">ℹ</div><span class="card-title">Legend</span></div>
+    <div style="display:flex;gap:1.5rem;flex-wrap:wrap;font-size:.77rem">
+      <span style="display:flex;align-items:center;gap:6px"><span style="width:13px;height:13px;background:rgba(34,197,94,.3);border:2px solid var(--success);border-radius:4px;display:inline-block"></span>Start/End</span>
+      <span style="display:flex;align-items:center;gap:6px"><span style="width:13px;height:13px;background:var(--surface3);border:2px solid var(--border2);border-radius:4px;display:inline-block"></span>Task</span>
+      <span style="display:flex;align-items:center;gap:6px"><span style="width:13px;height:13px;background:rgba(245,158,11,.2);border:2px solid var(--warning);border-radius:4px;display:inline-block"></span>Decision</span>
+      <span style="display:flex;align-items:center;gap:6px"><span style="width:13px;height:13px;background:rgba(0,136,255,.15);border:2px solid var(--accent2);border-radius:4px;display:inline-block"></span>Approval</span>
+      <span style="display:flex;align-items:center;gap:6px"><span style="width:13px;height:13px;background:rgba(168,85,247,.15);border:2px solid var(--accent4);border-radius:4px;display:inline-block"></span>Automated</span>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== GAPS ==================== -->
+<section id="section-gaps" class="section">
+  <div class="section-hero"><span class="section-hero-icon">⚠</span><div><div class="section-hero-title">Gap Analysis</div><div class="section-hero-sub">Register and track process gaps and improvement opportunities</div></div></div>
+  <div class="card">
+    <div class="card-header"><div class="card-icon" style="background:rgba(255,107,53,.1)">➕</div><span class="card-title">Register Gap</span></div>
+    <div class="form-grid">
+      <div class="form-group"><label>Gap Title *</label><input type="text" id="gap-title" placeholder="e.g. Missing SLA definition"/></div>
+      <div class="form-group"><label>Category</label><select id="gap-cat"><option value="process">Process Design</option><option value="people">People / Skills</option><option value="technology">Technology / Tools</option><option value="compliance">Compliance / Policy</option><option value="data">Data / Information</option><option value="communication">Communication</option><option value="performance">Performance / KPI</option><option value="other">Other</option></select></div>
+      <div class="form-group"><label>Severity</label><select id="gap-severity"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option><option value="critical">Critical</option></select></div>
+      <div class="form-group"><label>Status</label><select id="gap-status"><option value="open">Open</option><option value="in-analysis">In Analysis</option><option value="action-planned">Action Planned</option><option value="in-progress">In Progress</option><option value="resolved">Resolved</option><option value="accepted">Accepted Risk</option></select></div>
+      <div class="form-group"><label>Linked Process</label><select id="gap-proc-id" onchange="refreshGapStepDropdown()"><option value="">— select process —</option></select></div>
+      <div class="form-group"><label>Linked Step <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label><select id="gap-step-id"><option value="">— none —</option></select></div>
+      <div class="form-group"><label>Responsible</label><input type="text" id="gap-owner" placeholder="Name or team"/></div>
+      <div class="form-group"><label>Identified Date</label><input type="date" id="gap-date"/></div>
+      <div class="form-group"><label>Target Resolution</label><input type="date" id="gap-target"/></div>
+      <div class="form-group full"><label>Current State *</label><textarea id="gap-current" rows="2" placeholder="Describe the current situation…"></textarea></div>
+      <div class="form-group full"><label>Desired State</label><textarea id="gap-desired" rows="2" placeholder="Describe the ideal situation…"></textarea></div>
+      <!-- Multi root cause/consequence -->
+      <div class="form-group full">
+        <label>Root Causes &amp; Consequences</label>
+        <div id="rc-list" style="display:flex;flex-direction:column;gap:.6rem;margin-top:.4rem"></div>
+        <button type="button" class="btn btn-secondary" style="margin-top:.6rem;padding:6px 14px;font-size:.75rem" onclick="addRCRow()">+ Add Root Cause</button>
+      </div>
+      <div class="form-group full"><label>Impact / Business Consequences</label><textarea id="gap-impact" rows="2" placeholder="Overall business impact if not addressed…"></textarea></div>
+      <div class="form-group full"><label>Proposed Action</label><textarea id="gap-action" rows="2" placeholder="What actions are proposed?"></textarea></div>
+    </div>
+    <div class="btn-row"><button class="btn btn-orange" onclick="addGap()">⚠ Register Gap</button><button class="btn btn-secondary" onclick="clearGapForm()">↺ Clear</button></div>
+  </div>
+  <div id="gaps-summary-bar" style="display:none"><div class="summary-bar" id="gaps-summary-inner"></div></div>
+  <div id="gaps-list"><div class="empty-state"><div class="es-icon">⚠</div><div class="es-text">No gaps registered yet.</div></div></div>
+  <div class="card" id="gaps-table-card" style="display:none">
+    <div class="card-header"><div class="card-icon" style="background:rgba(255,107,53,.1)">📋</div><span class="card-title">Gaps Summary Table</span></div>
+    <div style="overflow-x:auto"><table><thead><tr><th>#</th><th>Title</th><th>Process</th><th>Step</th><th>Category</th><th>Severity</th><th>Status</th><th>Causes</th><th>Responsible</th><th>Target</th><th></th></tr></thead><tbody id="gaps-table-body"></tbody></table></div>
+  </div>
+</section>
+
+<!-- ==================== METRICS ==================== -->
+<section id="section-metrics" class="section">
+  <div class="section-hero"><span class="section-hero-icon">📊</span><div><div class="section-hero-title">Current Metrics</div><div class="section-hero-sub">Performance data linked to processes and steps</div></div></div>
+  <div class="card">
+    <div class="card-header"><div class="card-icon" style="background:rgba(0,136,255,.1)">📥</div><span class="card-title">Add Metric</span></div>
+    <div class="form-grid">
+      <div class="form-group"><label>Linked Process *</label><select id="metric-proc-id"><option value="">— select process —</option></select></div>
+      <div class="form-group"><label>Linked Step <span style="color:var(--text3)">(optional)</span></label><select id="metric-step-id"><option value="">— none / process-level —</option></select></div>
+      <div class="form-group"><label>Metric Name *</label><input type="text" id="metric-name" placeholder="e.g. Average Processing Time"/></div>
+      <div class="form-group"><label>Category</label><select id="metric-cat"><option value="time">Time</option><option value="quality">Quality</option><option value="cost">Cost</option><option value="volume">Volume</option><option value="satisfaction">Satisfaction</option><option value="efficiency">Efficiency</option><option value="compliance">Compliance</option><option value="other">Other</option></select></div>
+      <div class="form-group"><label>Current Value *</label><input type="number" id="metric-val" placeholder="e.g. 45" step="any"/></div>
+      <div class="form-group"><label>Unit</label><input type="text" id="metric-unit" placeholder="e.g. min, %, $"/></div>
+      <div class="form-group"><label>Target Value</label><input type="number" id="metric-target" placeholder="e.g. 20" step="any"/></div>
+      <div class="form-group"><label>Trend</label><select id="metric-trend"><option value="">Unknown</option><option value="improving">Improving ↑</option><option value="stable">Stable →</option><option value="worsening">Worsening ↓</option></select></div>
+      <div class="form-group full"><label>Notes</label><textarea id="metric-notes" rows="2" placeholder="Context, measurement method…"></textarea></div>
+    </div>
+    <div class="btn-row"><button class="btn btn-primary" onclick="addMetric()">➕ Add Metric</button><button class="btn btn-secondary" onclick="clearMetricForm()">↺ Clear</button></div>
+  </div>
+  <div style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:center">
+    <label style="font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text3)">Filter:</label>
+    <select id="metric-filter-proc" onchange="renderMetrics()" style="max-width:220px;padding:7px 10px;font-size:.82rem"><option value="">All Processes</option></select>
+  </div>
+  <div class="metrics-grid" id="metrics-grid"><div class="empty-state" style="grid-column:1/-1"><div class="es-icon">📊</div><div class="es-text">No metrics yet.</div></div></div>
+  <div class="card" id="metrics-table-card" style="display:none">
+    <div class="card-header"><div class="card-icon" style="background:rgba(255,107,53,.1)">📋</div><span class="card-title">All Metrics</span></div>
+    <div style="overflow-x:auto"><table><thead><tr><th>Metric</th><th>Process</th><th>Step</th><th>Category</th><th>Current</th><th>Target</th><th>Gap</th><th>Trend</th><th></th></tr></thead><tbody id="metrics-table-body"></tbody></table></div>
+  </div>
+</section>
+
+<!-- ==================== AI / IMPROVE ==================== -->
+<section id="section-ai" class="section">
+  <div class="section-hero"><span class="section-hero-icon">🚀</span><div><div class="section-hero-title">Improve</div><div class="section-hero-sub">AI analyses the selected process and proposes targeted improvements</div></div></div>
+  <div class="card">
+    <div class="card-header"><div class="card-icon" style="background:rgba(168,85,247,.1)">⚙</div><span class="card-title">Analysis Options</span></div>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Process to Analyse <span style="color:var(--danger);font-weight:900">*</span></label>
+        <select id="ai-proc-id" style="font-size:.88rem" onchange="populateAIStepsSelect()">
+          <option value="">— select a process —</option>
+        </select>
+        <div style="font-size:.72rem;color:var(--text3);margin-top:4px">Select a process to scope the AI analysis. Only steps, gaps and metrics linked to this process will be included.</div>
+      </div>
+      
+      <div class="form-group full">
+        <label>Specific Steps to Analyze <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(optional — leave empty to analyze all steps)</span></label>
+        <div id="ai-steps-container" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.5rem;margin-top:.5rem;max-height:200px;overflow-y:auto;padding:.5rem;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius)">
+          <div style="grid-column:1/-1;text-align:center;color:var(--text3);font-size:.78rem;padding:1rem">Select a process first to see its steps</div>
+        </div>
+        <div style="font-size:.72rem;color:var(--text3);margin-top:4px">Check specific steps to focus the AI analysis, or leave all unchecked to analyze the entire process.</div>
+      </div>
+
+      <div class="form-group"><label>Focus Area</label><select id="ai-focus"><option value="all">Overall improvement</option><option value="speed">Reduce processing time</option><option value="quality">Improve quality</option><option value="cost">Reduce costs</option><option value="automation">Automation opportunities</option><option value="satisfaction">Customer satisfaction</option></select></div>
+      <div class="form-group"><label>Methodology</label><select id="ai-method"><option value="lean">Lean / Waste elimination</option><option value="six-sigma">Six Sigma</option><option value="agile">Agile / Iterative</option><option value="bpm">BPM / Reengineering</option><option value="kaizen">Kaizen</option></select></div>
+      <div class="form-group full"><label>Additional Context <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label><textarea id="ai-context" rows="2" placeholder="e.g. Budget limited, must keep current ERP, regulatory constraints…"></textarea></div>
+    </div>
+    <div class="btn-row"><button class="btn btn-purple" onclick="generateAISuggestion()">🚀 Generate Improvement Plan</button></div>
+  </div>
+  <div id="ai-result-area"></div>
+</section>
+
+<!-- ==================== GRAPHS ==================== -->
+<section id="section-graphs" class="section">
+  <div class="section-hero"><span class="section-hero-icon">📈</span><div><div class="section-hero-title">Graphs</div><div class="section-hero-sub">Visual dashboards and cause-effect analysis</div></div></div>
+
+  <!-- Sub-tabs -->
+  <div style="display:flex;gap:4px;background:var(--surface2);border-radius:var(--radius);padding:4px;border:1px solid var(--border);width:fit-content">
+    <button class="graph-tab active" id="gtab-rag" onclick="switchGraphTab('rag',this)">🚦 RAG Dashboard</button>
+    <button class="graph-tab" id="gtab-ishi" onclick="switchGraphTab('ishi',this)">🐟 Ishikawa</button>
+  </div>
+
+  <!-- ===== RAG DASHBOARD ===== -->
+  <div id="graph-pane-rag">
+    <!-- KPI row -->
+    <div class="rag-dash-kpi-row" id="rag-kpi-row">
+      <div class="rag-kpi-card rag-kpi-green">
+        <div class="rag-kpi-circle">G</div>
+        <div class="rag-kpi-num" id="rag-kpi-green-n">0</div>
+        <div class="rag-kpi-label">Green — On Track</div>
+      </div>
+      <div class="rag-kpi-card rag-kpi-amber">
+        <div class="rag-kpi-circle" style="background:#d97706">A</div>
+        <div class="rag-kpi-num" id="rag-kpi-amber-n">0</div>
+        <div class="rag-kpi-label">Amber — At Risk</div>
+      </div>
+      <div class="rag-kpi-card rag-kpi-red">
+        <div class="rag-kpi-circle" style="background:#dc2626">R</div>
+        <div class="rag-kpi-num" id="rag-kpi-red-n">0</div>
+        <div class="rag-kpi-label">Red — Off Track</div>
+      </div>
+      <div class="rag-kpi-card" style="border-color:var(--border2)">
+        <div class="rag-kpi-circle" style="background:var(--text3)">—</div>
+        <div class="rag-kpi-num" id="rag-kpi-none-n">0</div>
+        <div class="rag-kpi-label">No RAG Set</div>
+      </div>
+    </div>
+
+    <!-- Charts row -->
+    <div style="display:grid;grid-template-columns:340px 1fr;gap:1.2rem;flex-wrap:wrap" id="rag-charts-row">
+      <!-- Donut chart -->
+      <div class="card">
+        <div class="card-header"><div class="card-icon" style="background:rgba(0,143,116,.1)">🍩</div><span class="card-title">RAG Distribution</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:1rem">
+          <div id="rag-donut-wrap" style="position:relative;width:200px;height:200px">
+            <svg id="rag-donut-svg" viewBox="0 0 200 200" width="200" height="200"></svg>
+            <div id="rag-donut-center" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none">
+              <div style="font-family:var(--mono);font-size:1.8rem;font-weight:900;color:var(--text)" id="rag-donut-total">0</div>
+              <div style="font-size:.7rem;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">Processes</div>
+            </div>
+          </div>
+          <div id="rag-donut-legend" style="display:flex;flex-direction:column;gap:6px;width:100%"></div>
+        </div>
+      </div>
+
+      <!-- Bar chart + process list -->
+      <div class="card" style="display:flex;flex-direction:column;gap:1.2rem">
+        <div class="card-header" style="margin-bottom:0;padding-bottom:.8rem"><div class="card-icon" style="background:rgba(0,112,214,.1)">📊</div><span class="card-title">Processes by RAG Status</span></div>
+        <div id="rag-bar-chart"></div>
+        <div class="card-header" style="margin-bottom:0;padding-bottom:.8rem;border-top:1px solid var(--border);padding-top:.8rem;margin-top:.4rem"><div class="card-icon" style="background:rgba(220,38,38,.1)">📋</div><span class="card-title">Process List</span></div>
+        <div id="rag-process-list" style="display:flex;flex-direction:column;gap:.5rem"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ===== ISHIKAWA ===== -->
+  <div id="graph-pane-ishi" style="display:none;flex-direction:column;gap:1.5rem">
+    <div class="card">
+      <div class="card-header"><div class="card-icon" style="background:rgba(220,38,38,.1)">🐟</div><span class="card-title">Ishikawa Diagram — Cause & Effect</span>
+        <span style="font-size:.72rem;color:var(--text3);margin-left:auto">Built from registered gaps</span>
+      </div>
+      <div style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;margin-bottom:1rem">
+        <label style="font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text3)">Effect (Problem):</label>
+        <select id="ishi-gap-select" style="max-width:320px;padding:7px 10px;font-size:.82rem"><option value="">— select a gap —</option></select>
+        <button class="btn btn-primary" onclick="renderIshikawa()">⟳ Generate</button>
+        <button class="btn btn-secondary" onclick="exportIshikawa()">↓ Export SVG</button>
+      </div>
+      <div id="ishikawa-canvas" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius2);padding:1.5rem;min-height:320px;overflow-x:auto;">
+        <div class="empty-state"><div class="es-icon">🐟</div><div class="es-text">Select a gap and click Generate to see the Ishikawa diagram.</div></div>
+      </div>
+    </div>
+    <div class="card" id="ishi-detail-card" style="display:none">
+      <div class="card-header"><div class="card-icon" style="background:rgba(124,58,237,.1)">📋</div><span class="card-title">Cause & Consequence Detail</span></div>
+      <div id="ishi-detail-table"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== PROJECT MANAGEMENT ==================== -->
+<section id="section-project" class="section">
+  <div class="section-hero"><span class="section-hero-icon">🗂</span><div><div class="section-hero-title">Project Management</div><div class="section-hero-sub">Transform your process improvement into an actionable project</div></div></div>
+
+  <div class="card">
+    <div class="card-header"><div class="card-icon" style="background:rgba(0,143,116,.1)">🚀</div><span class="card-title">Project Setup</span></div>
+    <div class="form-grid">
+      <div class="form-group"><label>Project Name *</label><input type="text" id="proj-name" placeholder="e.g. Customer Onboarding Optimization"/></div>
+      <div class="form-group"><label>Linked Process</label><select id="proj-proc-id"><option value="">— select process —</option></select></div>
+      <div class="form-group"><label>Project Manager</label><input type="text" id="proj-manager" placeholder="Name or role"/></div>
+      <div class="form-group"><label>Sponsor</label><input type="text" id="proj-sponsor" placeholder="Executive sponsor"/></div>
+      <div class="form-group"><label>Start Date</label><input type="date" id="proj-start"/></div>
+      <div class="form-group"><label>Target End Date</label><input type="date" id="proj-end"/></div>
+      <div class="form-group"><label>Budget</label><input type="text" id="proj-budget" placeholder="e.g. $50,000 or TBD"/></div>
+      <div class="form-group"><label>Priority</label><select id="proj-priority"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option><option value="critical">Critical</option></select></div>
+      <div class="form-group full"><label>Project Objective</label><textarea id="proj-objective" rows="2" placeholder="What is the main goal of this improvement project?"></textarea></div>
+      <div class="form-group full"><label>Success Criteria</label><textarea id="proj-success" rows="2" placeholder="How will we know the project succeeded?"></textarea></div>
+    </div>
+    <div class="btn-row"><button class="btn btn-primary" onclick="saveProject()">✓ Save Project</button><button class="btn btn-secondary" onclick="clearProjectForm()">↺ Clear</button></div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><div class="card-icon" style="background:rgba(0,112,214,.1)">✅</div><span class="card-title">Task Manager</span>
+      <button class="btn btn-blue" style="margin-left:auto;padding:5px 12px;font-size:.72rem" onclick="openTaskModal()">+ Add Task</button>
+    </div>
+    <div style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;margin-bottom:1rem">
+      <label style="font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text3)">Project:</label>
+      <select id="task-filter-proj" onchange="renderTasks()" style="max-width:220px;padding:7px 10px;font-size:.82rem"><option value="">All Projects</option></select>
+      <select id="task-filter-phase" onchange="renderTasks()" style="max-width:180px;padding:7px 10px;font-size:.82rem">
+        <option value="">All Phases</option>
+        <option value="quick-win">Quick Wins</option>
+        <option value="short-term">Short-term</option>
+        <option value="long-term">Long-term</option>
+      </select>
+    </div>
+    <div id="tasks-list"><div class="empty-state"><div class="es-icon">✅</div><div class="es-text">No tasks yet. Add a task or generate from AI suggestion.</div></div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><div class="card-icon" style="background:rgba(124,58,237,.1)">📌</div><span class="card-title">Kanban Board</span></div>
+    <div style="display:flex;gap:1rem;overflow-x:auto;padding-bottom:.5rem">
+      <div class="kanban-col"><div class="kanban-col-title">🔲 Backlog</div><div id="kb-backlog"></div></div>
+      <div class="kanban-col"><div class="kanban-col-title" style="color:var(--accent2)">▶ In Progress</div><div id="kb-inprogress"></div></div>
+      <div class="kanban-col"><div class="kanban-col-title" style="color:var(--warning)">⏸ Review</div><div id="kb-review"></div></div>
+      <div class="kanban-col"><div class="kanban-col-title" style="color:var(--success)">✓ Done</div><div id="kb-done"></div></div>
+    </div>
+  </div>
+
+  <div class="card" id="project-summary-card" style="display:none">
+    <div class="card-header"><div class="card-icon" style="background:rgba(0,143,116,.1)">📊</div><span class="card-title">Projects Overview</span></div>
+    <div style="overflow-x:auto"><table><thead><tr><th>Project</th><th>Process</th><th>Manager</th><th>Start</th><th>End</th><th>Priority</th><th>Tasks</th><th>Progress</th><th></th></tr></thead><tbody id="projects-table-body"></tbody></table></div>
+  </div>
+</section>
+
+<!-- ==================== CHANGE MANAGEMENT ==================== -->
+<section id="section-change" class="section">
+  <div class="section-hero"><span class="section-hero-icon">🔄</span><div><div class="section-hero-title">Change Management</div><div class="section-hero-sub">Track adoption readiness using the ADKAR methodology — Awareness, Desire, Knowledge, Ability, Reinforcement</div></div></div>
+
+  <!-- Filter bar -->
+  <div style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;margin-bottom:1.2rem">
+    <label style="font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text3)">Filter:</label>
+    <select id="change-filter-company" onchange="filterChangeByCompany()" style="max-width:200px;padding:7px 10px;font-size:.82rem">
+      <option value="">All Companies</option>
+    </select>
+    <select id="change-filter-process" onchange="renderChangeEntries()" style="max-width:220px;padding:7px 10px;font-size:.82rem">
+      <option value="">All Processes</option>
+    </select>
+  </div>
+
+  <!-- ADKAR Summary Dashboard -->
+  <div class="card">
+    <div class="card-header"><div class="card-icon" style="background:rgba(0,143,116,.1)">📊</div><span class="card-title">ADKAR Readiness Overview</span></div>
+    <div id="adkar-summary-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:1.2rem">
+      <!-- Will be populated by JS -->
+    </div>
+    <div id="adkar-progress-bars" style="display:flex;flex-direction:column;gap:.8rem">
+      <!-- Progress bars per ADKAR dimension -->
+    </div>
+  </div>
+
+  <!-- Register Change Entry -->
+  <div class="card">
+    <div class="card-header"><div class="card-icon" style="background:rgba(124,58,237,.1)">➕</div><span class="card-title">Register Change Assessment</span></div>
+    <div class="form-grid">
+      <div class="form-group"><label>Company <span style="color:var(--danger);font-weight:900">*</span></label><select id="chg-company-id" onchange="filterChangeProcesses()"><option value="">— select company —</option></select></div>
+      <div class="form-group"><label>Process <span style="color:var(--danger);font-weight:900">*</span></label><select id="chg-proc-id"><option value="">— select process —</option></select></div>
+      <div class="form-group"><label>Stakeholder / Group *</label><input type="text" id="chg-stakeholder" placeholder="e.g. Sales Team, Operations"/></div>
+      <div class="form-group"><label>Assessment Date</label><input type="date" id="chg-date"/></div>
+      <div class="form-group"><label>Assessed By</label><input type="text" id="chg-assessor" placeholder="Your name"/></div>
+      <div class="form-group"><label>Linked Project <span style="color:var(--text3)">(optional)</span></label><select id="chg-proj-id"><option value="">— none —</option></select></div>
+    </div>
+
+    <!-- ADKAR Scoring -->
+    <div style="margin-top:1.5rem">
+      <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);margin-bottom:1rem">ADKAR Assessment (1 = Low, 5 = High)</div>
+      
+      <div style="display:flex;flex-direction:column;gap:1.2rem">
+        <!-- Awareness -->
+        <div class="adkar-score-row">
+          <div class="adkar-score-label">
+            <span style="font-weight:700;color:var(--accent2)">A</span> — Awareness
+            <div style="font-size:.7rem;color:var(--text3);font-weight:400;margin-top:2px">Understanding why change is needed</div>
+          </div>
+          <div class="adkar-score-input">
+            <input type="range" id="chg-awareness" min="1" max="5" value="3" oninput="updateAdkarLabel('awareness',this.value)" style="flex:1"/>
+            <span id="chg-awareness-val" style="font-family:var(--mono);font-size:.9rem;font-weight:700;min-width:24px;text-align:center">3</span>
+          </div>
+        </div>
+
+        <!-- Desire -->
+        <div class="adkar-score-row">
+          <div class="adkar-score-label">
+            <span style="font-weight:700;color:var(--accent)">D</span> — Desire
+            <div style="font-size:.7rem;color:var(--text3);font-weight:400;margin-top:2px">Willingness to support and participate</div>
+          </div>
+          <div class="adkar-score-input">
+            <input type="range" id="chg-desire" min="1" max="5" value="3" oninput="updateAdkarLabel('desire',this.value)" style="flex:1"/>
+            <span id="chg-desire-val" style="font-family:var(--mono);font-size:.9rem;font-weight:700;min-width:24px;text-align:center">3</span>
+          </div>
+        </div>
+
+        <!-- Knowledge -->
+        <div class="adkar-score-row">
+          <div class="adkar-score-label">
+            <span style="font-weight:700;color:var(--warning)">K</span> — Knowledge
+            <div style="font-size:.7rem;color:var(--text3);font-weight:400;margin-top:2px">Understanding how to change</div>
+          </div>
+          <div class="adkar-score-input">
+            <input type="range" id="chg-knowledge" min="1" max="5" value="3" oninput="updateAdkarLabel('knowledge',this.value)" style="flex:1"/>
+            <span id="chg-knowledge-val" style="font-family:var(--mono);font-size:.9rem;font-weight:700;min-width:24px;text-align:center">3</span>
+          </div>
+        </div>
+
+        <!-- Ability -->
+        <div class="adkar-score-row">
+          <div class="adkar-score-label">
+            <span style="font-weight:700;color:var(--accent4)">A</span> — Ability
+            <div style="font-size:.7rem;color:var(--text3);font-weight:400;margin-top:2px">Capability to implement required skills</div>
+          </div>
+          <div class="adkar-score-input">
+            <input type="range" id="chg-ability" min="1" max="5" value="3" oninput="updateAdkarLabel('ability',this.value)" style="flex:1"/>
+            <span id="chg-ability-val" style="font-family:var(--mono);font-size:.9rem;font-weight:700;min-width:24px;text-align:center">3</span>
+          </div>
+        </div>
+
+        <!-- Reinforcement -->
+        <div class="adkar-score-row">
+          <div class="adkar-score-label">
+            <span style="font-weight:700;color:var(--success)">R</span> — Reinforcement
+            <div style="font-size:.7rem;color:var(--text3);font-weight:400;margin-top:2px">Sustaining the change over time</div>
+          </div>
+          <div class="adkar-score-input">
+            <input type="range" id="chg-reinforcement" min="1" max="5" value="3" oninput="updateAdkarLabel('reinforcement',this.value)" style="flex:1"/>
+            <span id="chg-reinforcement-val" style="font-family:var(--mono);font-size:.9rem;font-weight:700;min-width:24px;text-align:center">3</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-grid" style="margin-top:1.5rem">
+      <div class="form-group full"><label>Observations / Notes</label><textarea id="chg-notes" rows="3" placeholder="Key observations, resistance points, readiness factors…"></textarea></div>
+      <div class="form-group full"><label>Recommended Actions</label><textarea id="chg-actions" rows="2" placeholder="What interventions are needed to improve readiness?"></textarea></div>
+    </div>
+
+    <div class="btn-row"><button class="btn btn-primary" onclick="saveChangeEntry()">✓ Save Assessment</button><button class="btn btn-secondary" onclick="clearChangeForm()">↺ Clear</button></div>
+  </div>
+
+  <!-- Change Entries List -->
+  <div id="change-entries-list">
+    <div class="empty-state"><div class="es-icon">🔄</div><div class="es-text">No change assessments registered yet.</div></div>
+  </div>
+
+  <!-- Change Summary Table -->
+  <div class="card" id="change-table-card" style="display:none">
+    <div class="card-header"><div class="card-icon" style="background:rgba(0,143,116,.1)">📋</div><span class="card-title">All Assessments</span></div>
+    <div style="overflow-x:auto"><table><thead><tr><th>Company</th><th>Process</th><th>Stakeholder</th><th>Date</th><th>A</th><th>D</th><th>K</th><th>A</th><th>R</th><th>Avg</th><th></th></tr></thead><tbody id="change-table-body"></tbody></table></div>
+  </div>
+</section>
+
+
+<!-- ==================== FEEDBACK ==================== -->
+<section id="section-feedback" class="section">
+  <div class="section-hero"><span class="section-hero-icon">💬</span><div><div class="section-hero-title">Feedback</div><div class="section-hero-sub">Share your experience, suggestions and ideas about ProcessFlow</div></div></div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem" id="fb-layout">
+
+    <!-- LEFT: submission form -->
+    <div style="display:flex;flex-direction:column;gap:1.2rem">
+
+      <!-- Mood picker -->
+      <div class="card">
+        <div class="card-header"><div class="card-icon" style="background:rgba(124,58,237,.1)">😊</div><span class="card-title">How are you feeling about ProcessFlow?</span></div>
+        <div style="display:flex;gap:.8rem;flex-wrap:wrap;margin-bottom:.3rem" id="fb-mood-row">
+          <div class="fb-mood" data-mood="love"      onclick="selectMood('love')"      title="Love it!">😍</div>
+          <div class="fb-mood" data-mood="happy"     onclick="selectMood('happy')"     title="Happy">😊</div>
+          <div class="fb-mood" data-mood="neutral"   onclick="selectMood('neutral')"   title="Neutral">😐</div>
+          <div class="fb-mood" data-mood="confused"  onclick="selectMood('confused')"  title="Confused">😕</div>
+          <div class="fb-mood" data-mood="frustrated"onclick="selectMood('frustrated')"title="Frustrated">😤</div>
+        </div>
+        <div id="fb-mood-label" style="font-size:.78rem;color:var(--text3);min-height:1.2rem"></div>
+      </div>
+
+      <!-- Star rating -->
+      <div class="card">
+        <div class="card-header"><div class="card-icon" style="background:rgba(217,119,6,.1)">⭐</div><span class="card-title">Overall Rating</span></div>
+        <div style="display:flex;gap:.3rem" id="fb-stars">
+          <span class="fb-star" data-val="1" onclick="selectStar(1)">★</span>
+          <span class="fb-star" data-val="2" onclick="selectStar(2)">★</span>
+          <span class="fb-star" data-val="3" onclick="selectStar(3)">★</span>
+          <span class="fb-star" data-val="4" onclick="selectStar(4)">★</span>
+          <span class="fb-star" data-val="5" onclick="selectStar(5)">★</span>
+        </div>
+        <div id="fb-star-label" style="font-size:.78rem;color:var(--text3);margin-top:.4rem;min-height:1.2rem"></div>
+      </div>
+
+      <!-- Category + section + form -->
+      <div class="card">
+        <div class="card-header"><div class="card-icon" style="background:rgba(0,143,116,.1)">📝</div><span class="card-title">Your Feedback</span></div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Type</label>
+            <select id="fb-type">
+              <option value="suggestion">💡 Suggestion</option>
+              <option value="bug">🐛 Bug Report</option>
+              <option value="praise">🙌 Praise</option>
+              <option value="question">❓ Question</option>
+              <option value="other">💬 Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Related Section</label>
+            <select id="fb-section">
+              <option value="">— general —</option>
+              <option value="register">⚙ Process Registration</option>
+              <option value="steps">📋 Steps</option>
+              <option value="diagram">🗺 Diagram</option>
+              <option value="gaps">⚠ Gap Analysis</option>
+              <option value="metrics">📊 Metrics</option>
+              <option value="ai">✦ AI Suggestion</option>
+              <option value="graphs">📈 Graphs</option>
+              <option value="project">🗂 Project</option>
+              <option value="change">🔄 Change</option>
+              <option value="config">⚙ Configuration</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Priority / Urgency</label>
+            <select id="fb-priority">
+              <option value="low">🟢 Low — nice to have</option>
+              <option value="medium" selected>🟡 Medium — would help</option>
+              <option value="high">🔴 High — blocking me</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Your Name <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(auto-filled)</span></label>
+            <input type="text" id="fb-author" placeholder="Name or role"/>
+          </div>
+          <div class="form-group full">
+            <label>Subject / Title *</label>
+            <input type="text" id="fb-title" placeholder="e.g. It would be great if I could filter gaps by company…"/>
+          </div>
+          <div class="form-group full">
+            <label>Detailed Description *</label>
+            <textarea id="fb-body" rows="5" placeholder="Describe your feedback in detail. If reporting a bug, include what you were doing and what happened. If a suggestion, describe the problem it would solve…"></textarea>
+          </div>
+          <div class="form-group full">
+            <label>Expected Outcome <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
+            <textarea id="fb-expected" rows="2" placeholder="What result or behaviour would you expect?"></textarea>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="submitFeedback()">💬 Submit Feedback</button>
+          <button class="btn btn-secondary" onclick="clearFeedbackForm()">↺ Clear</button>
+        </div>
+        <div id="fb-err" class="login-err" style="margin-top:.8rem"></div>
+        <div id="fb-ok"  class="login-ok"  style="margin-top:.8rem"></div>
+      </div>
+    </div>
+
+    <!-- RIGHT: stats + live feed -->
+    <div style="display:flex;flex-direction:column;gap:1.2rem">
+
+      <!-- Stats bar -->
+      <div id="fb-stats-row" style="display:grid;grid-template-columns:repeat(3,1fr);gap:.8rem">
+        <div class="summary-stat" style="align-items:center;text-align:center">
+          <div class="summary-stat-val" id="fb-stat-total">0</div>
+          <div class="summary-stat-label">Total</div>
+        </div>
+        <div class="summary-stat" style="align-items:center;text-align:center">
+          <div class="summary-stat-val" id="fb-stat-avg" style="color:var(--warning)">—</div>
+          <div class="summary-stat-label">Avg Rating</div>
+        </div>
+        <div class="summary-stat" style="align-items:center;text-align:center">
+          <div class="summary-stat-val" id="fb-stat-open" style="color:var(--accent2)">0</div>
+          <div class="summary-stat-label">Open</div>
+        </div>
+      </div>
+
+      <!-- Type breakdown -->
+      <div class="card" id="fb-breakdown-card" style="display:none">
+        <div class="card-header"><div class="card-icon" style="background:rgba(0,112,214,.1)">📊</div><span class="card-title">Breakdown by Type</span></div>
+        <div id="fb-breakdown"></div>
+      </div>
+
+      <!-- Admin response toggle (admin only) -->
+      <div id="fb-admin-filter" style="display:none;align-items:center;gap:.6rem;flex-wrap:wrap">
+        <label style="font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text3)">Filter:</label>
+        <select id="fb-filter-type" onchange="renderFeedback()" style="padding:7px 10px;font-size:.82rem;max-width:160px">
+          <option value="">All Types</option>
+          <option value="suggestion">💡 Suggestions</option>
+          <option value="bug">🐛 Bugs</option>
+          <option value="praise">🙌 Praise</option>
+          <option value="question">❓ Questions</option>
+          <option value="other">💬 Other</option>
+        </select>
+        <select id="fb-filter-status" onchange="renderFeedback()" style="padding:7px 10px;font-size:.82rem;max-width:160px">
+          <option value="">All Statuses</option>
+          <option value="open">Open</option>
+          <option value="reviewing">Reviewing</option>
+          <option value="planned">Planned</option>
+          <option value="done">Done</option>
+          <option value="closed">Closed</option>
+        </select>
+      </div>
+
+      <!-- Feed -->
+      <div id="fb-feed" style="display:flex;flex-direction:column;gap:.8rem">
+        <div class="empty-state"><div class="es-icon">💬</div><div class="es-text">No feedback yet. Be the first to share!</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== CONFIGURATION ==================== -->
+<section id="section-config" class="section">
+  <div class="section-hero"><span class="section-hero-icon">⚙</span><div><div class="section-hero-title">Configuration</div><div class="section-hero-sub">System parameters — Business registration and User management</div></div></div>
+
+  <!-- Pending approvals alert — shown only when there are pending users -->
+  <div id="pending-banner" style="display:none"></div>
+
+  <!-- Sub-tabs -->
+  <div style="display:flex;gap:4px;background:var(--surface2);border-radius:var(--radius);padding:4px;border:1px solid var(--border);width:fit-content">
+    <button class="graph-tab active" id="ctab-biz"         onclick="switchConfigTab('biz',this)">🏢 Business</button>
+    <button class="graph-tab"        id="ctab-users"       onclick="switchConfigTab('users',this)">👥 Users</button>
+    <button class="graph-tab"        id="ctab-analytics"   onclick="switchConfigTab('analytics',this)">📊 Analytics</button>
+    <button class="graph-tab"        id="ctab-integration" onclick="switchConfigTab('integration',this)">🔌 Integration</button>
+  </div>
+
+  <!-- ===== BUSINESS ===== -->
+  <div id="config-pane-biz" style="display:flex;flex-direction:column;gap:1.5rem">
+    <div class="card">
+      <div class="card-header"><div class="card-icon" style="background:rgba(0,112,214,.1)">🏢</div><span class="card-title">Register Company</span></div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Company ID <span style="color:var(--accent);font-weight:900">*</span></label>
+          <div style="display:flex;gap:6px">
+            <input type="text" id="biz-id" placeholder="e.g. ACME" style="font-family:var(--mono);font-size:.84rem;text-transform:uppercase"/>
+            <button class="btn btn-secondary" style="padding:8px 12px;flex-shrink:0" onclick="generateBizId()" title="Auto-generate">⚡</button>
+          </div>
+        </div>
+        <div class="form-group"><label>Company Name *</label><input type="text" id="biz-name" placeholder="e.g. ACME Corporation"/></div>
+        <div class="form-group"><label>Industry / Sector</label><input type="text" id="biz-industry" placeholder="e.g. Manufacturing, Healthcare, Finance"/></div>
+        <div class="form-group"><label>Country</label><input type="text" id="biz-country" placeholder="e.g. Brazil, USA"/></div>
+        <div class="form-group"><label>Company Size</label><select id="biz-size">
+          <option value="">Select…</option>
+          <option value="micro">Micro (1–9)</option>
+          <option value="small">Small (10–49)</option>
+          <option value="medium">Medium (50–249)</option>
+          <option value="large">Large (250–999)</option>
+          <option value="enterprise">Enterprise (1000+)</option>
+        </select></div>
+        <div class="form-group"><label>Status</label><select id="biz-status">
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+        </select></div>
+        <div class="form-group full"><label>Description / Notes</label><textarea id="biz-desc" rows="2" placeholder="Brief description, scope, or any notes about this company…"></textarea></div>
+        <div class="form-group"><label>Primary Contact</label><input type="text" id="biz-contact" placeholder="Name or role"/></div>
+        <div class="form-group"><label>Contact Email</label><input type="email" id="biz-email" placeholder="contact@company.com"/></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-blue" onclick="saveCompany()">🏢 Register Company</button>
+        <button class="btn btn-secondary" onclick="clearCompanyForm()">↺ Clear</button>
+      </div>
+      <div id="biz-err" class="login-err" style="margin-top:.8rem"></div>
+      <div id="biz-ok"  class="login-ok"  style="margin-top:.8rem"></div>
+    </div>
+
+    <div class="card" id="biz-table-card" style="display:none">
+      <div class="card-header"><div class="card-icon" style="background:rgba(0,112,214,.1)">🏢</div><span class="card-title">Registered Companies</span></div>
+      <div style="overflow-x:auto">
+        <table><thead><tr><th>Company ID</th><th>Name</th><th>Industry</th><th>Country</th><th>Size</th><th>Status</th><th>Processes</th><th>Contact</th><th></th></tr></thead>
+        <tbody id="biz-table-body"></tbody></table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== USERS ===== -->
+  <div id="config-pane-users" style="display:none;flex-direction:column;gap:1.5rem">
+    <div class="card">
+      <div class="card-header"><div class="card-icon" style="background:rgba(124,58,237,.1)">➕</div><span class="card-title">Add User</span></div>
+      <div class="form-grid">
+        <div class="form-group"><label>Full Name *</label><input type="text" id="adm-name" placeholder="User name"/></div>
+        <div class="form-group"><label>Email *</label><input type="email" id="adm-email" placeholder="user@company.com"/></div>
+        <div class="form-group"><label>Password *</label><input type="password" id="adm-pass" placeholder="Min. 6 chars"/></div>
+        <div class="form-group"><label>Role</label><select id="adm-role">
+          <option value="viewer">Viewer — read only</option>
+          <option value="editor">Editor — add / edit</option>
+          <option value="manager">Manager — full + AI</option>
+          <option value="admin">Admin — user control</option>
+        </select></div>
+        <div class="form-group"><label>Linked Company <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
+          <select id="adm-company-id"><option value="">— all companies —</option></select>
+        </div>
+      </div>
+      <div class="btn-row"><button class="btn btn-purple" onclick="adminAddUser()">➕ Add User</button></div>
+      <div id="adm-err" class="login-err" style="margin-top:.8rem"></div>
+      <div id="adm-ok"  class="login-ok"  style="margin-top:.8rem"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-icon" style="background:rgba(0,143,116,.1)">👥</div><span class="card-title">Registered Users</span></div>
+      <div style="overflow-x:auto">
+        <table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Company</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead>
+        <tbody id="users-table-body"></tbody></table>
+      </div>
+    </div>
+
+    <div class="card" style="background:rgba(124,58,237,.04);border-color:rgba(124,58,237,.15)">
+      <div class="card-header"><div class="card-icon" style="background:rgba(124,58,237,.1)">🔑</div><span class="card-title">Role Permissions</span></div>
+      <div style="overflow-x:auto"><table><thead><tr><th>Permission</th><th>Viewer</th><th>Editor</th><th>Manager</th><th>Admin</th></tr></thead><tbody>
+        <tr><td>View data</td><td style="color:var(--success)">✓</td><td style="color:var(--success)">✓</td><td style="color:var(--success)">✓</td><td style="color:var(--success)">✓</td></tr>
+        <tr><td>Add / edit records</td><td style="color:var(--danger)">✗</td><td style="color:var(--success)">✓</td><td style="color:var(--success)">✓</td><td style="color:var(--success)">✓</td></tr>
+        <tr><td>Delete records</td><td style="color:var(--danger)">✗</td><td style="color:var(--danger)">✗</td><td style="color:var(--success)">✓</td><td style="color:var(--success)">✓</td></tr>
+        <tr><td>AI Suggestion</td><td style="color:var(--danger)">✗</td><td style="color:var(--danger)">✗</td><td style="color:var(--success)">✓</td><td style="color:var(--success)">✓</td></tr>
+        <tr><td>Configuration / Users</td><td style="color:var(--danger)">✗</td><td style="color:var(--danger)">✗</td><td style="color:var(--danger)">✗</td><td style="color:var(--success)">✓</td></tr>
+      </tbody></table></div>
+    </div>
+  </div>
+
+  <!-- ===== ANALYTICS PANE ===== -->
+  <div id="config-pane-analytics" style="display:none;flex-direction:column;gap:1.5rem">
+
+    <!-- KPI row -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem" id="an-kpi-row">
+      <div class="summary-stat" style="align-items:center;text-align:center;border-color:rgba(0,112,214,.25);background:rgba(0,112,214,.03)">
+        <div class="summary-stat-val" id="an-total-visits" style="color:var(--accent2)">0</div>
+        <div class="summary-stat-label">Total Visits</div>
+      </div>
+      <div class="summary-stat" style="align-items:center;text-align:center;border-color:rgba(0,143,116,.25);background:rgba(0,143,116,.03)">
+        <div class="summary-stat-val" id="an-today-visits" style="color:var(--accent)">0</div>
+        <div class="summary-stat-label">Today</div>
+      </div>
+      <div class="summary-stat" style="align-items:center;text-align:center;border-color:rgba(124,58,237,.25);background:rgba(124,58,237,.03)">
+        <div class="summary-stat-val" id="an-unique-days" style="color:var(--accent4)">0</div>
+        <div class="summary-stat-label">Days Active</div>
+      </div>
+      <div class="summary-stat" style="align-items:center;text-align:center;border-color:rgba(217,119,6,.25);background:rgba(217,119,6,.03)">
+        <div class="summary-stat-val" id="an-avg-day" style="color:var(--warning)">0</div>
+        <div class="summary-stat-label">Avg / Day</div>
+      </div>
+    </div>
+
+    <!-- Daily chart + login log side by side -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem">
+
+      <div class="card">
+        <div class="card-header"><div class="card-icon" style="background:rgba(0,112,214,.1)">📅</div><span class="card-title">Visits — Last 14 Days</span>
+          <button class="btn btn-secondary" style="margin-left:auto;padding:4px 10px;font-size:.68rem" onclick="clearVisitLog()">🗑 Clear Log</button>
+        </div>
+        <div id="an-bar-chart" style="display:flex;flex-direction:column;gap:.35rem"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><div class="card-icon" style="background:rgba(0,143,116,.1)">🕐</div><span class="card-title">Recent Access Log</span></div>
+        <div id="an-access-log" style="display:flex;flex-direction:column;gap:.4rem;max-height:340px;overflow-y:auto"></div>
+      </div>
+
+    </div>
+
+    <!-- Peak hours heatmap -->
+    <div class="card">
+      <div class="card-header"><div class="card-icon" style="background:rgba(124,58,237,.1)">🔥</div><span class="card-title">Activity by Hour of Day</span><span style="font-size:.72rem;color:var(--text3);margin-left:auto">Based on all recorded visits</span></div>
+      <div id="an-heatmap" style="display:flex;gap:4px;flex-wrap:wrap;align-items:flex-end;padding:.5rem 0"></div>
+      <div style="display:flex;gap:1rem;margin-top:.6rem;font-size:.7rem;color:var(--text3)">
+        <span>🌙 00:00</span><span>🌅 06:00</span><span>☀ 12:00</span><span>🌆 18:00</span><span>🌙 23:00</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ===== INTEGRATION PANE ===== -->
+  <div id="config-pane-integration" style="display:none;flex-direction:column;gap:1.5rem">
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon" style="background:rgba(124,58,237,.1)">🔑</div>
+        <span class="card-title">OpenAI API Key</span>
+        <span style="font-size:.72rem;color:var(--text3);margin-left:auto">Powers the ✦ AI section · stored locally in your browser only</span>
+      </div>
+      <div class="form-grid">
+        <div class="form-group full">
+          <label>API Key <span style="color:var(--accent);font-weight:900">*</span></label>
+          <div style="display:flex;gap:8px">
+            <input type="password" id="int-api-key" placeholder="sk-…" style="font-family:var(--mono);font-size:.82rem;letter-spacing:.04em" autocomplete="off"/>
+            <button class="btn btn-secondary" style="padding:8px 12px;flex-shrink:0" onclick="toggleApiKeyVisibility()" id="int-key-eye" title="Show/hide key">👁</button>
+          </div>
+          <div style="font-size:.72rem;color:var(--text3);margin-top:4px">Your key is stored only in this browser's localStorage and sent exclusively to OpenAI — never to any other server.</div>
+        </div>
+        <div class="form-group">
+          <label>Model</label>
+          <select id="int-model">
+            <option value="gpt-4o">GPT-4o (recommended)</option>
+            <option value="gpt-4-turbo">GPT-4 Turbo</option>
+            <option value="gpt-4">GPT-4</option>
+            <option value="gpt-3.5-turbo">GPT-3.5 Turbo (faster / cheaper)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Max Response Tokens</label>
+          <select id="int-max-tokens">
+            <option value="1000">1 000 — Quick summary</option>
+            <option value="2000" selected>2 000 — Standard</option>
+            <option value="3000">3 000 — Detailed</option>
+            <option value="4000">4 000 — Full analysis</option>
+          </select>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-purple" onclick="saveIntegration()">💾 Save Settings</button>
+        <button class="btn btn-secondary" onclick="testApiKey()">⚡ Test Connection</button>
+        <button class="btn btn-danger" onclick="clearApiKey()">🗑 Remove Key</button>
+      </div>
+      <div id="int-err" class="login-err" style="margin-top:.8rem"></div>
+      <div id="int-ok"  class="login-ok"  style="margin-top:.8rem"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon" style="background:rgba(0,143,116,.1)">🤖</div>
+        <span class="card-title">Agent Instructions</span>
+        <span style="font-size:.72rem;color:var(--text3);margin-left:auto">Sent to the AI before your process data on every request</span>
+      </div>
+      <div class="form-grid">
+        <div class="form-group full">
+          <label>System Role / Persona</label>
+          <textarea id="int-system-prompt" rows="6" placeholder="e.g. You are a senior Lean Six Sigma Black Belt consultant specialising in healthcare process improvement. Always prioritise patient safety above cost reduction. Structure your responses using the DMAIC framework. Be concise and specific — avoid generic advice."></textarea>
+          <div style="font-size:.72rem;color:var(--text3);margin-top:4px">This becomes the <strong>system message</strong> prepended to every AI suggestion. Leave blank to use the built-in consultant persona.</div>
+        </div>
+        <div class="form-group full">
+          <label>Output Format / Style <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
+          <textarea id="int-style-prompt" rows="3" placeholder="e.g. Always respond in Portuguese. Use bullet points for action items. Limit each section to 3 key points maximum."></textarea>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="saveIntegration()">💾 Save Instructions</button>
+        <button class="btn btn-secondary" onclick="resetSystemPrompt()">↺ Reset to Default</button>
+      </div>
+    </div>
+
+    <div class="card" id="int-status-card" style="background:rgba(124,58,237,.04);border-color:rgba(124,58,237,.15)">
+      <div class="card-header"><div class="card-icon" style="background:rgba(124,58,237,.1)">📋</div><span class="card-title">Integration Status</span></div>
+      <div id="int-status-body" style="font-size:.85rem;line-height:1.8"></div>
+    </div>
+
+  </div>
+
+</section>
+</div>
+
+<!-- TASK MODAL -->
+<div class="modal-overlay" id="task-modal">
+  <div class="modal-box">
+    <div style="font-size:1rem;font-weight:800;margin-bottom:1.2rem">➕ Add Task</div>
+    <div class="form-grid" style="grid-template-columns:1fr 1fr">
+      <div class="form-group full"><label>Task Title *</label><input type="text" id="tm-title" placeholder="e.g. Map current process steps"/></div>
+      <div class="form-group"><label>Project</label><select id="tm-proj-id"><option value="">— none —</option></select></div>
+      <div class="form-group"><label>Phase</label><select id="tm-phase">
+        <option value="quick-win">Quick Win</option>
+        <option value="short-term">Short-term</option>
+        <option value="long-term">Long-term</option>
+      </select></div>
+      <div class="form-group"><label>Assigned To</label><input type="text" id="tm-assignee" placeholder="Name or role"/></div>
+      <div class="form-group"><label>Due Date</label><input type="date" id="tm-due"/></div>
+      <div class="form-group"><label>Priority</label><select id="tm-priority"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option></select></div>
+      <div class="form-group"><label>Kanban Status</label><select id="tm-kanban"><option value="backlog">Backlog</option><option value="inprogress">In Progress</option><option value="review">Review</option><option value="done">Done</option></select></div>
+      <div class="form-group full"><label>Description</label><textarea id="tm-desc" rows="2" placeholder="What needs to be done?"></textarea></div>
+    </div>
+    <div class="btn-row" style="margin-top:.8rem"><button class="btn btn-primary" onclick="saveTask()">✓ Add Task</button><button class="btn btn-secondary" onclick="closeTaskModal()">Cancel</button></div>
+  </div>
+</div>
+<div class="modal-overlay" id="edit-proc-modal">
+  <div class="modal-box" style="max-width:620px">
+    <div style="font-size:1rem;font-weight:800;margin-bottom:1.2rem;display:flex;align-items:center;gap:8px">✏ Edit Process <span id="epm-proc-id-label" style="font-family:var(--mono);font-size:.82rem;color:var(--accent)"></span></div>
+    <input type="hidden" id="epm-internal-id"/>
+    <div class="form-grid" style="grid-template-columns:1fr 1fr">
+      <div class="form-group">
+        <label>Process ID</label>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input type="text" id="epm-proc-id" style="font-family:var(--mono);font-size:.82rem"/>
+          <span id="epm-id-lock" style="font-size:.72rem;color:var(--warning);white-space:nowrap"></span>
+        </div>
+      </div>
+      <div class="form-group"><label>Process Name *</label><input type="text" id="epm-name"/></div>
+      <div class="form-group"><label>Department</label><input type="text" id="epm-dept"/></div>
+      <div class="form-group"><label>Process Owner</label><input type="text" id="epm-owner"/></div>
+      <div class="form-group"><label>Version</label><input type="text" id="epm-version"/></div>
+      <div class="form-group"><label>Status</label><select id="epm-status"><option value="draft">Draft</option><option value="active">Active</option><option value="under-review">Under Review</option><option value="deprecated">Deprecated</option></select></div>
+      <div class="form-group"><label>Priority</label><select id="epm-priority"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="critical">Critical</option></select></div>
+      <div class="form-group"><label>Process Type</label><select id="epm-type"><option value="operational">Operational</option><option value="administrative">Administrative</option><option value="strategic">Strategic</option><option value="support">Support</option><option value="compliance">Compliance</option></select></div>
+      <div class="form-group"><label>Start Date</label><input type="date" id="epm-start"/></div>
+      <div class="form-group"><label>Target End Date</label><input type="date" id="epm-end"/></div>
+      <div class="form-group"><label>Expected Duration</label><input type="text" id="epm-duration"/></div>
+      <div class="form-group"><label>Frequency</label><select id="epm-frequency"><option value="">Select…</option><option value="on-demand">On Demand</option><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option><option value="quarterly">Quarterly</option><option value="annually">Annually</option></select></div>
+      <div class="form-group full"><label>Description *</label><textarea id="epm-desc" rows="3"></textarea></div>
+      <div class="form-group full"><label>Input (trigger)</label><input type="text" id="epm-input"/></div>
+      <div class="form-group full"><label>Output (result)</label><input type="text" id="epm-output"/></div>
+      <div class="form-group full"><label>Stakeholders</label><input type="text" id="epm-stakeholders"/></div>
+      <div class="form-group full"><label>Tools & Systems</label><input type="text" id="epm-tools"/></div>
+      <div class="form-group full"><label>KPIs / Success Criteria</label><textarea id="epm-kpis" rows="2"></textarea></div>
+      <div class="form-group full"><label>Risks & Pain Points</label><textarea id="epm-risks" rows="2"></textarea></div>
+    </div>
+    <div class="btn-row" style="margin-top:1rem">
+      <button class="btn btn-primary" onclick="applyEditProcess()">✓ Save Changes</button>
+      <button class="btn btn-secondary" onclick="closeEditProcModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ROLE MODAL -->
+<div class="modal-overlay" id="edit-user-modal">
+  <div class="modal-box" style="max-width:500px">
+    <div style="font-size:1rem;font-weight:800;margin-bottom:1.4rem;display:flex;align-items:center;gap:8px">
+      👤 Edit User — <span id="eum-name-label" style="color:var(--accent);font-family:var(--mono);font-size:.85rem"></span>
+    </div>
+    <input type="hidden" id="eum-id"/>
+    <div class="form-grid" style="grid-template-columns:1fr 1fr">
+      <div class="form-group full">
+        <label>Full Name *</label>
+        <input type="text" id="eum-name" placeholder="Full name"/>
+      </div>
+      <div class="form-group full">
+        <label>Email *</label>
+        <input type="email" id="eum-email" placeholder="user@company.com"/>
+      </div>
+      <div class="form-group full">
+        <label>New Password <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(leave blank to keep current)</span></label>
+        <input type="password" id="eum-pass" placeholder="Min. 6 characters"/>
+      </div>
+      <div class="form-group">
+        <label>Role</label>
+        <select id="eum-role">
+          <option value="viewer">Viewer — read only</option>
+          <option value="editor">Editor — add / edit</option>
+          <option value="manager">Manager — full + AI</option>
+          <option value="admin">Admin — user control</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Linked Company</label>
+        <select id="eum-company-id"><option value="">— all companies —</option></select>
+      </div>
+    </div>
+    <div id="eum-err" class="login-err" style="margin-top:.8rem"></div>
+    <div class="btn-row" style="margin-top:1rem">
+      <button class="btn btn-primary" onclick="applyEditUser()">✓ Save Changes</button>
+      <button class="btn btn-secondary" onclick="closeEditUserModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// STATE — all let declarations first
+// ============================================================
+const ROLE_COLORS = {viewer:'#6b7280',editor:'#0088ff',manager:'#00d4aa',admin:'#a855f7'};
+const ROLE_BG     = {viewer:'rgba(107,114,128,.15)',editor:'rgba(0,136,255,.15)',manager:'rgba(0,212,170,.15)',admin:'rgba(168,85,247,.15)'};
+const CAN_EDIT   = ['editor','manager','admin'];
+const CAN_DELETE = ['manager','admin'];
+const CAN_AI     = ['manager','admin'];
+const CAN_ADMIN  = ['admin'];
+
+let users        = JSON.parse(localStorage.getItem('pf_users') || '[]');
+//let currentUser  = null;
+
+let processes   = [];
+let steps       = [];
+let stepHistory = {};
+let metrics     = [];
+let gaps        = [];
+let projects    = [];
+let tasks       = [];
+let companies   = [];
+let feedbacks   = [];
+let changeEntries = [];
+let currentRAG  = null;
+
+// (Rest of the JavaScript code continues exactly as in your original, plus the new change management functions below...)
+// I'll add the change management JavaScript functions after the existing code
+
+// ============================================================
+// CHANGE MANAGEMENT — ADKAR
+// ============================================================
+function updateAdkarLabel(dim, val) {
+  document.getElementById(`chg-${dim}-val`).textContent = val;
+}
+
+function populateChangeDropdowns() {
+  // Company dropdown
+  const coSel = document.getElementById('chg-company-id');
+  const coOpts = companies.map(c=>`<option value="${c.id}">[${c.bizId}] ${c.name}</option>`).join('');
+  if(coSel) {
+    const v = coSel.value;
+    coSel.innerHTML = '<option value="">— select company —</option>' + coOpts;
+    if(v) coSel.value = v;
+  }
+
+  // Filter company dropdown
+  const filterCoSel = document.getElementById('change-filter-company');
+  if(filterCoSel) {
+    const v = filterCoSel.value;
+    filterCoSel.innerHTML = '<option value="">All Companies</option>' + coOpts;
+    if(v) filterCoSel.value = v;
+  }
+
+  // Project dropdown for change entries
+  const projSel = document.getElementById('chg-proj-id');
+  if(projSel) {
+    const projOpts = projects.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+    const v = projSel.value;
+    projSel.innerHTML = '<option value="">— none —</option>' + projOpts;
+    if(v) projSel.value = v;
+  }
+}
+
+function filterChangeProcesses() {
+  const companyId = document.getElementById('chg-company-id').value;
+  const procSel = document.getElementById('chg-proc-id');
+  if(!procSel) return;
+  
+  const filtered = companyId 
+    ? processes.filter(p=>String(p.companyId)===String(companyId))
+    : processes;
+  
+  procSel.innerHTML = '<option value="">— select process —</option>' +
+    filtered.map(p=>`<option value="${p.id}">[${p.procId}] ${p.name}</option>`).join('');
+}
+
+function filterChangeByCompany() {
+  const companyId = document.getElementById('change-filter-company').value;
+  const procSel = document.getElementById('change-filter-process');
+  if(!procSel) return;
+  
+  const filtered = companyId
+    ? processes.filter(p=>String(p.companyId)===String(companyId))
+    : processes;
+  
+  const v = procSel.value;
+  procSel.innerHTML = '<option value="">All Processes</option>' +
+    filtered.map(p=>`<option value="${p.id}">[${p.procId}] ${p.name}</option>`).join('');
+  if(v) procSel.value = v;
+  
+  renderChangeEntries();
+}
+
+function saveChangeEntry() {
+  if(!CAN_EDIT.includes(currentUser.role)) {
+    alert('Editors or above can register change assessments.');
+    return;
+  }
+  
+  const companyId = document.getElementById('chg-company-id').value;
+  const procId = document.getElementById('chg-proc-id').value;
+  const stakeholder = document.getElementById('chg-stakeholder').value.trim();
+  
+  if(!companyId || !procId || !stakeholder) {
+    alert('Company, Process and Stakeholder are required.');
+    return;
+  }
+  
+  changeEntries.push({
+    id: Date.now(),
+    companyId,
+    procId,
+    stakeholder,
+    date: document.getElementById('chg-date').value || new Date().toLocaleDateString(),
+    assessor: document.getElementById('chg-assessor').value.trim() || currentUser.name,
+    projId: document.getElementById('chg-proj-id').value || null,
+    awareness: parseInt(document.getElementById('chg-awareness').value),
+    desire: parseInt(document.getElementById('chg-desire').value),
+    knowledge: parseInt(document.getElementById('chg-knowledge').value),
+    ability: parseInt(document.getElementById('chg-ability').value),
+    reinforcement: parseInt(document.getElementById('chg-reinforcement').value),
+    notes: document.getElementById('chg-notes').value.trim(),
+    actions: document.getElementById('chg-actions').value.trim(),
+    createdBy: currentUser.name,
+    createdAt: new Date().toLocaleString()
+  });
+  
+  persist('changeEntries', changeEntries);
+  renderChangeEntries();
+  renderAdkarSummary();
+  clearChangeForm();
+  document.getElementById('change-table-card').style.display = 'block';
+}
+
+function clearChangeForm() {
+  ['chg-stakeholder','chg-date','chg-assessor','chg-notes','chg-actions'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('chg-company-id').value = '';
+  document.getElementById('chg-proc-id').innerHTML = '<option value="">— select process —</option>';
+  document.getElementById('chg-proj-id').value = '';
+  
+  // Reset sliders to 3
+  ['awareness','desire','knowledge','ability','reinforcement'].forEach(dim=>{
+    document.getElementById(`chg-${dim}`).value = 3;
+    document.getElementById(`chg-${dim}-val`).textContent = 3;
+  });
+}
+
+function deleteChangeEntry(id) {
+  if(!CAN_DELETE.includes(currentUser.role)) {
+    alert('Managers or above can delete.');
+    return;
+  }
+  if(!confirm('Delete this change assessment?')) return;
+  
+  changeEntries = changeEntries.filter(c=>c.id!==id);
+  persist('changeEntries', changeEntries);
+  renderChangeEntries();
+  renderAdkarSummary();
+  
+  if(!changeEntries.length) {
+    document.getElementById('change-table-card').style.display = 'none';
+  }
+}
+
+function renderAdkarSummary() {
+  const filterCompany = document.getElementById('change-filter-company')?.value || '';
+  const filterProcess = document.getElementById('change-filter-process')?.value || '';
+  
+  let filtered = changeEntries;
+  if(filterCompany) {
+    const companyProcs = processes.filter(p=>String(p.companyId)===String(filterCompany)).map(p=>p.id);
+    filtered = filtered.filter(c=>companyProcs.includes(parseInt(c.procId)));
+  }
+  if(filterProcess) {
+    filtered = filtered.filter(c=>String(c.procId)===String(filterProcess));
+  }
+  
+  if(!filtered.length) {
+    document.getElementById('adkar-summary-grid').innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--text3);padding:2rem">No assessments to display. Add an assessment above.</div>';
+    document.getElementById('adkar-progress-bars').innerHTML = '';
+    return;
+  }
+  
+  // Calculate averages
+  const dims = ['awareness','desire','knowledge','ability','reinforcement'];
+  const averages = {};
+  dims.forEach(dim=>{
+    const sum = filtered.reduce((s,c)=>s+c[dim], 0);
+    averages[dim] = (sum / filtered.length).toFixed(1);
+  });
+  
+  const overallAvg = (Object.values(averages).reduce((s,v)=>s+parseFloat(v), 0) / 5).toFixed(1);
+  
+  // KPI cards
+  const dimLabels = {
+    awareness: {label:'Awareness', color:'#0088ff', icon:'A'},
+    desire: {label:'Desire', color:'#00d4aa', icon:'D'},
+    knowledge: {label:'Knowledge', color:'#f59e0b', icon:'K'},
+    ability: {label:'Ability', color:'#a855f7', icon:'A'},
+    reinforcement: {label:'Reinforcement', color:'#22c55e', icon:'R'}
+  };
+  
+  document.getElementById('adkar-summary-grid').innerHTML = dims.map(dim=>{
+    const cfg = dimLabels[dim];
+    const score = averages[dim];
+    const pct = (score / 5 * 100).toFixed(0);
+    return `<div class="summary-stat" style="align-items:center;text-align:center;border-color:${cfg.color}40;background:${cfg.color}08">
+      <div style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:${cfg.color};margin-bottom:.4rem">${cfg.icon} — ${cfg.label}</div>
+      <div class="summary-stat-val" style="color:${cfg.color}">${score}</div>
+      <div style="font-size:.68rem;color:var(--text3)">${pct}% readiness</div>
+    </div>`;
+  }).join('') + `<div class="summary-stat" style="align-items:center;text-align:center;border-color:var(--accent2);background:rgba(0,136,255,.05)">
+    <div style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--accent2);margin-bottom:.4rem">Overall</div>
+    <div class="summary-stat-val" style="color:var(--accent2)">${overallAvg}</div>
+    <div style="font-size:.68rem;color:var(--text3)">${(overallAvg/5*100).toFixed(0)}% avg</div>
+  </div>`;
+  
+  // Progress bars
+  document.getElementById('adkar-progress-bars').innerHTML = dims.map(dim=>{
+    const cfg = dimLabels[dim];
+    const score = averages[dim];
+    const pct = (score / 5 * 100).toFixed(0);
+    return `<div style="display:flex;align-items:center;gap:1rem">
+      <div style="min-width:120px;font-size:.82rem;font-weight:600;color:${cfg.color}">${cfg.icon} — ${cfg.label}</div>
+      <div style="flex:1;height:24px;background:var(--surface2);border-radius:12px;overflow:hidden;border:1px solid var(--border)">
+        <div style="height:100%;background:${cfg.color};width:${pct}%;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;transition:width .5s">
+          <span style="font-size:.7rem;font-weight:700;color:#fff">${score}/5</span>
+        </div>
+      </div>
+      <span style="font-family:var(--mono);font-size:.78rem;min-width:40px;text-align:right;color:var(--text3)">${pct}%</span>
+    </div>`;
+  }).join('');
+}
+
+function renderChangeEntries() {
+  const list = document.getElementById('change-entries-list');
+  const tbody = document.getElementById('change-table-body');
+  
+  const filterCompany = document.getElementById('change-filter-company')?.value || '';
+  const filterProcess = document.getElementById('change-filter-process')?.value || '';
+  
+  let filtered = changeEntries;
+  if(filterCompany) {
+    const companyProcs = processes.filter(p=>String(p.companyId)===String(filterCompany)).map(p=>p.id);
+    filtered = filtered.filter(c=>companyProcs.includes(parseInt(c.procId)));
+  }
+  if(filterProcess) {
+    filtered = filtered.filter(c=>String(c.procId)===String(filterProcess));
+  }
+  
+  if(!filtered.length) {
+    list.innerHTML = '<div class="empty-state"><div class="es-icon">🔄</div><div class="es-text">No change assessments match the filter.</div></div>';
+    document.getElementById('change-table-card').style.display = 'none';
+    renderAdkarSummary();
+    return;
+  }
+  
+  document.getElementById('change-table-card').style.display = 'block';
+  
+  const ce = CAN_EDIT.includes(currentUser?.role);
+  const cd = CAN_DELETE.includes(currentUser?.role);
+  
+  const dimColors = {awareness:'#0088ff',desire:'#00d4aa',knowledge:'#f59e0b',ability:'#a855f7',reinforcement:'#22c55e'};
+  
+  list.innerHTML = filtered.map(c=>{
+    const proc = processes.find(p=>String(p.id)===String(c.procId));
+    const co = proc ? companies.find(x=>String(x.id)===String(proc.companyId)) : null;
+    const avg = ((c.awareness + c.desire + c.knowledge + c.ability + c.reinforcement) / 5).toFixed(1);
+    const avgPct = (avg / 5 * 100).toFixed(0);
+    const avgColor = avg >= 4 ? '#22c55e' : avg >= 3 ? '#f59e0b' : '#dc2626';
+    
+    return `<div class="card" style="margin-bottom:1rem">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:1rem">
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:.5rem">
+            ${co?`<span class="badge badge-teal" style="font-size:.65rem">${co.bizId}</span>`:''}
+            ${proc?`<span style="font-family:var(--mono);font-size:.75rem;color:var(--accent);font-weight:700">${proc.procId}</span>`:''}
+            <span style="font-size:.82rem;color:var(--text3)">·</span>
+            <span style="font-size:.72rem;color:var(--text3)">Assessed ${c.date}</span>
+          </div>
+          <div style="font-weight:700;font-size:1rem;margin-bottom:.3rem">${c.stakeholder}</div>
+          <div style="font-size:.78rem;color:var(--text3)">Assessed by <strong style="color:var(--text2)">${c.assessor}</strong></div>
+        </div>
+        <div style="text-align:center;padding:.8rem 1rem;background:${avgColor}10;border:2px solid ${avgColor}40;border-radius:var(--radius2)">
+          <div style="font-size:.68rem;text-transform:uppercase;letter-spacing:.5px;color:${avgColor};font-weight:700;margin-bottom:4px">Overall</div>
+          <div style="font-family:var(--mono);font-size:1.6rem;font-weight:900;color:${avgColor}">${avg}</div>
+          <div style="font-size:.7rem;color:var(--text3)">${avgPct}%</div>
+        </div>
+      </div>
+      
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:.6rem;margin-bottom:1rem">
+        ${['awareness','desire','knowledge','ability','reinforcement'].map(dim=>{
+          const score = c[dim];
+          const pct = (score / 5 * 100).toFixed(0);
+          const color = dimColors[dim];
+          const label = dim.charAt(0).toUpperCase();
+          return `<div style="text-align:center;padding:.6rem;background:${color}08;border:1px solid ${color}20;border-radius:6px">
+            <div style="font-size:.7rem;font-weight:700;color:${color};margin-bottom:4px">${label}</div>
+            <div style="font-family:var(--mono);font-size:1.2rem;font-weight:700;color:${color}">${score}</div>
+            <div style="font-size:.65rem;color:var(--text3)">${pct}%</div>
+          </div>`;
+        }).join('')}
+      </div>
+      
+      ${c.notes?`<div style="margin-bottom:.8rem"><div style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);margin-bottom:4px">Observations</div><div style="font-size:.83rem;color:var(--text2);line-height:1.6">${c.notes}</div></div>`:''}
+      ${c.actions?`<div style="margin-bottom:.8rem"><div style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--accent);margin-bottom:4px">Recommended Actions</div><div style="font-size:.83rem;color:var(--text2);line-height:1.6">${c.actions}</div></div>`:''}
+      
+      ${cd?`<button class="btn btn-danger" style="padding:4px 10px;font-size:.7rem" onclick="deleteChangeEntry(${c.id})">✕ Delete</button>`:''}
+    </div>`;
+  }).join('');
+  
+  // Table
+  tbody.innerHTML = filtered.map(c=>{
+    const proc = processes.find(p=>String(p.id)===String(c.procId));
+    const co = proc ? companies.find(x=>String(x.id)===String(proc.companyId)) : null;
+    const avg = ((c.awareness + c.desire + c.knowledge + c.ability + c.reinforcement) / 5).toFixed(1);
+    
+    return `<tr>
+      <td>${co?`<span style="font-family:var(--mono);font-size:.7rem;color:var(--accent2);font-weight:700">${co.bizId}</span>`:'—'}</td>
+      <td>${proc?`<span style="font-family:var(--mono);font-size:.72rem;color:var(--accent);font-weight:700">${proc.procId}</span>`:'—'}</td>
+      <td><strong>${c.stakeholder}</strong></td>
+      <td style="font-size:.75rem">${c.date}</td>
+      <td style="font-family:var(--mono);font-size:.78rem;font-weight:700;color:${dimColors.awareness}">${c.awareness}</td>
+      <td style="font-family:var(--mono);font-size:.78rem;font-weight:700;color:${dimColors.desire}">${c.desire}</td>
+      <td style="font-family:var(--mono);font-size:.78rem;font-weight:700;color:${dimColors.knowledge}">${c.knowledge}</td>
+      <td style="font-family:var(--mono);font-size:.78rem;font-weight:700;color:${dimColors.ability}">${c.ability}</td>
+      <td style="font-family:var(--mono);font-size:.78rem;font-weight:700;color:${dimColors.reinforcement}">${c.reinforcement}</td>
+      <td style="font-family:var(--mono);font-size:.82rem;font-weight:700;color:var(--accent2)">${avg}</td>
+      <td>${cd?`<button class="btn btn-danger" style="padding:3px 9px" onclick="deleteChangeEntry(${c.id})">✕</button>`:'—'}</td>
+    </tr>`;
+  }).join('');
+  
+  renderAdkarSummary();
+}
+
+// ============================================================
+// AI STEPS SELECTION
+// ============================================================
+function populateAIStepsSelect() {
+  const procId = document.getElementById('ai-proc-id').value;
+  const container = document.getElementById('ai-steps-container');
+  
+  if(!procId) {
+    container.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--text3);font-size:.78rem;padding:1rem">Select a process first to see its steps</div>';
+    return;
+  }
+  
+  const procSteps = steps.filter(s=>String(s.procId)===String(procId));
+  
+  if(!procSteps.length) {
+    container.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--text3);font-size:.78rem;padding:1rem">This process has no steps registered yet</div>';
+    return;
+  }
+  
+  container.innerHTML = procSteps.map(s=>`
+    <label style="display:flex;align-items:center;gap:6px;padding:.5rem;background:var(--surface);border:1px solid var(--border);border-radius:6px;cursor:pointer;transition:all .2s" onmouseover="this.style.background='var(--surface3)'" onmouseout="this.style.background='var(--surface)'">
+      <input type="checkbox" class="ai-step-checkbox" value="${s.id}" style="flex-shrink:0"/>
+      <span style="font-size:.78rem;line-height:1.3">${s.name}</span>
+    </label>
+  `).join('');
+}
+
+function getSelectedAISteps() {
+  const checkboxes = document.querySelectorAll('.ai-step-checkbox:checked');
+  return Array.from(checkboxes).map(cb=>parseInt(cb.value));
+}
+
+// ... (Continue with all the rest of your existing JavaScript, making sure to add these new functions and update necessary parts)
+
+</script>
+  <script src="./js/config.js"></script>
+  <script src="./js/auth.js"></script>
+  <script src="./js/app.js"></script>
+  <script src="./js/process.js"></script>
+</body>
+</html>
