@@ -1,3 +1,37 @@
+// Make bootApp available globally
+window.bootApp = async function () {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('main-header').style.display = 'flex';
+  document.getElementById('main-app').classList.add('visible');
+
+  // Set user info in header
+  const initials = currentUser.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+  const av = document.getElementById('hdr-avatar');
+  av.textContent = initials;
+  av.style.background = getRoleColor(currentUser.role);
+
+  document.getElementById('hdr-name').textContent = currentUser.name;
+  const rb = document.getElementById('hdr-role');
+  rb.textContent = currentUser.role;
+  rb.style.background = getRoleBg(currentUser.role);
+  rb.style.color = getRoleColor(currentUser.role);
+
+  // Show config nav for admins
+  if (CAN_ADMIN.includes(currentUser.role)) {
+    document.getElementById('nav-config').style.display = 'inline-flex';
+  }
+
+  // Load all data
+  await loadAllData();
+
+  // Show first section
+  showSection('register', document.querySelector('.nav-btn'));
+};
+
+let currentUser = null;
+let processes = [];
+let companies = [];
+// ... rest of your app.js code
 let currentUser = null;
 window.CAN_EDIT = ['editor', 'manager', 'admin'];        
 window.CAN_ADMIN = ['admin'];                             
