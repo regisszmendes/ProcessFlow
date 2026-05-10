@@ -337,7 +337,7 @@ window.renderCompanyTable = function () {
       <td>${c.contact || '—'}</td>
       <td style="display:flex;gap:4px">
         ${ce ? `<button class="btn btn-secondary" style="padding:3px 9px;font-size:.68rem" onclick="editCompany(${c.id})">✏️ Edit</button>` : ''}
-        ${cd ? `<button class="btn btn-danger" style="padding:3px 9px;font-size:.68rem" onclick="deleteCompany(${c.id})">Delete</button>` : '—'}
+        ${cd ? `<button class="btn btn-danger" style="padding:3px 9px;font-size:.68rem" onclick="deleteCompany(${c.id})">x Delete</button>` : '—'}
       </td>
     </tr>`;
   }).join('');
