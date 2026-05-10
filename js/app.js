@@ -71,7 +71,7 @@ window.loadAllData = async function () {
       .order('created_at', { ascending: false });
     
     if (compError) console.error('Error loading companies:', compError);
-    companies = companiesData || [];
+    window.companies = companiesData || [];
 
     const { data: processesData, error: procError } = await window.supabaseClient
       .from('processes')
@@ -79,25 +79,25 @@ window.loadAllData = async function () {
       .order('created_at', { ascending: false });
     
     if (procError) console.error('Error loading processes:', procError);
-    processes = processesData || [];
+    window.processes = processesData || [];
 
     const { data: stepsData } = await window.supabaseClient.from('steps').select('*').order('created_at', { ascending: false });
-    steps = stepsData || [];
+    window.steps = stepsData || [];
 
     const { data: metricsData } = await window.supabaseClient.from('metrics').select('*').order('created_at', { ascending: false });
-    metrics = metricsData || [];
+    window.metrics = metricsData || [];
 
     const { data: gapsData } = await window.supabaseClient.from('gaps').select('*').order('created_at', { ascending: false });
-    gaps = gapsData || [];
+    window.gaps = gapsData || [];
 
     const { data: projectsData } = await window.supabaseClient.from('projects').select('*').order('created_at', { ascending: false });
-    projects = projectsData || [];
+    window.projects = projectsData || [];
 
     const { data: tasksData } = await window.supabaseClient.from('tasks').select('*').order('created_at', { ascending: false });
-    tasks = tasksData || [];
+    window.tasks = tasksData || [];
 
     const { data: changeData } = await window.supabaseClient.from('change_entries').select('*').order('created_at', { ascending: false });
-    changeEntries = changeData || [];
+    window.changeEntries = changeData || [];
 
     populateCompanyDropdowns();
     populateProcessDropdowns();
@@ -105,7 +105,7 @@ window.loadAllData = async function () {
 
     if (typeof renderProcessTable === 'function') {
       renderProcessTable();
-      if (processes.length > 0) {
+      if (window.processes.length > 0) {
         const tableCard = document.getElementById('process-table-card');
         if (tableCard) tableCard.style.display = 'block';
       }
@@ -248,7 +248,7 @@ window.closeEditProcModal = function() {
 };
 
 window.applyEditProcess = async function() {
-  const id = parseInt(document.getElementById('epm-internal-id').value);
+  const id = document.getElementById('epm-internal-id').value;
   const updates = {
     proc_id: document.getElementById('epm-proc-id').value.trim(),
     name: document.getElementById('epm-name').value.trim(),
