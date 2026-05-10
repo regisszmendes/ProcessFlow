@@ -729,7 +729,7 @@
         <div class="form-group"><label>Contact Email</label><input type="email" id="biz-email" placeholder="contact@company.com"/></div>
       </div>
       <div class="btn-row">
-        <button class="btn btn-blue" onclick="saveCompany()">🏢 Register Company</button>
+        <button id="biz-save-btn" class="btn btn-blue" onclick="saveCompany()">🏢 Register Company</button>
         <button class="btn btn-secondary" onclick="clearCompanyForm()">↺ Clear</button>
       </div>
       <div id="biz-err" class="login-err" style="margin-top:.8rem"></div>
@@ -762,7 +762,7 @@
           <select id="adm-company-id"><option value="">— all companies —</option></select>
         </div>
       </div>
-      <div class="btn-row"><button class="btn btn-purple" onclick="adminAddUser()">➕ Add User</button></div>
+      <div class="btn-row"><button id="user-save-btn" class="btn btn-purple" onclick="adminAddUser()">➕ Add User</button></div>
       <div id="adm-err" class="login-err" style="margin-top:.8rem"></div>
       <div id="adm-ok"  class="login-ok"  style="margin-top:.8rem"></div>
     </div>
