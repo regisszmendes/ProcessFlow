@@ -733,13 +733,6 @@
     <div class="card">
       <div class="card-header"><div class="card-icon" style="background:rgba(0,112,214,.1)">🏢</div><span class="card-title">Register Company</span></div>
       <div class="form-grid">
-        <div class="form-group">
-          <label>Company ID <span style="color:var(--accent);font-weight:900">*</span></label>
-          <div style="display:flex;gap:6px">
-            <input type="text" id="biz-id" placeholder="e.g. ACME" style="font-family:var(--mono);font-size:.84rem;text-transform:uppercase"/>
-            <button class="btn btn-secondary" style="padding:8px 12px;flex-shrink:0" onclick="generateBizId()" title="Auto-generate">⚡</button>
-          </div>
-        </div>
         <div class="form-group"><label>Company Name *</label><input type="text" id="biz-name" placeholder="e.g. ACME Corporation"/></div>
         <div class="form-group"><label>Industry / Sector</label><input type="text" id="biz-industry" placeholder="e.g. Manufacturing, Healthcare, Finance"/></div>
         <div class="form-group"><label>Country</label><input type="text" id="biz-country" placeholder="e.g. Brazil, USA"/></div>
@@ -747,6 +740,13 @@
           <option value="">Select…</option>
           <option value="micro">Micro (1–9)</option>
           <option value="small">Small (10–49)</option>
+          <div class="form-group">
+          <label>Company ID <span style="color:var(--accent);font-weight:900">*</span></label>
+          <div style="display:flex;gap:6px">
+            <input type="text" id="biz-id" placeholder="e.g. ACME" style="font-family:var(--mono);font-size:.84rem;text-transform:uppercase"/>
+            <button class="btn btn-secondary" style="padding:8px 12px;flex-shrink:0" onclick="generateBizId()" title="Auto-generate">⚡</button>
+          </div>
+        </div>
           <option value="medium">Medium (50–249)</option>
           <option value="large">Large (250–999)</option>
           <option value="enterprise">Enterprise (1000+)</option>
@@ -888,15 +888,36 @@
           </div>
           <div style="font-size:.72rem;color:var(--text3);margin-top:4px">Your key is stored only in this browser's localStorage and sent exclusively to OpenAI — never to any other server.</div>
         </div>
-        <div class="form-group">
-          <label>Model</label>
-          <select id="int-model">
-            <option value="gpt-4o">GPT-4o (recommended)</option>
-            <option value="gpt-4-turbo">GPT-4 Turbo</option>
-            <option value="gpt-4">GPT-4</option>
-            <option value="gpt-3.5-turbo">GPT-3.5 Turbo (faster / cheaper)</option>
-          </select>
-        </div>
+       <div class="form-group">
+  <label>Model / Provider</label>
+  <select id="int-model">
+    <optgroup label="OpenAI">
+      <option value="gpt-4o" selected>GPT-4o (recommended)</option>
+      <option value="gpt-4o-mini">GPT-4o Mini (faster)</option>
+      <option value="gpt-4-turbo">GPT-4 Turbo</option>
+      <option value="gpt-4">GPT-4</option>
+      <option value="gpt-3.5-turbo">GPT-3.5 Turbo (cheaper)</option>
+    </optgroup>
+    <optgroup label="Anthropic Claude">
+      <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet (best)</option>
+      <option value="claude-3-5-haiku-20241022">Claude 3.5 Haiku (fast)</option>
+      <option value="claude-3-opus-20240229">Claude 3 Opus (powerful)</option>
+      <option value="claude-3-sonnet-20240229">Claude 3 Sonnet</option>
+      <option value="claude-3-haiku-20240307">Claude 3 Haiku</option>
+    </optgroup>
+    <optgroup label="Perplexity">
+      <option value="llama-3.1-sonar-large-128k-online">Llama 3.1 Sonar Large (online)</option>
+      <option value="llama-3.1-sonar-small-128k-online">Llama 3.1 Sonar Small (faster)</option>
+      <option value="llama-3.1-sonar-large-128k-chat">Llama 3.1 Sonar Large (chat)</option>
+      <option value="llama-3.1-sonar-small-128k-chat">Llama 3.1 Sonar Small</option>
+    </optgroup>
+    <optgroup label="Google Gemini">
+      <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+      <option value="gemini-1.5-flash">Gemini 1.5 Flash (fast)</option>
+      <option value="gemini-pro">Gemini Pro</option>
+    </optgroup>
+  </select>
+</div>
         <div class="form-group">
           <label>Max Response Tokens</label>
           <select id="int-max-tokens">
