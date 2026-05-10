@@ -46,8 +46,8 @@ window.saveProcess = async function () {
     owner: document.getElementById('proc-owner').value.trim(),
     version: document.getElementById('proc-version').value.trim() || '1.0',
     status: document.getElementById('proc-status').value,
-    start_date: document.getElementById('proc-start').value,
-    end_date: document.getElementById('proc-end').value,
+    start_date: document.getElementById('proc-start').value || null,
+    end_date: document.getElementById('proc-end').value || null,
     priority: document.getElementById('proc-priority').value,
     type: document.getElementById('proc-type').value,
     duration: document.getElementById('proc-duration').value.trim(),
@@ -60,7 +60,7 @@ window.saveProcess = async function () {
     risks: document.getElementById('proc-risks').value.trim(),
     rag: currentRAG,
     rag_notes: document.getElementById('proc-rag-notes').value.trim(),
-    rag_date: document.getElementById('proc-rag-date').value,
+    rag_date: document.getElementById('proc-rag-date').value || null,
     rag_by: document.getElementById('proc-rag-by').value.trim(),
     created_by: currentUser.id
   };
