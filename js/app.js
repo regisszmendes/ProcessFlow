@@ -214,7 +214,7 @@ setInterval(async function () {
 }, 4000);
 
 // ===========================================================
-// EDIT & DELETE FUNCTIONS
+// EDIT MODAL FOR PROCESS (from process.js)
 // ===========================================================
 window.openEditProcModal = function(id) {
   const proc = processes.find(p => p.id === id);
@@ -279,62 +279,6 @@ window.applyEditProcess = async function() {
   alert('✓ Updated!');
   closeEditProcModal();
   await loadAllData();
-};
-
-window.deleteStep = async function(id) {
-  if (!confirm('Delete?')) return;
-  const { error } = await window.supabaseClient.from('steps').delete().eq('id', id);
-  if (error) { alert('Error: ' + error.message); return; }
-  alert('✓ Deleted');
-  steps = steps.filter(s => s.id !== id);
-  if (typeof renderSteps === 'function') renderSteps();
-};
-
-window.deleteGap = async function(id) {
-  if (!confirm('Delete?')) return;
-  const { error } = await window.supabaseClient.from('gaps').delete().eq('id', id);
-  if (error) { alert('Error: ' + error.message); return; }
-  alert('✓ Deleted');
-  gaps = gaps.filter(g => g.id !== id);
-  if (typeof renderGaps === 'function') renderGaps();
-};
-
-window.deleteMetric = async function(id) {
-  if (!confirm('Delete?')) return;
-  const { error } = await window.supabaseClient.from('metrics').delete().eq('id', id);
-  if (error) { alert('Error: ' + error.message); return; }
-  alert('✓ Deleted');
-  metrics = metrics.filter(m => m.id !== id);
-  if (typeof renderMetrics === 'function') renderMetrics();
-};
-
-window.deleteTask = async function(id) {
-  if (!confirm('Delete?')) return;
-  const { error } = await window.supabaseClient.from('tasks').delete().eq('id', id);
-  if (error) { alert('Error: ' + error.message); return; }
-  alert('✓ Deleted');
-  tasks = tasks.filter(t => t.id !== id);
-  if (typeof renderTasks === 'function') renderTasks();
-  if (typeof renderKanban === 'function') renderKanban();
-};
-
-window.deleteChangeEntry = async function(id) {
-  if (!confirm('Delete?')) return;
-  const { error } = await window.supabaseClient.from('change_entries').delete().eq('id', id);
-  if (error) { alert('Error: ' + error.message); return; }
-  alert('✓ Deleted');
-  changeEntries = changeEntries.filter(c => c.id !== id);
-  if (typeof renderChangeEntries === 'function') renderChangeEntries();
-};
-
-window.deleteFeedback = async function(id) {
-  if (!window.CAN_ADMIN.includes(window.currentUser?.role)) { alert('Admin only'); return; }
-  if (!confirm('Delete?')) return;
-  const { error } = await window.supabaseClient.from('feedbacks').delete().eq('id', id);
-  if (error) { alert('Error: ' + error.message); return; }
-  alert('✓ Deleted');
-  feedbacks = feedbacks.filter(f => f.id !== id);
-  if (typeof renderFeedback === 'function') renderFeedback();
 };
 
 console.log('✅ app.js loaded');
