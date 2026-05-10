@@ -729,24 +729,29 @@
   </div>
 
   <!-- ===== BUSINESS ===== -->
+<!-- ===== BUSINESS ===== -->
   <div id="config-pane-biz" style="display:flex;flex-direction:column;gap:1.5rem">
     <div class="card">
       <div class="card-header"><div class="card-icon" style="background:rgba(0,112,214,.1)">🏢</div><span class="card-title">Register Company</span></div>
       <div class="form-grid">
-        <div class="form-group"><label>Company Name *</label><input type="text" id="biz-name" placeholder="e.g. ACME Corporation"/></div>
+        <!-- ✅ COMPANY NAME FIRST -->
+        <div class="form-group"><label>Company Name <span style="color:var(--accent);font-weight:900">*</span></label><input type="text" id="biz-name" placeholder="e.g. ACME Corporation"/></div>
+        
+        <!-- ✅ COMPANY ID SECOND -->
+        <div class="form-group">
+          <label>Company ID <span style="color:var(--accent);font-weight:900">*</span></label>
+          <div style="display:flex;gap:6px">
+            <input type="text" id="biz-id" placeholder="e.g. ACME-2024-001" style="font-family:var(--mono);font-size:.84rem;text-transform:uppercase"/>
+            <button class="btn btn-secondary" style="padding:8px 12px;flex-shrink:0" onclick="generateBizId()" title="Auto-generate">⚡</button>
+          </div>
+        </div>
+        
         <div class="form-group"><label>Industry / Sector</label><input type="text" id="biz-industry" placeholder="e.g. Manufacturing, Healthcare, Finance"/></div>
         <div class="form-group"><label>Country</label><input type="text" id="biz-country" placeholder="e.g. Brazil, USA"/></div>
         <div class="form-group"><label>Company Size</label><select id="biz-size">
           <option value="">Select…</option>
           <option value="micro">Micro (1–9)</option>
           <option value="small">Small (10–49)</option>
-          <div class="form-group">
-          <label>Company ID <span style="color:var(--accent);font-weight:900">*</span></label>
-          <div style="display:flex;gap:6px">
-            <input type="text" id="biz-id" placeholder="e.g. ACME" style="font-family:var(--mono);font-size:.84rem;text-transform:uppercase"/>
-            <button class="btn btn-secondary" style="padding:8px 12px;flex-shrink:0" onclick="generateBizId()" title="Auto-generate">⚡</button>
-          </div>
-        </div>
           <option value="medium">Medium (50–249)</option>
           <option value="large">Large (250–999)</option>
           <option value="enterprise">Enterprise (1000+)</option>
@@ -775,7 +780,6 @@
       </div>
     </div>
   </div>
-
   <!-- ===== USERS ===== -->
   <div id="config-pane-users" style="display:none;flex-direction:column;gap:1.5rem">
     <div class="card">
