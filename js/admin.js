@@ -206,6 +206,7 @@ window.editCompany = async function (id) {
   let cancelBtn = document.querySelector('button[onclick*="cancelEditCompany"]');
   if (!cancelBtn) {
     cancelBtn = document.createElement('button');
+    cancelBtn.id = 'biz-cancel-btn';
     cancelBtn.className = 'btn btn-secondary';
     cancelBtn.textContent = '✕ Cancel';
     cancelBtn.onclick = cancelEditCompany;
@@ -336,8 +337,8 @@ window.renderCompanyTable = function () {
       <td style="text-align:center">${procCount}</td>
       <td>${c.contact || '—'}</td>
       <td style="display:flex;gap:4px">
-        ${ce ? `<button class="btn btn-secondary" style="padding:3px 9px;font-size:.68rem" onclick="editCompany(${c.id})">✏️ Edit</button>` : ''}
-        ${cd ? `<button class="btn btn-danger" style="padding:3px 9px;font-size:.68rem" onclick="deleteCompany(${c.id})">x Delete</button>` : '—'}
+        ${ce ? `<button class="btn btn-secondary" style="padding:3px 9px;font-size:.68rem" onclick="editCompany('${c.id}')">✏️ Edit</button>` : ''}
+        ${cd ? `<button class="btn btn-danger" style="padding:3px 9px;font-size:.68rem" onclick="deleteCompany('${c.id}')">x Delete</button>` : '—'}
       </td>
     </tr>`;
   }).join('');
