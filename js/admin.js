@@ -289,14 +289,14 @@ window.cancelEditCompany = function () {
   document.getElementById('biz-id').disabled = false;
 
   // Reset button
-  const saveBtn = document.querySelector('button[onclick*="Company"]');
+  const saveBtn = document.getElementById('biz-save-btn');
   if (saveBtn) {
     saveBtn.textContent = '🏢 Register Company';
     saveBtn.onclick = saveCompany;
   }
 
   // Remove cancel button
-  const cancelBtn = document.querySelector('button[onclick*="cancelEditCompany"]');
+  const cancelBtn = document.getElementById('biz-cancel-btn');
   if (cancelBtn) {
     cancelBtn.remove();
   }
@@ -337,7 +337,7 @@ window.renderCompanyTable = function () {
       <td>${c.contact || '—'}</td>
       <td style="display:flex;gap:4px">
         ${ce ? `<button class="btn btn-secondary" style="padding:3px 9px;font-size:.68rem" onclick="editCompany(${c.id})">✏️ Edit</button>` : ''}
-        ${cd ? `<button class="btn btn-danger" style="padding:3px 9px;font-size:.68rem" onclick="deleteCompany(${c.id})">✕</button>` : '—'}
+        ${cd ? `<button class="btn btn-danger" style="padding:3px 9px;font-size:.68rem" onclick="deleteCompany(${c.id})">Delete</button>` : '—'}
       </td>
     </tr>`;
   }).join('');
@@ -556,7 +556,7 @@ window.editUser = async function (userId) {
   document.getElementById('adm-company-id').value = user.company_id || '';
 
   // Change button to "Update User"
-  const addBtn = document.querySelector('button[onclick="adminAddUser()"]');
+  const addBtn = document.getElementById('user-save-btn');
   if (addBtn) {
     addBtn.textContent = '✏️ Update User';
     addBtn.onclick = () => updateUser(userId);
@@ -648,7 +648,7 @@ window.cancelEditUser = function () {
   document.getElementById('adm-company-id').value = '';
 
   // Reset button
-  const btn = document.querySelector('button[onclick*="User"]');
+  const btn = document.getElementById('user-save-btn');
   if (btn) {
     btn.textContent = '➕ Add User';
     btn.onclick = adminAddUser;
