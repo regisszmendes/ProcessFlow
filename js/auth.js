@@ -2,17 +2,19 @@
 // GLOBAL CURRENT USER
 // =========================
 let currentUser = null;
+
 // =========================
 // HELPERS
 // =========================
 function showError(el, message) {
   el.textContent = message;
   el.style.display = 'block';
-}//
+}
 
 function clearMessages(...elements) {
   elements.forEach(el => el.style.display = 'none');
-}//
+}
+
 // =========================
 // LOGIN
 // =========================
@@ -27,56 +29,65 @@ window.doLogin = async function () {
 
   clearMessages(err);
 
+  // ✅ VALIDATION FIRST
+  if (!email || !pass) {
+    showError(err, 'Please enter both email and password.');
+    return;
+  }
+
   // loading state
   btn.disabled = true;
   btn.textContent = 'Logging in...';
 
   try {
+    // ✅ ATTEMPT LOGIN
     const { data, error } = await window.supabaseClient.auth.signInWithPassword({
       email,
       password: pass
     });
 
     if (error || !data?.user) {
-      console.error(error);
+      console.error('Login error:', error);
       showError(err, 'Invalid email or password.');
       return;
     }
 
-    const { data: userProfile, error: profileError } = await supabaseClient
+    // ✅ FETCH USER PROFILE FROM DATABASE
+    const { data: userProfile, error: profileError } = await window.supabaseClient
       .from('users')
       .select('*')
       .eq('id', data.user.id)
       .single();
 
     if (profileError || !userProfile) {
-      console.error(profileError);
-      showError(err, 'User profile not found.');
+      console.error('Profile fetch error:', profileError);
+      showError(err, 'User profile not found. Please contact support.');
       return;
     }
 
+    // ✅ CHECK IF ACCOUNT IS ACTIVE
     if (!userProfile.active) {
-      showError(err, 'Your account has been disabled.');
+      showError(err, 'Your account has been disabled. Please contact support.');
       return;
     }
 
+    // ✅ SUCCESS - SET CURRENT USER AND BOOT APP
     window.currentUser = userProfile;
+    console.log('✅ Login successful:', userProfile);
     bootApp();
 
   } catch (e) {
-    console.error(e);
-    showError(err, 'Unexpected error during login.');
+    console.error('Unexpected login error:', e);
+    showError(err, 'Unexpected error during login. Please try again.');
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Login';
+    btn.textContent = 'Sign In';
   }
 };
-
 
 // =========================
 // REGISTER
 // =========================
-let isSubmitting = false;
 window.doRegister = async function () {
   const nameInput = document.getElementById('reg-name');
   const emailInput = document.getElementById('reg-email');
@@ -98,7 +109,7 @@ window.doRegister = async function () {
   // VALIDATION
   // =========================
   if (!name || !email || !pass) {
-    showError(err, 'All fields required.');
+    showError(err, 'All fields are required.');
     return;
   }
 
@@ -128,7 +139,7 @@ window.doRegister = async function () {
     });
 
     if (signUpError || !data?.user) {
-      console.error(signUpError);
+      console.error('Signup error:', signUpError);
       showError(err, signUpError?.message || 'Error creating account.');
       return;
     }
@@ -140,47 +151,60 @@ window.doRegister = async function () {
       id: data.user.id,
       name,
       email,
-      role: 'manager',
+      role: 'viewer',  // ✅ Changed default role to 'viewer' for security
       active: true,
     };
 
-    const { error: insertError } = await supabaseClient
+    // ✅ USING INSERT INSTEAD OF UPSERT
+    const { error: insertError } = await window.supabaseClient
       .from('users')
-      .upsert([newUser]);
+      .insert([newUser]);
 
     if (insertError) {
-      console.error(insertError);
-      showError(err, 'Error creating user profile.');
+      console.error('User insert error:', insertError);
+      showError(err, 'Error creating user profile: ' + insertError.message);
       return;
     }
+
+    console.log('✅ User created in database:', newUser);
 
     // =========================
     // EMAIL CONFIRMATION FLOW
     // =========================
     if (!data.session) {
-      ok.textContent = 'Check your email to confirm your account.';
+      ok.textContent = 'Check your email to confirm your account, then sign in.';
       ok.style.display = 'block';
+      
+      // Clear form
+      nameInput.value = '';
+      emailInput.value = '';
+      passInput.value = '';
+      pass2Input.value = '';
+      
       return;
     }
 
     // =========================
-    // AUTO LOGIN
+    // AUTO LOGIN (if email confirmation disabled)
     // =========================
     window.currentUser = newUser;
 
-    ok.textContent = 'Account created successfully!';
+    ok.textContent = 'Account created successfully! Logging you in...';
     ok.style.display = 'block';
 
-    bootApp();
+    setTimeout(() => {
+      bootApp();
+    }, 1000);
 
   } catch (e) {
-    console.error(e);
+    console.error('Unexpected registration error:', e);
     showError(err, 'Unexpected error during registration.');
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Register';
+    btn.textContent = 'Create Account';
   }
 };
+
 // =========================
 // LOGOUT
 // =========================
@@ -214,7 +238,6 @@ window.doLogout = async function () {
   );
 };
 
-
 // =========================
 // TAB SWITCH
 // =========================
@@ -231,17 +254,23 @@ window.switchLoginTab = function (tab, btn) {
     tab === 'register' ? 'block' : 'none';
 };
 
-
 // =========================
-// SESSION AUTO-RESTORE
+// SESSION AUTO-RESTORE (ONLY ON PAGE LOAD)
 // =========================
 window.addEventListener('DOMContentLoaded', async () => {
+  console.log('🔐 Checking for existing session...');
+  
   try {
     const { data: { session } } = await window.supabaseClient.auth.getSession();
 
-    if (!session?.user) return;
+    if (!session?.user) {
+      console.log('❌ No active session found');
+      return;
+    }
 
-    const { data: userProfile, error } = await supabaseClient
+    console.log('✅ Active session found, fetching user profile...');
+
+    const { data: userProfile, error } = await window.supabaseClient
       .from('users')
       .select('*')
       .eq('id', session.user.id)
@@ -252,57 +281,22 @@ window.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
-    if (userProfile?.active) {
-      window.currentUser = userProfile;
-      bootApp();
+    if (!userProfile) {
+      console.error('User profile not found for session');
+      return;
     }
+
+    if (!userProfile.active) {
+      console.log('Account is inactive, showing login screen');
+      await window.supabaseClient.auth.signOut();
+      return;
+    }
+
+    console.log('✅ Session restored for user:', userProfile.name);
+    window.currentUser = userProfile;
+    bootApp();
 
   } catch (e) {
     console.error('Unexpected session restore error:', e);
   }
 });
-//Login temporary
-async function seedAdmin() {
-  const email = "admin@admin.com";
-  const password = "123456";
-
-  // Try to sign up
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password
-  });
-
-  let userId;
-
-  if (error) {
-    console.log("User may already exist, trying to fetch...");
-
-    // 👉 LOGIN instead to get the user
-    const { data: loginData, error: loginError } =
-      await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
-
-    if (loginError) {
-      console.error("Cannot login:", loginError.message);
-      return;
-    }
-
-    userId = loginData.user.id;
-
-  } else {
-    userId = data.user.id;
-  }
-
-  // 👉 Now ALWAYS insert into users table
-  await supabase.from("users").insert([
-    {
-      id: userId,
-      email: email,
-      role: "admin"
-    }
-  ]);
-
-  console.log("Admin ensured");
-}
