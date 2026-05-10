@@ -12,6 +12,9 @@ let feedbacks = [];
 let changeEntries = [];
 let currentRAG = null;
 
+// ✅ CRITICAL: currentUser is stored on window object (set in auth.js)
+// Don't declare it here as a local variable!
+
 window.CAN_EDIT = ['editor', 'manager', 'admin'];
 window.CAN_DELETE = ['manager', 'admin'];
 window.CAN_AI = ['manager', 'admin'];
@@ -21,9 +24,9 @@ window.CAN_ADMIN = ['admin'];
 // BOOT APP - MUST BE FIRST AND GLOBAL
 // ===========================================================
 window.bootApp = async function () {
-  console.log('🚀 bootApp called with user:', currentUser);
+  console.log('🚀 bootApp called with user:', window.currentUser);
   
-  if (!currentUser) {
+  if (!window.currentUser) {
     console.error('❌ Cannot boot app: no current user');
     return;
   }
@@ -33,24 +36,24 @@ window.bootApp = async function () {
   document.getElementById('main-app').classList.add('visible');
 
   // Set user info in header
-  const initials = currentUser.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+  const initials = window.currentUser.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
   const av = document.getElementById('hdr-avatar');
   av.textContent = initials;
-  av.style.background = getRoleColor(currentUser.role);
+  av.style.background = getRoleColor(window.currentUser.role);
 
-  document.getElementById('hdr-name').textContent = currentUser.name;
+  document.getElementById('hdr-name').textContent = window.currentUser.name;
   const rb = document.getElementById('hdr-role');
-  rb.textContent = currentUser.role;
-  rb.style.background = getRoleBg(currentUser.role);
-  rb.style.color = getRoleColor(currentUser.role);
+  rb.textContent = window.currentUser.role;
+  rb.style.background = getRoleBg(window.currentUser.role);
+  rb.style.color = getRoleColor(window.currentUser.role);
 
   // ✅ SHOW CONFIG NAV FOR ADMINS - IMPROVED LOGIC
   const configNav = document.getElementById('nav-config');
-  if (configNav && window.CAN_ADMIN.includes(currentUser.role)) {
+  if (configNav && window.CAN_ADMIN.includes(window.currentUser.role)) {
     console.log('✅ Showing config nav for admin user');
     configNav.style.display = 'inline-flex';
   } else {
-    console.log('⚠️ Config nav hidden - user role:', currentUser.role);
+    console.log('⚠️ Config nav hidden - user role:', window.currentUser.role);
     if (configNav) {
       configNav.style.display = 'none';
     }
@@ -276,7 +279,7 @@ window.addEventListener('DOMContentLoaded', async function () {
 // ADMIN PENDING USER POLL
 // =========================
 setInterval(async function () {
-  if (!currentUser || !window.CAN_ADMIN?.includes(currentUser.role)) return;
+  if (!window.currentUser || !window.CAN_ADMIN?.includes(window.currentUser.role)) return;
 
   const { data: users, error } = await window.supabaseClient
     .from('users')
