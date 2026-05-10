@@ -241,7 +241,7 @@ window.renderChangeEntries = function () {
       ${c.notes ? `<div style="margin-bottom:.8rem"><div style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);margin-bottom:4px">Observations</div><div style="font-size:.83rem;color:var(--text2);line-height:1.6">${c.notes}</div></div>` : ''}
       ${c.actions ? `<div style="margin-bottom:.8rem"><div style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--accent);margin-bottom:4px">Recommended Actions</div><div style="font-size:.83rem;color:var(--text2);line-height:1.6">${c.actions}</div></div>` : ''}
 
-      ${cd ? `<button class="btn btn-danger" style="padding:4px 10px;font-size:.7rem" onclick="deleteChangeEntry(${c.id})">✕ Delete</button>` : ''}
+      ${cd ? `<button class="btn btn-danger" style="padding:4px 10px;font-size:.7rem" onclick="deleteChangeEntry('${c.id}')">✕ Delete</button>` : ''}
     </div>`;
   }).join('');
 
@@ -262,7 +262,7 @@ window.renderChangeEntries = function () {
       <td style="font-family:var(--mono);font-size:.78rem;font-weight:700;color:${dimColors.ability}">${c.ability}</td>
       <td style="font-family:var(--mono);font-size:.78rem;font-weight:700;color:${dimColors.reinforcement}">${c.reinforcement}</td>
       <td style="font-family:var(--mono);font-size:.82rem;font-weight:700;color:var(--accent2)">${avg}</td>
-      <td>${cd ? `<button class="btn btn-danger" style="padding:3px 9px" onclick="deleteChangeEntry(${c.id})">✕</button>` : '—'}</td>
+      <td>${cd ? `<button class="btn btn-danger" style="padding:3px 9px" onclick="deleteChangeEntry('${c.id}')">✕</button>` : '—'}</td>
     </tr>`;
   }).join('');
 
