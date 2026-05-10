@@ -195,7 +195,7 @@ window.editCompany = async function (id) {
   document.getElementById('biz-email').value = company.email || '';
 
   // Change buttons
-  const saveBtn = document.querySelector('button[onclick="saveCompany()"]');
+  const saveBtn = document.getElementById('biz-save-btn');
   if (saveBtn) {
     saveBtn.textContent = '✏️ Update Company';
     saveBtn.onclick = () => updateCompany(id);
