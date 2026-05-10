@@ -262,6 +262,48 @@ window.showSection = function (id, btn) {
   if (id === 'change' && typeof renderChangeEntries === 'function') {
     renderChangeEntries();
   }
+  
+  // ✅ If opening config section, show business pane by default
+  if (id === 'config') {
+    switchConfigTab('biz', document.getElementById('ctab-biz'));
+  }
+};
+
+// =========================
+// CONFIG SUB-TABS
+// =========================
+window.switchConfigTab = function (tab, btn) {
+  // Remove active class from all config tab buttons
+  document.querySelectorAll('.graph-tab').forEach(b => b.classList.remove('active'));
+  
+  // Add active class to clicked button
+  if (btn) btn.classList.add('active');
+  
+  // Hide all config panes
+  const panes = ['config-pane-biz', 'config-pane-users', 'config-pane-analytics', 'config-pane-integration'];
+  panes.forEach(paneId => {
+    const pane = document.getElementById(paneId);
+    if (pane) pane.style.display = 'none';
+  });
+  
+  // Show selected pane
+  const selectedPane = document.getElementById('config-pane-' + tab);
+  if (selectedPane) {
+    selectedPane.style.display = 'flex';
+  }
+  
+  // ✅ Load specific data when tabs are opened
+  if (tab === 'biz' && typeof renderCompanyTable === 'function') {
+    renderCompanyTable();
+  }
+  
+  if (tab === 'users' && typeof renderUserTable === 'function') {
+    renderUserTable();
+  }
+  
+  if (tab === 'analytics' && typeof renderAnalytics === 'function') {
+    renderAnalytics();
+  }
 };
 
 // =========================
