@@ -1,7 +1,8 @@
 // =========================
 // GLOBAL CURRENT USER
 // =========================
-let currentUser = null;
+// ✅ CRITICAL: currentUser is stored on window.currentUser
+// This makes it accessible across all JS files
 
 // =========================
 // HELPERS
