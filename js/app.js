@@ -1,7 +1,7 @@
 // ===========================================================
 // GLOBAL VARIABLES
 // ===========================================================
-let processes = [];
+window.processes = window.processes || [];
 let companies = [];
 let steps = [];
 let metrics = [];
