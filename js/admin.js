@@ -83,7 +83,7 @@ window.saveCompany = async function () {
   document.getElementById('biz-table-card').style.display = 'block';
 };
 
-// GENERATE COMPANY ID
+// GENERATE COMPANY ID (Standardized format)
 window.generateBizId = function () {
   const nameInput = document.getElementById('biz-name').value.trim().toUpperCase();
   
@@ -92,17 +92,27 @@ window.generateBizId = function () {
     return;
   }
 
-  // Extract first letters of each word, max 4 chars
+  // Extract first letters of each word to create prefix (max 4 chars)
   const words = nameInput.split(/\s+/);
-  let bizId = '';
+  let prefix = '';
   
   if (words.length === 1) {
-    bizId = words[0].substring(0, 4);
+    // Single word: take first 3-4 letters
+    prefix = words[0].substring(0, 4);
   } else {
-    bizId = words.map(w => w[0]).join('').substring(0, 4);
+    // Multiple words: take first letter of each word
+    prefix = words.map(w => w[0]).join('').substring(0, 4);
   }
 
-  document.getElementById('biz-id').value = bizId;
+  // Standardized format: PREFIX-YYYY-NNN (e.g., ACME-2024-001)
+  const year = new Date().getFullYear();
+  const existingCompanies = companies.filter(c => c.biz_id.startsWith(prefix));
+  const sequence = String(existingCompanies.length + 1).padStart(3, '0');
+
+  const standardizedId = `${prefix}-${year}-${sequence}`;
+  document.getElementById('biz-id').value = standardizedId;
+  
+  console.log(`Generated Company ID: ${standardizedId}`);
 };
 
 // CLEAR COMPANY FORM
@@ -158,12 +168,148 @@ window.deleteCompany = async function (id) {
   renderCompanyTable();
 };
 
+// EDIT COMPANY
+window.editCompany = async function (id) {
+  if (!window.CAN_ADMIN.includes(window.currentUser?.role)) {
+    alert('Only admins can edit companies.');
+    return;
+  }
+
+  // Fetch company data
+  const company = companies.find(c => c.id === id);
+  if (!company) {
+    alert('Company not found.');
+    return;
+  }
+
+  // Populate form
+  document.getElementById('biz-name').value = company.name;
+  document.getElementById('biz-id').value = company.biz_id;
+  document.getElementById('biz-id').disabled = true; // Can't change ID
+  document.getElementById('biz-industry').value = company.industry || '';
+  document.getElementById('biz-country').value = company.country || '';
+  document.getElementById('biz-size').value = company.size || '';
+  document.getElementById('biz-status').value = company.status || 'active';
+  document.getElementById('biz-desc').value = company.description || '';
+  document.getElementById('biz-contact').value = company.contact || '';
+  document.getElementById('biz-email').value = company.email || '';
+
+  // Change buttons
+  const saveBtn = document.querySelector('button[onclick="saveCompany()"]');
+  if (saveBtn) {
+    saveBtn.textContent = '✏️ Update Company';
+    saveBtn.onclick = () => updateCompany(id);
+  }
+
+  // Add cancel button if not exists
+  const btnRow = document.querySelector('#config-pane-biz .btn-row');
+  let cancelBtn = document.querySelector('button[onclick*="cancelEditCompany"]');
+  if (!cancelBtn) {
+    cancelBtn = document.createElement('button');
+    cancelBtn.className = 'btn btn-secondary';
+    cancelBtn.textContent = '✕ Cancel';
+    cancelBtn.onclick = cancelEditCompany;
+    btnRow.appendChild(cancelBtn);
+  }
+
+  // Scroll to form
+  document.querySelector('#config-pane-biz').scrollIntoView({ behavior: 'smooth' });
+};
+
+// UPDATE COMPANY
+window.updateCompany = async function (id) {
+  if (!window.CAN_ADMIN.includes(window.currentUser?.role)) {
+    alert('Only admins can update companies.');
+    return;
+  }
+
+  const name = document.getElementById('biz-name').value.trim();
+  const industry = document.getElementById('biz-industry').value.trim();
+  const country = document.getElementById('biz-country').value.trim();
+  const size = document.getElementById('biz-size').value;
+  const status = document.getElementById('biz-status').value;
+  const desc = document.getElementById('biz-desc').value.trim();
+  const contact = document.getElementById('biz-contact').value.trim();
+  const email = document.getElementById('biz-email').value.trim();
+
+  const err = document.getElementById('biz-err');
+  const ok = document.getElementById('biz-ok');
+
+  err.style.display = 'none';
+  ok.style.display = 'none';
+
+  // Validation
+  if (!name) {
+    err.textContent = 'Company Name is required.';
+    err.style.display = 'block';
+    return;
+  }
+
+  const updateData = {
+    name,
+    industry,
+    country,
+    size,
+    status,
+    description: desc,
+    contact,
+    email,
+    updated_at: new Date().toISOString()
+  };
+
+  const { error } = await window.supabaseClient
+    .from('companies')
+    .update(updateData)
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error updating company:', error);
+    err.textContent = 'Error updating company: ' + error.message;
+    err.style.display = 'block';
+    return;
+  }
+
+  ok.textContent = '✓ Company updated successfully!';
+  ok.style.display = 'block';
+
+  // Reset form
+  cancelEditCompany();
+
+  // Reload data
+  await loadAllData();
+  renderCompanyTable();
+};
+
+// CANCEL EDIT COMPANY
+window.cancelEditCompany = function () {
+  // Clear form
+  clearCompanyForm();
+  
+  // Re-enable ID field
+  document.getElementById('biz-id').disabled = false;
+
+  // Reset button
+  const saveBtn = document.querySelector('button[onclick*="Company"]');
+  if (saveBtn) {
+    saveBtn.textContent = '🏢 Register Company';
+    saveBtn.onclick = saveCompany;
+  }
+
+  // Remove cancel button
+  const cancelBtn = document.querySelector('button[onclick*="cancelEditCompany"]');
+  if (cancelBtn) {
+    cancelBtn.remove();
+  }
+};
+
 // RENDER COMPANY TABLE
 window.renderCompanyTable = function () {
   const tbody = document.getElementById('biz-table-body');
   if (!tbody) return;
 
   const cd = window.CAN_DELETE.includes(window.currentUser?.role);
+  const ce = window.CAN_ADMIN.includes(window.currentUser?.role);
+  
   const sizeBadge = {
     micro: 'badge-gray',
     small: 'badge-blue',
@@ -189,7 +335,10 @@ window.renderCompanyTable = function () {
       <td><span class="badge ${statusBadge[c.status] || 'badge-gray'}">${c.status}</span></td>
       <td style="text-align:center">${procCount}</td>
       <td>${c.contact || '—'}</td>
-      <td>${cd ? `<button class="btn btn-danger" style="padding:3px 9px" onclick="deleteCompany(${c.id})">✕</button>` : '—'}</td>
+      <td style="display:flex;gap:4px">
+        ${ce ? `<button class="btn btn-secondary" style="padding:3px 9px;font-size:.68rem" onclick="editCompany(${c.id})">✏️ Edit</button>` : ''}
+        ${cd ? `<button class="btn btn-danger" style="padding:3px 9px;font-size:.68rem" onclick="deleteCompany(${c.id})">✕</button>` : '—'}
+      </td>
     </tr>`;
   }).join('');
 
@@ -999,6 +1148,8 @@ window.callAI = async function (userMessage, processContext = '') {
 
 // CALL OPENAI
 async function callOpenAI(apiKey, systemPrompt, userMessage, maxTokens) {
+  const model = localStorage.getItem('pf_model') || 'gpt-4o';
+  
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -1006,7 +1157,7 @@ async function callOpenAI(apiKey, systemPrompt, userMessage, maxTokens) {
       'Authorization': `Bearer ${apiKey}`
     },
     body: JSON.stringify({
-      model: localStorage.getItem('pf_model') || 'gpt-4o',
+      model: model,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userMessage }
@@ -1027,6 +1178,8 @@ async function callOpenAI(apiKey, systemPrompt, userMessage, maxTokens) {
 
 // CALL CLAUDE
 async function callClaudeAPI(apiKey, systemPrompt, userMessage, maxTokens) {
+  const model = localStorage.getItem('pf_model') || 'claude-3-5-sonnet-20241022';
+  
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -1035,7 +1188,7 @@ async function callClaudeAPI(apiKey, systemPrompt, userMessage, maxTokens) {
       'anthropic-version': '2023-06-01'
     },
     body: JSON.stringify({
-      model: 'claude-3-5-sonnet-20241022',
+      model: model,
       max_tokens: maxTokens,
       system: systemPrompt,
       messages: [{ role: 'user', content: userMessage }]
@@ -1053,6 +1206,8 @@ async function callClaudeAPI(apiKey, systemPrompt, userMessage, maxTokens) {
 
 // CALL PERPLEXITY
 async function callPerplexity(apiKey, systemPrompt, userMessage, maxTokens) {
+  const model = localStorage.getItem('pf_model') || 'llama-3.1-sonar-large-128k-online';
+  
   const response = await fetch('https://api.perplexity.ai/chat/completions', {
     method: 'POST',
     headers: {
@@ -1060,7 +1215,7 @@ async function callPerplexity(apiKey, systemPrompt, userMessage, maxTokens) {
       'Authorization': `Bearer ${apiKey}`
     },
     body: JSON.stringify({
-      model: 'llama-3.1-sonar-large-128k-online',
+      model: model,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userMessage }
@@ -1080,9 +1235,10 @@ async function callPerplexity(apiKey, systemPrompt, userMessage, maxTokens) {
 
 // CALL GEMINI
 async function callGemini(apiKey, systemPrompt, userMessage, maxTokens) {
+  const model = localStorage.getItem('pf_model') || 'gemini-1.5-pro';
   const fullPrompt = `${systemPrompt}\n\n${userMessage}`;
   
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`, {
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
