@@ -74,6 +74,10 @@ window.doLogin = async function () {
 
     // ✅ SUCCESS - SET CURRENT USER AND BOOT APP
     window.currentUser = userProfile;
+    
+    // ✅ Set flag to allow session restore on page reload
+    sessionStorage.setItem('pf_logged_in', 'true');
+    
     console.log('✅ Login successful:', userProfile);
     bootApp();
 
@@ -217,6 +221,9 @@ window.doLogout = async function () {
   }
 
   window.currentUser = null;
+  
+  // ✅ Clear the login flag
+  sessionStorage.removeItem('pf_logged_in');
 
   document.getElementById('main-app').classList.remove('visible');
   document.getElementById('main-header').style.display = 'none';
@@ -293,9 +300,18 @@ window.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
-    console.log('✅ Session restored for user:', userProfile.name);
-    window.currentUser = userProfile;
-    bootApp();
+    // ✅ FIX: ONLY AUTO-LOGIN IF USER EXPLICITLY LOGGED IN THIS SESSION
+    // Check if there's a flag indicating they logged in via the login button
+    const hasLoggedIn = sessionStorage.getItem('pf_logged_in');
+    
+    if (hasLoggedIn === 'true') {
+      console.log('✅ Session restored for user:', userProfile.name);
+      window.currentUser = userProfile;
+      bootApp();
+    } else {
+      console.log('⚠️ Session exists but user never clicked login - clearing it');
+      await window.supabaseClient.auth.signOut();
+    }
 
   } catch (e) {
     console.error('Unexpected session restore error:', e);
