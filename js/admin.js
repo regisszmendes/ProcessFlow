@@ -139,11 +139,11 @@ window.deleteCompany = async function (id) {
     return;
   }
 
-  const company = companies.find(c => c.id === id);
+  const company = companies.find(c => c.id == id);
   if (!company) return;
 
   // Check for linked processes
-  const linkedProcs = processes.filter(p => p.company_id === id);
+  const linkedProcs = processes.filter(p => p.company_id == id);
 
   const detail = linkedProcs.length 
     ? `\n\nThis will also affect ${linkedProcs.length} linked process(es).`
