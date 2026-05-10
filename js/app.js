@@ -304,6 +304,10 @@ window.switchConfigTab = function (tab, btn) {
   if (tab === 'analytics' && typeof renderAnalytics === 'function') {
     renderAnalytics();
   }
+  
+  if (tab === 'integration' && typeof loadIntegrationSettings === 'function') {
+    loadIntegrationSettings();
+  }
 };
 
 // =========================
