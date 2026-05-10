@@ -189,6 +189,7 @@ window.clearProcessForm = function () {
 window.renderProcessTable = function () {
   const tbody = document.getElementById('process-table-body');
   if (!tbody) return;
+  const processes = window.processes || [];
 
   const ce = CAN_EDIT.includes(currentUser?.role);
   const cd = CAN_DELETE.includes(currentUser?.role);
