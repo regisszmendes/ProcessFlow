@@ -311,7 +311,8 @@ window.cancelEditCompany = function () {
 window.renderCompanyTable = function () {
   const tbody = document.getElementById('biz-table-body');
   if (!tbody) return;
-
+  const companies = window.companies || [];
+  const processes = window.processes || [];
   const cd = window.CAN_DELETE.includes(window.currentUser?.role);
   const ce = window.CAN_ADMIN.includes(window.currentUser?.role);
   
