@@ -1,16 +1,16 @@
 // ===========================================================
 // GLOBAL VARIABLES
 // ===========================================================
-window.processes = window.processes || [];
-let companies = [];
-let steps = [];
-let metrics = [];
-let gaps = [];
-let projects = [];
-let tasks = [];
-let feedbacks = [];
-let changeEntries = [];
-let currentRAG = null;
+window.processes = [];
+window.companies = [];
+window.steps = [];
+window.metrics = [];
+window.gaps = [];
+window.projects = [];
+window.tasks = [];
+window.feedbacks = [];
+window.changeEntries = [];
+window.currentRAG = null;
 
 window.CAN_EDIT = ['editor', 'manager', 'admin'];
 window.CAN_DELETE = ['manager', 'admin'];
