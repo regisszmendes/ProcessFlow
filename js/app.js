@@ -354,3 +354,260 @@ setInterval(async function () {
 }, 4000);
 
 console.log('✅ app.js loaded');
+// ===========================================================
+// MISSING EDIT & DELETE FUNCTIONS
+// ===========================================================
+// Add this to the END of your app.js file
+
+// ===== PROCESS EDIT MODAL =====
+window.openEditProcModal = function(id) {
+  const proc = processes.find(p => p.id === id);
+  if (!proc) return;
+  
+  document.getElementById('epm-internal-id').value = id;
+  document.getElementById('epm-proc-id-label').textContent = proc.proc_id;
+  document.getElementById('epm-proc-id').value = proc.proc_id;
+  document.getElementById('epm-name').value = proc.name;
+  document.getElementById('epm-dept').value = proc.department || '';
+  document.getElementById('epm-owner').value = proc.owner || '';
+  document.getElementById('epm-version').value = proc.version || '';
+  document.getElementById('epm-status').value = proc.status;
+  document.getElementById('epm-priority').value = proc.priority;
+  document.getElementById('epm-type').value = proc.type;
+  document.getElementById('epm-start').value = proc.start_date || '';
+  document.getElementById('epm-end').value = proc.end_date || '';
+  document.getElementById('epm-duration').value = proc.duration || '';
+  document.getElementById('epm-frequency').value = proc.frequency || '';
+  document.getElementById('epm-desc').value = proc.description || '';
+  document.getElementById('epm-input').value = proc.input || '';
+  document.getElementById('epm-output').value = proc.output || '';
+  document.getElementById('epm-stakeholders').value = proc.stakeholders || '';
+  document.getElementById('epm-tools').value = proc.tools || '';
+  document.getElementById('epm-kpis').value = proc.kpis || '';
+  document.getElementById('epm-risks').value = proc.risks || '';
+  
+  document.getElementById('edit-proc-modal').style.display = 'flex';
+};
+
+window.closeEditProcModal = function() {
+  document.getElementById('edit-proc-modal').style.display = 'none';
+};
+
+window.applyEditProcess = async function() {
+  const id = parseInt(document.getElementById('epm-internal-id').value);
+  
+  const updates = {
+    proc_id: document.getElementById('epm-proc-id').value.trim(),
+    name: document.getElementById('epm-name').value.trim(),
+    department: document.getElementById('epm-dept').value.trim(),
+    owner: document.getElementById('epm-owner').value.trim(),
+    version: document.getElementById('epm-version').value.trim(),
+    status: document.getElementById('epm-status').value,
+    priority: document.getElementById('epm-priority').value,
+    type: document.getElementById('epm-type').value,
+    start_date: document.getElementById('epm-start').value || null,
+    end_date: document.getElementById('epm-end').value || null,
+    duration: document.getElementById('epm-duration').value.trim(),
+    frequency: document.getElementById('epm-frequency').value,
+    description: document.getElementById('epm-desc').value.trim(),
+    input: document.getElementById('epm-input').value.trim(),
+    output: document.getElementById('epm-output').value.trim(),
+    stakeholders: document.getElementById('epm-stakeholders').value.trim(),
+    tools: document.getElementById('epm-tools').value.trim(),
+    kpis: document.getElementById('epm-kpis').value.trim(),
+    risks: document.getElementById('epm-risks').value.trim(),
+    updated_at: new Date().toISOString()
+  };
+  
+  const { error } = await window.supabaseClient
+    .from('processes')
+    .update(updates)
+    .eq('id', id);
+  
+  if (error) {
+    alert('Error updating process: ' + error.message);
+    return;
+  }
+  
+  alert('✓ Process updated successfully!');
+  closeEditProcModal();
+  await loadProcesses();
+  renderProcessTable();
+};
+
+// ===== STEP FUNCTIONS =====
+window.deleteStep = async function(id) {
+  if (!confirm('Delete this step?')) return;
+  
+  const { error } = await window.supabaseClient
+    .from('steps')
+    .delete()
+    .eq('id', id);
+  
+  if (error) {
+    alert('Error: ' + error.message);
+    return;
+  }
+  
+  alert('✓ Step deleted');
+  await loadSteps();
+  renderSteps();
+};
+
+// ===== GAP FUNCTIONS =====
+window.deleteGap = async function(id) {
+  if (!confirm('Delete this gap?')) return;
+  
+  const { error } = await window.supabaseClient
+    .from('gaps')
+    .delete()
+    .eq('id', id);
+  
+  if (error) {
+    alert('Error: ' + error.message);
+    return;
+  }
+  
+  alert('✓ Gap deleted');
+  await loadGaps();
+  renderGaps();
+};
+
+// ===== METRIC FUNCTIONS =====
+window.deleteMetric = async function(id) {
+  if (!confirm('Delete this metric?')) return;
+  
+  const { error } = await window.supabaseClient
+    .from('metrics')
+    .delete()
+    .eq('id', id);
+  
+  if (error) {
+    alert('Error: ' + error.message);
+    return;
+  }
+  
+  alert('✓ Metric deleted');
+  await loadMetrics();
+  renderMetrics();
+};
+
+// ===== TASK FUNCTIONS =====
+window.deleteTask = async function(id) {
+  if (!confirm('Delete this task?')) return;
+  
+  const { error } = await window.supabaseClient
+    .from('tasks')
+    .delete()
+    .eq('id', id);
+  
+  if (error) {
+    alert('Error: ' + error.message);
+    return;
+  }
+  
+  alert('✓ Task deleted');
+  await loadTasks();
+  renderTasks();
+  renderKanban();
+};
+
+// ===== CHANGE ENTRY FUNCTIONS =====
+window.deleteChangeEntry = async function(id) {
+  if (!confirm('Delete this assessment?')) return;
+  
+  const { error } = await window.supabaseClient
+    .from('change_entries')
+    .delete()
+    .eq('id', id);
+  
+  if (error) {
+    alert('Error: ' + error.message);
+    return;
+  }
+  
+  alert('✓ Assessment deleted');
+  await loadChangeEntries();
+  renderChangeEntries();
+};
+
+// ===== FEEDBACK FUNCTIONS =====
+window.deleteFeedback = async function(id) {
+  if (!CAN_ADMIN.includes(currentUser?.role)) {
+    alert('Only admins can delete feedback');
+    return;
+  }
+  
+  if (!confirm('Delete this feedback?')) return;
+  
+  const { error } = await window.supabaseClient
+    .from('feedbacks')
+    .delete()
+    .eq('id', id);
+  
+  if (error) {
+    alert('Error: ' + error.message);
+    return;
+  }
+  
+  alert('✓ Feedback deleted');
+  await loadFeedback();
+  renderFeedback();
+};
+
+// ===== LOAD FUNCTIONS (if missing) =====
+window.loadSteps = async function() {
+  const { data } = await window.supabaseClient
+    .from('steps')
+    .select('*')
+    .order('created_at', { ascending: false });
+  
+  window.steps = data || [];
+};
+
+window.loadGaps = async function() {
+  const { data } = await window.supabaseClient
+    .from('gaps')
+    .select('*')
+    .order('created_at', { ascending: false });
+  
+  window.gaps = data || [];
+};
+
+window.loadMetrics = async function() {
+  const { data } = await window.supabaseClient
+    .from('metrics')
+    .select('*')
+    .order('created_at', { ascending: false });
+  
+  window.metrics = data || [];
+};
+
+window.loadTasks = async function() {
+  const { data } = await window.supabaseClient
+    .from('tasks')
+    .select('*')
+    .order('created_at', { ascending: false });
+  
+  window.tasks = data || [];
+};
+
+window.loadChangeEntries = async function() {
+  const { data } = await window.supabaseClient
+    .from('change_entries')
+    .select('*')
+    .order('created_at', { ascending: false });
+  
+  window.changeEntries = data || [];
+};
+
+window.loadFeedback = async function() {
+  const { data } = await window.supabaseClient
+    .from('feedbacks')
+    .select('*')
+    .order('created_at', { ascending: false });
+  
+  window.feedbacks = data || [];
+};
+
+console.log('✅ Edit & Delete functions loaded');
