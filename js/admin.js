@@ -13,8 +13,8 @@ window.saveCompany = async function () {
     return;
   }
 
-  const bizId = document.getElementById('biz-id').value.trim().toUpperCase();
   const name = document.getElementById('biz-name').value.trim();
+  const bizId = document.getElementById('biz-id').value.trim().toUpperCase();
   const industry = document.getElementById('biz-industry').value.trim();
   const country = document.getElementById('biz-country').value.trim();
   const size = document.getElementById('biz-size').value;
@@ -29,9 +29,9 @@ window.saveCompany = async function () {
   err.style.display = 'none';
   ok.style.display = 'none';
 
-  // Validation
-  if (!bizId || !name) {
-    err.textContent = 'Company ID and Name are required.';
+  // Validation - Name first, then ID
+  if (!name || !bizId) {
+    err.textContent = 'Company Name and Company ID are required.';
     err.style.display = 'block';
     return;
   }
@@ -332,12 +332,15 @@ window.renderUserTable = async function () {
       <td>${company ? `[${company.biz_id}] ${company.name}` : '—'}</td>
       <td><span class="badge ${statusBadge[u.active]}">${u.active ? 'Active' : 'Inactive'}</span></td>
       <td style="font-size:.72rem;color:var(--text3)">${createdDate}</td>
-      <td>
+      <td style="display:flex;gap:4px">
         ${!isCurrentUser ? `
-          <button class="btn btn-secondary" style="padding:3px 9px;font-size:.68rem" onclick="toggleUserStatus(${u.id}, ${!u.active})">
+          <button class="btn btn-secondary" style="padding:3px 9px;font-size:.68rem" onclick="editUser('${u.id}')">
+            ✏️ Edit
+          </button>
+          <button class="btn ${u.active ? 'btn-danger' : 'btn-primary'}" style="padding:3px 9px;font-size:.68rem" onclick="toggleUserStatus('${u.id}', ${!u.active})">
             ${u.active ? '🔒 Deactivate' : '🔓 Activate'}
           </button>
-        ` : '—'}
+        ` : '<span style="color:var(--text3);font-size:.7rem">—</span>'}
       </td>
     </tr>`;
   }).join('');
@@ -347,6 +350,16 @@ window.renderUserTable = async function () {
 window.toggleUserStatus = async function (userId, newStatus) {
   if (!window.CAN_ADMIN.includes(window.currentUser?.role)) {
     alert('Only admins can change user status.');
+    return;
+  }
+
+  if (userId === window.currentUser.id) {
+    alert('You cannot deactivate yourself!');
+    return;
+  }
+
+  const action = newStatus ? 'activate' : 'deactivate';
+  if (!confirm(`Are you sure you want to ${action} this user?`)) {
     return;
   }
 
@@ -361,7 +374,136 @@ window.toggleUserStatus = async function (userId, newStatus) {
     return;
   }
 
-  renderUserTable();
+  alert(`✓ User ${newStatus ? 'activated' : 'deactivated'} successfully!`);
+  await renderUserTable();
+};
+
+// EDIT USER
+window.editUser = async function (userId) {
+  if (!window.CAN_ADMIN.includes(window.currentUser?.role)) {
+    alert('Only admins can edit users.');
+    return;
+  }
+
+  // Fetch user data
+  const { data: user, error } = await window.supabaseClient
+    .from('users')
+    .select('*')
+    .eq('id', userId)
+    .single();
+
+  if (error || !user) {
+    alert('Error loading user data.');
+    return;
+  }
+
+  // Populate form
+  document.getElementById('adm-name').value = user.name;
+  document.getElementById('adm-email').value = user.email;
+  document.getElementById('adm-email').disabled = true; // Can't change email
+  document.getElementById('adm-pass').value = '';
+  document.getElementById('adm-pass').placeholder = 'Leave blank to keep current password';
+  document.getElementById('adm-role').value = user.role;
+  document.getElementById('adm-company-id').value = user.company_id || '';
+
+  // Change button to "Update User"
+  const addBtn = document.querySelector('button[onclick="adminAddUser()"]');
+  if (addBtn) {
+    addBtn.textContent = '✏️ Update User';
+    addBtn.onclick = () => updateUser(userId);
+  }
+
+  // Scroll to form
+  document.getElementById('config-pane-users').scrollIntoView({ behavior: 'smooth' });
+};
+
+// UPDATE USER
+window.updateUser = async function (userId) {
+  if (!window.CAN_ADMIN.includes(window.currentUser?.role)) {
+    alert('Only admins can update users.');
+    return;
+  }
+
+  const name = document.getElementById('adm-name').value.trim();
+  const pass = document.getElementById('adm-pass').value;
+  const role = document.getElementById('adm-role').value;
+  const companyId = document.getElementById('adm-company-id').value || null;
+
+  const err = document.getElementById('adm-err');
+  const ok = document.getElementById('adm-ok');
+
+  err.style.display = 'none';
+  ok.style.display = 'none';
+
+  // Validation
+  if (!name) {
+    err.textContent = 'Name is required.';
+    err.style.display = 'block';
+    return;
+  }
+
+  // Update user profile in database
+  const updateData = {
+    name,
+    role,
+    company_id: companyId
+  };
+
+  const { error: updateError } = await window.supabaseClient
+    .from('users')
+    .update(updateData)
+    .eq('id', userId);
+
+  if (updateError) {
+    console.error('User update error:', updateError);
+    err.textContent = 'Error updating user: ' + updateError.message;
+    err.style.display = 'block';
+    return;
+  }
+
+  // Update password if provided
+  if (pass && pass.length >= 6) {
+    const { error: pwError } = await window.supabaseClient.auth.admin.updateUserById(
+      userId,
+      { password: pass }
+    );
+
+    if (pwError) {
+      console.error('Password update error:', pwError);
+      // Continue anyway - profile was updated
+    }
+  }
+
+  ok.textContent = '✓ User updated successfully!';
+  ok.style.display = 'block';
+
+  // Reset form
+  cancelEditUser();
+
+  // Reload users
+  await renderUserTable();
+};
+
+// CANCEL EDIT USER
+window.cancelEditUser = function () {
+  // Clear form
+  ['adm-name', 'adm-email', 'adm-pass'].forEach(id => {
+    const el = document.getElementById(id);
+    el.value = '';
+    el.disabled = false;
+    if (id === 'adm-pass') {
+      el.placeholder = 'Min. 6 chars';
+    }
+  });
+  document.getElementById('adm-role').value = 'viewer';
+  document.getElementById('adm-company-id').value = '';
+
+  // Reset button
+  const btn = document.querySelector('button[onclick*="User"]');
+  if (btn) {
+    btn.textContent = '➕ Add User';
+    btn.onclick = adminAddUser;
+  }
 };
 
 // =========================
@@ -496,5 +638,486 @@ window.clearVisitLog = function () {
   localStorage.removeItem('pf_visits');
   renderAnalytics();
 };
+
+// =========================
+// INTEGRATION MANAGEMENT
+// =========================
+
+// SAVE INTEGRATION SETTINGS
+window.saveIntegration = function () {
+  const apiKey = document.getElementById('int-api-key').value.trim();
+  const model = document.getElementById('int-model').value;
+  const maxTokens = document.getElementById('int-max-tokens').value;
+  const systemPrompt = document.getElementById('int-system-prompt').value.trim();
+  const stylePrompt = document.getElementById('int-style-prompt').value.trim();
+
+  const err = document.getElementById('int-err');
+  const ok = document.getElementById('int-ok');
+
+  err.style.display = 'none';
+  ok.style.display = 'none';
+
+  // Validation
+  if (!apiKey) {
+    err.textContent = 'API Key is required.';
+    err.style.display = 'block';
+    return;
+  }
+
+  // Save to localStorage
+  localStorage.setItem('pf_api_key', apiKey);
+  localStorage.setItem('pf_model', model);
+  localStorage.setItem('pf_max_tokens', maxTokens);
+  localStorage.setItem('pf_system_prompt', systemPrompt);
+  localStorage.setItem('pf_style_prompt', stylePrompt);
+
+  ok.textContent = '✓ Integration settings saved successfully!';
+  ok.style.display = 'block';
+
+  updateIntegrationStatus();
+};
+
+// TOGGLE API KEY VISIBILITY
+window.toggleApiKeyVisibility = function () {
+  const input = document.getElementById('int-api-key');
+  const btn = document.getElementById('int-key-eye');
+
+  if (input.type === 'password') {
+    input.type = 'text';
+    btn.textContent = '🙈';
+  } else {
+    input.type = 'password';
+    btn.textContent = '👁';
+  }
+};
+
+// TEST API KEY - OpenAI
+async function testOpenAI(apiKey) {
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      model: 'gpt-3.5-turbo',
+      messages: [{ role: 'user', content: 'Say "Hello from ProcessFlow!"' }],
+      max_tokens: 20
+    })
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error?.message || 'API request failed');
+  }
+
+  const data = await response.json();
+  return data.choices[0].message.content;
+}
+
+// TEST API KEY - Claude (Anthropic)
+async function testClaude(apiKey) {
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01'
+    },
+    body: JSON.stringify({
+      model: 'claude-3-haiku-20240307',
+      max_tokens: 20,
+      messages: [{ role: 'user', content: 'Say "Hello from ProcessFlow!"' }]
+    })
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error?.message || 'API request failed');
+  }
+
+  const data = await response.json();
+  return data.content[0].text;
+}
+
+// TEST API KEY - Perplexity
+async function testPerplexity(apiKey) {
+  const response = await fetch('https://api.perplexity.ai/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      model: 'llama-3.1-sonar-small-128k-online',
+      messages: [{ role: 'user', content: 'Say "Hello from ProcessFlow!"' }],
+      max_tokens: 20
+    })
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error?.message || 'API request failed');
+  }
+
+  const data = await response.json();
+  return data.choices[0].message.content;
+}
+
+// TEST API KEY - Gemini
+async function testGemini(apiKey) {
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      contents: [{
+        parts: [{ text: 'Say "Hello from ProcessFlow!"' }]
+      }]
+    })
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error?.message || 'API request failed');
+  }
+
+  const data = await response.json();
+  return data.candidates[0].content.parts[0].text;
+}
+
+// TEST API CONNECTION
+window.testApiKey = async function () {
+  const apiKey = document.getElementById('int-api-key').value.trim();
+  const err = document.getElementById('int-err');
+  const ok = document.getElementById('int-ok');
+
+  err.style.display = 'none';
+  ok.style.display = 'none';
+
+  if (!apiKey) {
+    err.textContent = 'Please enter an API key first.';
+    err.style.display = 'block';
+    return;
+  }
+
+  // Detect API provider based on key prefix
+  let provider = 'Unknown';
+  let testFunction = null;
+
+  if (apiKey.startsWith('sk-')) {
+    provider = 'OpenAI';
+    testFunction = testOpenAI;
+  } else if (apiKey.startsWith('sk-ant-')) {
+    provider = 'Claude (Anthropic)';
+    testFunction = testClaude;
+  } else if (apiKey.startsWith('pplx-')) {
+    provider = 'Perplexity';
+    testFunction = testPerplexity;
+  } else if (apiKey.startsWith('AIza')) {
+    provider = 'Google Gemini';
+    testFunction = testGemini;
+  } else {
+    err.textContent = 'Unknown API key format. Supported: OpenAI (sk-...), Claude (sk-ant-...), Perplexity (pplx-...), Gemini (AIza...)';
+    err.style.display = 'block';
+    return;
+  }
+
+  ok.textContent = `⏳ Testing ${provider} connection...`;
+  ok.style.display = 'block';
+
+  try {
+    const response = await testFunction(apiKey);
+    ok.textContent = `✓ ${provider} connection successful! Response: "${response}"`;
+    ok.style.display = 'block';
+  } catch (error) {
+    console.error('API test error:', error);
+    err.textContent = `✗ ${provider} test failed: ${error.message}`;
+    err.style.display = 'block';
+  }
+};
+
+// CLEAR API KEY
+window.clearApiKey = function () {
+  if (!confirm('Remove API key and all integration settings?')) return;
+
+  localStorage.removeItem('pf_api_key');
+  localStorage.removeItem('pf_model');
+  localStorage.removeItem('pf_max_tokens');
+  localStorage.removeItem('pf_system_prompt');
+  localStorage.removeItem('pf_style_prompt');
+
+  document.getElementById('int-api-key').value = '';
+  document.getElementById('int-model').value = 'gpt-4o';
+  document.getElementById('int-max-tokens').value = '2000';
+  document.getElementById('int-system-prompt').value = '';
+  document.getElementById('int-style-prompt').value = '';
+
+  const ok = document.getElementById('int-ok');
+  ok.textContent = '✓ API key removed.';
+  ok.style.display = 'block';
+
+  updateIntegrationStatus();
+};
+
+// RESET SYSTEM PROMPT
+window.resetSystemPrompt = function () {
+  const defaultPrompt = `You are an expert process improvement consultant with deep knowledge of Lean Six Sigma, BPMN, and business process management. 
+
+Your role is to analyze processes and provide actionable recommendations to:
+- Reduce waste and inefficiency
+- Improve quality and consistency
+- Enhance customer satisfaction
+- Optimize resource utilization
+
+Always structure your analysis using clear frameworks (DMAIC, 5 Whys, Fishbone, etc.) and provide specific, measurable recommendations.`;
+
+  document.getElementById('int-system-prompt').value = defaultPrompt;
+  
+  const ok = document.getElementById('int-ok');
+  ok.textContent = '✓ System prompt reset to default.';
+  ok.style.display = 'block';
+};
+
+// UPDATE INTEGRATION STATUS
+window.updateIntegrationStatus = function () {
+  const statusBody = document.getElementById('int-status-body');
+  if (!statusBody) return;
+
+  const apiKey = localStorage.getItem('pf_api_key');
+  const model = localStorage.getItem('pf_model') || 'gpt-4o';
+  const maxTokens = localStorage.getItem('pf_max_tokens') || '2000';
+  const systemPrompt = localStorage.getItem('pf_system_prompt');
+
+  let provider = 'Not configured';
+  let providerColor = 'var(--text3)';
+
+  if (apiKey) {
+    if (apiKey.startsWith('sk-ant-')) {
+      provider = '🤖 Claude (Anthropic)';
+      providerColor = 'var(--accent4)';
+    } else if (apiKey.startsWith('sk-')) {
+      provider = '🤖 OpenAI';
+      providerColor = 'var(--accent2)';
+    } else if (apiKey.startsWith('pplx-')) {
+      provider = '🤖 Perplexity';
+      providerColor = 'var(--accent)';
+    } else if (apiKey.startsWith('AIza')) {
+      provider = '🤖 Google Gemini';
+      providerColor = 'var(--warning)';
+    }
+  }
+
+  const maskedKey = apiKey 
+    ? `${apiKey.substring(0, 7)}...${apiKey.substring(apiKey.length - 4)}`
+    : '—';
+
+  statusBody.innerHTML = `
+    <div style="display:grid;grid-template-columns:200px 1fr;gap:.8rem">
+      <div style="color:var(--text3)">Provider:</div>
+      <div style="color:${providerColor};font-weight:600">${provider}</div>
+      
+      <div style="color:var(--text3)">API Key:</div>
+      <div style="font-family:var(--mono);font-size:.82rem">${maskedKey}</div>
+      
+      <div style="color:var(--text3)">Model:</div>
+      <div style="font-weight:500">${model}</div>
+      
+      <div style="color:var(--text3)">Max Tokens:</div>
+      <div>${maxTokens}</div>
+      
+      <div style="color:var(--text3)">Custom Instructions:</div>
+      <div>${systemPrompt ? '✓ Configured' : '✗ Using default'}</div>
+      
+      <div style="color:var(--text3)">Status:</div>
+      <div style="color:${apiKey ? 'var(--success)' : 'var(--danger)'}">
+        ${apiKey ? '✓ Ready for AI suggestions' : '✗ API key required'}
+      </div>
+    </div>
+  `;
+};
+
+// LOAD INTEGRATION SETTINGS ON INIT
+window.loadIntegrationSettings = function () {
+  const apiKey = localStorage.getItem('pf_api_key');
+  const model = localStorage.getItem('pf_model');
+  const maxTokens = localStorage.getItem('pf_max_tokens');
+  const systemPrompt = localStorage.getItem('pf_system_prompt');
+  const stylePrompt = localStorage.getItem('pf_style_prompt');
+
+  if (apiKey) document.getElementById('int-api-key').value = apiKey;
+  if (model) document.getElementById('int-model').value = model;
+  if (maxTokens) document.getElementById('int-max-tokens').value = maxTokens;
+  if (systemPrompt) document.getElementById('int-system-prompt').value = systemPrompt;
+  if (stylePrompt) document.getElementById('int-style-prompt').value = stylePrompt;
+
+  updateIntegrationStatus();
+};
+
+// =========================
+// CALL AI API (For use in AI section)
+// =========================
+
+// GENERIC AI API CALLER
+window.callAI = async function (userMessage, processContext = '') {
+  const apiKey = localStorage.getItem('pf_api_key');
+  
+  if (!apiKey) {
+    throw new Error('API key not configured. Go to Config → Integration to set it up.');
+  }
+
+  const model = localStorage.getItem('pf_model') || 'gpt-4o';
+  const maxTokens = parseInt(localStorage.getItem('pf_max_tokens') || '2000');
+  const systemPrompt = localStorage.getItem('pf_system_prompt') || getDefaultSystemPrompt();
+  const stylePrompt = localStorage.getItem('pf_style_prompt') || '';
+
+  // Build full prompt
+  let fullSystemPrompt = systemPrompt;
+  if (stylePrompt) {
+    fullSystemPrompt += '\n\n' + stylePrompt;
+  }
+
+  let fullUserMessage = userMessage;
+  if (processContext) {
+    fullUserMessage = `${processContext}\n\n${userMessage}`;
+  }
+
+  // Detect provider and call appropriate API
+  if (apiKey.startsWith('sk-ant-')) {
+    return await callClaudeAPI(apiKey, fullSystemPrompt, fullUserMessage, maxTokens);
+  } else if (apiKey.startsWith('sk-')) {
+    return await callOpenAI(apiKey, model, fullSystemPrompt, fullUserMessage, maxTokens);
+  } else if (apiKey.startsWith('pplx-')) {
+    return await callPerplexity(apiKey, fullSystemPrompt, fullUserMessage, maxTokens);
+  } else if (apiKey.startsWith('AIza')) {
+    return await callGemini(apiKey, fullSystemPrompt, fullUserMessage, maxTokens);
+  } else {
+    throw new Error('Unknown API key format');
+  }
+};
+
+// CALL OPENAI
+async function callOpenAI(apiKey, systemPrompt, userMessage, maxTokens) {
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      model: localStorage.getItem('pf_model') || 'gpt-4o',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userMessage }
+      ],
+      max_tokens: maxTokens,
+      temperature: 0.7
+    })
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error?.message || 'OpenAI API request failed');
+  }
+
+  const data = await response.json();
+  return data.choices[0].message.content;
+}
+
+// CALL CLAUDE
+async function callClaudeAPI(apiKey, systemPrompt, userMessage, maxTokens) {
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01'
+    },
+    body: JSON.stringify({
+      model: 'claude-3-5-sonnet-20241022',
+      max_tokens: maxTokens,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userMessage }]
+    })
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error?.message || 'Claude API request failed');
+  }
+
+  const data = await response.json();
+  return data.content[0].text;
+}
+
+// CALL PERPLEXITY
+async function callPerplexity(apiKey, systemPrompt, userMessage, maxTokens) {
+  const response = await fetch('https://api.perplexity.ai/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      model: 'llama-3.1-sonar-large-128k-online',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userMessage }
+      ],
+      max_tokens: maxTokens
+    })
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error?.message || 'Perplexity API request failed');
+  }
+
+  const data = await response.json();
+  return data.choices[0].message.content;
+}
+
+// CALL GEMINI
+async function callGemini(apiKey, systemPrompt, userMessage, maxTokens) {
+  const fullPrompt = `${systemPrompt}\n\n${userMessage}`;
+  
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      contents: [{
+        parts: [{ text: fullPrompt }]
+      }],
+      generationConfig: {
+        maxOutputTokens: maxTokens,
+        temperature: 0.7
+      }
+    })
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error?.message || 'Gemini API request failed');
+  }
+
+  const data = await response.json();
+  return data.candidates[0].content.parts[0].text;
+}
+
+// DEFAULT SYSTEM PROMPT
+function getDefaultSystemPrompt() {
+  return `You are an expert process improvement consultant with deep knowledge of Lean Six Sigma, BPMN, and business process management. 
+
+Your role is to analyze processes and provide actionable recommendations to:
+- Reduce waste and inefficiency
+- Improve quality and consistency
+- Enhance customer satisfaction
+- Optimize resource utilization
+
+Always structure your analysis using clear frameworks (DMAIC, 5 Whys, Fishbone, etc.) and provide specific, measurable recommendations.`;
+}
 
 console.log('✅ admin.js loaded');
