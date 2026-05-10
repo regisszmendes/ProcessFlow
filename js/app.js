@@ -23,6 +23,11 @@ window.CAN_ADMIN = ['admin'];
 window.bootApp = async function () {
   console.log('🚀 bootApp called with user:', currentUser);
   
+  if (!currentUser) {
+    console.error('❌ Cannot boot app: no current user');
+    return;
+  }
+  
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('main-header').style.display = 'flex';
   document.getElementById('main-app').classList.add('visible');
@@ -39,9 +44,16 @@ window.bootApp = async function () {
   rb.style.background = getRoleBg(currentUser.role);
   rb.style.color = getRoleColor(currentUser.role);
 
-  // Show config nav for admins
-  if (window.CAN_ADMIN.includes(currentUser.role)) {
-    document.getElementById('nav-config').style.display = 'inline-flex';
+  // ✅ SHOW CONFIG NAV FOR ADMINS - IMPROVED LOGIC
+  const configNav = document.getElementById('nav-config');
+  if (configNav && window.CAN_ADMIN.includes(currentUser.role)) {
+    console.log('✅ Showing config nav for admin user');
+    configNav.style.display = 'inline-flex';
+  } else {
+    console.log('⚠️ Config nav hidden - user role:', currentUser.role);
+    if (configNav) {
+      configNav.style.display = 'none';
+    }
   }
 
   // Load all data
@@ -250,7 +262,7 @@ window.showSection = function (id, btn) {
 };
 
 // =========================
-// APP INIT - DO NOT DUPLICATE SESSION RESTORE
+// APP INIT
 // =========================
 window.addEventListener('DOMContentLoaded', async function () {
   console.log('🎬 DOM loaded, recording visit');
