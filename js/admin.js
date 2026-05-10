@@ -164,9 +164,13 @@ window.deleteCompany = async function (id) {
     return;
   }
 
+  // Replace the last 2 lines of deleteCompany with this:
   await loadAllData();
+  
+  // Debug: confirm array was updated
+  console.log('Companies after delete:', companies.length, companies.map(c => c.biz_id));
+  
   renderCompanyTable();
-};
 
 // EDIT COMPANY
 window.editCompany = async function (id) {
