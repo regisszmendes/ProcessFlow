@@ -9,9 +9,8 @@ window.saveGap = async function () {
     return;
   }
 
-  const procId = document.getElementById('gap-proc-id').value;
-  const title = document.getElementById('gap-title').value.trim();
-  const desc = document.getElementById('gap-desc').value.trim();
+  const procId = document.getElementById('gap-proc-id')?.value;
+  const title = document.getElementById('gap-title')?.value.trim();
 
   if (!procId) {
     alert('Please select a Process first.');
@@ -25,14 +24,17 @@ window.saveGap = async function () {
 
   const gapData = {
     process_id: procId,
+    step_id: document.getElementById('gap-step-id')?.value || null,
     title: title,
-    description: desc,
-    category: document.getElementById('gap-category').value,
-    severity: document.getElementById('gap-severity').value,
-    impact: document.getElementById('gap-impact').value.trim(),
-    root_cause: document.getElementById('gap-cause').value.trim(),
-    recommendation: document.getElementById('gap-recommendation').value.trim(),
-    status: document.getElementById('gap-status').value,
+    category: document.getElementById('gap-cat')?.value || '',
+    current_state: document.getElementById('gap-current')?.value.trim() || '',
+    desired_state: document.getElementById('gap-desired')?.value.trim() || '',
+    impact: document.getElementById('gap-impact')?.value.trim() || '',
+    severity: document.getElementById('gap-severity')?.value || 'medium',
+    action: document.getElementById('gap-action')?.value.trim() || '',
+    owner: document.getElementById('gap-owner')?.value.trim() || '',
+    target_date: document.getElementById('gap-target')?.value || null,
+    status: document.getElementById('gap-status')?.value || 'open',
     created_by: window.currentUser.id
   };
 
@@ -50,6 +52,10 @@ window.saveGap = async function () {
   alert('✓ Gap saved successfully!');
   clearGapForm();
   await window.loadAllData();
+  
+  if (typeof window.renderGapsTable === 'function') {
+    window.renderGapsTable();
+  }
 };
 
 // ALIAS for HTML compatibility
@@ -58,15 +64,21 @@ window.addGap = window.saveGap;
 // CLEAR GAP FORM
 window.clearGapForm = function () {
   [
-    'gap-title', 'gap-desc', 'gap-impact', 'gap-cause', 'gap-recommendation'
+    'gap-title', 'gap-current', 'gap-desired', 'gap-impact', 
+    'gap-action', 'gap-owner', 'gap-target'
   ].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
 
-  document.getElementById('gap-category').value = '';
-  document.getElementById('gap-severity').value = 'medium';
-  document.getElementById('gap-status').value = 'open';
+  const catEl = document.getElementById('gap-cat');
+  if (catEl) catEl.value = '';
+  
+  const sevEl = document.getElementById('gap-severity');
+  if (sevEl) sevEl.value = 'medium';
+  
+  const statusEl = document.getElementById('gap-status');
+  if (statusEl) statusEl.value = 'open';
 };
 
 console.log('✅ gap.js loaded');
