@@ -38,7 +38,6 @@ window.saveStep = async function () {
     is_end: document.getElementById('step-is-end')?.checked || false,
     branch_yes: document.getElementById('step-branch-yes')?.value.trim() || '',
     branch_no: document.getElementById('step-branch-no')?.value.trim() || '',
-    order_num: window.steps.filter(s => s.process_id === procId).length + 1,
     created_by: window.currentUser.id
   };
 
