@@ -247,11 +247,11 @@ window.openEditProcModal = function(id) {
   document.getElementById('epm-kpis').value = proc.kpis || '';
   document.getElementById('epm-risks').value = proc.risks || '';
   
-  document.getElementById('edit-proc-modal').style.display = 'flex';
+  document.getElementById('edit-proc-modal').classList.add('open');
 };
 
 window.closeEditProcModal = function() {
-  document.getElementById('edit-proc-modal').style.display = 'none';
+  document.getElementById('edit-proc-modal').classList.remove('open');
 };
 
 window.applyEditProcess = async function() {
