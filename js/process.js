@@ -4,7 +4,7 @@
 
 // SAVE PROCESS
 window.saveProcess = async function () {
-  if (!CAN_EDIT.includes(currentUser?.role)) {
+  if (!window.CAN_EDIT.includes(window.currentUser?.role)) {
     alert('You need Editor role or above to save processes.');
     return;
   }
@@ -58,11 +58,11 @@ window.saveProcess = async function () {
     tools: document.getElementById('proc-tools').value.trim(),
     kpis: document.getElementById('proc-kpis').value.trim(),
     risks: document.getElementById('proc-risks').value.trim(),
-    rag: currentRAG,
+    rag: window.currentRAG,
     rag_notes: document.getElementById('proc-rag-notes').value.trim(),
     rag_date: document.getElementById('proc-rag-date').value || null,
     rag_by: document.getElementById('proc-rag-by').value.trim(),
-    created_by: currentUser.id
+    created_by: window.currentUser.id
   };
 
   const { data, error } = await window.supabaseClient
@@ -78,42 +78,18 @@ window.saveProcess = async function () {
 
   alert('✓ Process saved successfully!');
   clearProcessForm();
-  await loadProcesses();
-  renderProcessTable();
-  populateProcessDropdowns();
+  await loadAllData();
   document.getElementById('process-table-card').style.display = 'block';
-};
-
-// LOAD PROCESSES
-window.loadProcesses = async function () {
-  const { data, error } = await window.supabaseClient
-    .from('processes')
-    .select(`
-      *,
-      companies (
-        id,
-        biz_id,
-        name
-      )
-    `)
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    console.error('Error loading processes:', error);
-    return;
-  }
-
-  window.processes = data || [];
 };
 
 // DELETE PROCESS
 window.deleteProcess = async function (id) {
-  if (!CAN_DELETE.includes(currentUser?.role)) {
+  if (!window.CAN_DELETE.includes(window.currentUser?.role)) {
     alert('Managers or above can delete.');
     return;
   }
 
-  const proc = processes.find(p => p.id === id);
+  const proc = window.processes.find(p => p.id === id);
   if (!proc) return;
 
   // Check for linked data
@@ -156,9 +132,8 @@ window.deleteProcess = async function (id) {
     return;
   }
 
-  await loadProcesses();
-  renderProcessTable();
-  populateProcessDropdowns();
+  alert('✓ Process deleted successfully!');
+  await loadAllData();
 };
 
 // CLEAR FORM
@@ -179,7 +154,7 @@ window.clearProcessForm = function () {
   document.getElementById('proc-type').value = 'operational';
   document.getElementById('proc-frequency').value = '';
 
-  currentRAG = null;
+  window.currentRAG = null;
   ['green', 'amber', 'red'].forEach(c => {
     document.getElementById('rag-' + c)?.classList.remove('sel-green', 'sel-amber', 'sel-red');
   });
@@ -190,14 +165,14 @@ window.renderProcessTable = function () {
   const tbody = document.getElementById('process-table-body');
   if (!tbody) return;
 
-  const ce = CAN_EDIT.includes(currentUser?.role);
-  const cd = CAN_DELETE.includes(currentUser?.role);
+  const ce = window.CAN_EDIT.includes(window.currentUser?.role);
+  const cd = window.CAN_DELETE.includes(window.currentUser?.role);
 
   const priBadge = { low: 'badge-gray', medium: 'badge-blue', high: 'badge-orange', critical: 'badge-red' };
   const staBadge = { draft: 'badge-gray', active: 'badge-green', 'under-review': 'badge-orange', deprecated: 'badge-gray' };
   const RC = { green: '#16a34a', amber: '#d97706', red: '#dc2626' };
 
-  tbody.innerHTML = processes.map(p => {
+  tbody.innerHTML = window.processes.map(p => {
     const co = p.companies;
     return `<tr>
       <td>${co ? `<span style="font-family:var(--mono);font-size:.7rem;color:var(--accent2);font-weight:700">${co.biz_id}</span>` : '—'}</td>
@@ -210,7 +185,7 @@ window.renderProcessTable = function () {
       <td>${p.rag ? `<div style="display:flex;align-items:center;gap:5px"><div style="width:11px;height:11px;border-radius:50%;background:${RC[p.rag]}"></div><span style="font-size:.7rem;color:${RC[p.rag]};font-weight:700;text-transform:uppercase">${p.rag}</span></div>` : '—'}</td>
       <td style="display:flex;gap:4px">
         ${ce ? `<button class="btn btn-secondary" style="padding:3px 9px;font-size:.68rem" onclick="openEditProcModal(${p.id})">✏ Edit</button>` : ''}
-        ${cd ? `<button class="btn btn-danger" style="padding:3px 9px" onclick="deleteProcess(${p.id})">✕ Delete</button>` : '—'}
+        ${cd ? `<button class="btn btn-danger" style="padding:3px 9px;font-size:.68rem" onclick="deleteProcess(${p.id})">✕</button>` : ''}
       </td>
     </tr>`;
   }).join('');
@@ -224,10 +199,10 @@ window.generateProcId = function () {
     return;
   }
 
-  const co = companies.find(c => c.id == companyId);
+  const co = window.companies.find(c => c.id == companyId);
   const prefix = co ? co.biz_id : 'PRC';
   const yr = new Date().getFullYear();
-  const companyProcs = processes.filter(p => p.company_id == companyId);
+  const companyProcs = window.processes.filter(p => p.company_id == companyId);
   const seq = String(companyProcs.length + 1).padStart(3, '0');
 
   document.getElementById('proc-id').value = `${prefix}-${yr}-${seq}`;
@@ -235,10 +210,12 @@ window.generateProcId = function () {
 
 // RAG SELECTION
 window.selectRAG = function (color) {
-  currentRAG = color;
+  window.currentRAG = color;
   ['green', 'amber', 'red'].forEach(c => {
     const el = document.getElementById('rag-' + c);
     el?.classList.remove('sel-green', 'sel-amber', 'sel-red');
     if (c === color) el?.classList.add('sel-' + color);
   });
 };
+
+console.log('✅ process.js loaded');
