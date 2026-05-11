@@ -190,6 +190,11 @@ window.renderStepsTable = function() {
   }).join('');
   
   displayContainer.innerHTML = html;
+  
+  // Hide/show empty message
+  if (typeof window.updateStepsEmptyMessage === 'function') {
+    window.updateStepsEmptyMessage();
+  }
 };
 
 console.log('✅ step.js loaded');
@@ -264,4 +269,12 @@ window.deleteStep = async function(id) {
   
   alert('✓ Step deleted successfully!');
   await window.loadAllData();
+};
+
+// UPDATE EMPTY MESSAGE VISIBILITY
+window.updateStepsEmptyMessage = function() {
+  const msg = document.getElementById('empty-steps-msg');
+  if (msg) {
+    msg.style.display = window.steps.length > 0 ? 'none' : 'block';
+  }
 };
