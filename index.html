@@ -232,7 +232,7 @@
     <div class="btn-row"><button class="btn btn-orange" onclick="addGap()">⚠ Register Gap</button><button class="btn btn-secondary" onclick="clearGapForm()">↺ Clear</button></div>
   </div>
   <div id="gaps-summary-bar" style="display:none"><div class="summary-bar" id="gaps-summary-inner"></div></div>
-  <div id="gaps-list"><div class="empty-state"><div class="es-icon">⚠</div><div class="es-text">No gaps registered yet.</div></div></div>
+  <div id="gaps-list"><div class="empty-state" id="empty-gaps-msg"><div class="es-icon">⚠</div><div class="es-text">No gaps registered yet.</div></div></div>
   <div class="card" id="gaps-table-card" style="display:none">
     <div class="card-header"><div class="card-icon" style="background:rgba(255,107,53,.1)">📋</div><span class="card-title">Gaps Summary Table</span></div>
     <div style="overflow-x:auto"><table><thead><tr><th>#</th><th>Title</th><th>Process</th><th>Step</th><th>Category</th><th>Severity</th><th>Status</th><th>Causes</th><th>Responsible</th><th>Target</th><th></th></tr></thead><tbody id="gaps-table-body"></tbody></table></div>
