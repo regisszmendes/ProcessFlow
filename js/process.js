@@ -184,8 +184,8 @@ window.renderProcessTable = function () {
       <td><span class="badge ${staBadge[p.status] || 'badge-gray'}">${p.status}</span></td>
       <td>${p.rag ? `<div style="display:flex;align-items:center;gap:5px"><div style="width:11px;height:11px;border-radius:50%;background:${RC[p.rag]}"></div><span style="font-size:.7rem;color:${RC[p.rag]};font-weight:700;text-transform:uppercase">${p.rag}</span></div>` : '—'}</td>
       <td style="display:flex;gap:4px">
-        ${ce ? `<button class="btn btn-secondary" style="padding:3px 9px;font-size:.68rem" onclick="openEditProcModal(${p.id})">✏ Edit</button>` : ''}
-        ${cd ? `<button class="btn btn-danger" style="padding:3px 9px;font-size:.68rem" onclick="deleteProcess(${p.id})">✕</button>` : ''}
+        ${ce ? `<button class="btn btn-secondary" style="padding:3px 9px;font-size:.68rem" onclick="openEditProcModal('${p.id}')">✏ Edit</button>` : ''}
+        ${cd ? `<button class="btn btn-danger" style="padding:3px 9px;font-size:.68rem" onclick="deleteProcess('${p.id}')">✕</button>` : ''}
       </td>
     </tr>`;
   }).join('');
