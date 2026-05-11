@@ -81,4 +81,156 @@ window.clearGapForm = function () {
   if (statusEl) statusEl.value = 'open';
 };
 
+// ADD ROOT CAUSE ROW
+window.addRCRow = function() {
+  const container = document.getElementById('rc-rows');
+  if (!container) return;
+  
+  const rowCount = container.children.length;
+  const newRow = document.createElement('div');
+  newRow.className = 'form-group full';
+  newRow.innerHTML = `<input type="text" id="gap-rc-${rowCount + 1}" placeholder="Root cause ${rowCount + 1}"/>`;
+  
+  container.appendChild(newRow);
+};
+
+// RENDER GAPS TABLE
+window.renderGapsTable = function() {
+  const container = document.getElementById('gaps-display-container');
+  
+  // Create container if doesn't exist
+  if (!container) {
+    const gapsSection = document.getElementById('section-gaps');
+    if (!gapsSection) return;
+    
+    const cards = gapsSection.querySelectorAll('.card');
+    if (cards.length > 0) {
+      const displayCard = document.createElement('div');
+      displayCard.className = 'card';
+      displayCard.style.marginTop = '1.5rem';
+      displayCard.innerHTML = '<div class="card-header"><div class="card-icon" style="background:rgba(220,38,38,.1)">⚠</div><span class="card-title">Registered Gaps</span></div><div id="gaps-display-container" style="padding:1rem;"></div>';
+      cards[0].parentNode.appendChild(displayCard);
+    }
+  }
+  
+  const displayContainer = document.getElementById('gaps-display-container');
+  if (!displayContainer) return;
+  
+  if (window.gaps.length === 0) {
+    displayContainer.innerHTML = '<div style="text-align:center;padding:2rem;color:#999;">No gaps registered yet</div>';
+    return;
+  }
+  
+  const canEdit = window.CAN_EDIT.includes(window.currentUser?.role);
+  const canDelete = window.CAN_DELETE.includes(window.currentUser?.role);
+  
+  const severityColors = {
+    critical: '#dc2626',
+    high: '#d97706',
+    medium: '#0088ff',
+    low: '#6b7280'
+  };
+  
+  const html = window.gaps.map((gap, idx) => {
+    const proc = window.processes.find(p => p.id === gap.process_id);
+    const procName = proc ? proc.name : 'Unknown Process';
+    const sevColor = severityColors[gap.severity] || '#6b7280';
+    
+    return `<div style="background:#fff;border-left:4px solid ${sevColor};border:1px solid #e5e5e5;border-left:4px solid ${sevColor};border-radius:8px;padding:1rem;margin-bottom:10px;">
+      <div style="display:flex;gap:10px;align-items:flex-start;">
+        <div style="flex:1;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
+            <div style="font-weight:700;font-size:15px;">${gap.title}</div>
+            <span style="font-size:11px;padding:3px 8px;background:${sevColor};color:white;border-radius:4px;text-transform:uppercase;font-weight:600;">${gap.severity}</span>
+          </div>
+          <div style="font-size:12px;color:#666;margin-bottom:8px;">Process: ${procName}</div>
+          ${gap.current_state ? `<div style="font-size:13px;margin-top:8px;"><strong>Current:</strong> ${gap.current_state}</div>` : ''}
+          ${gap.desired_state ? `<div style="font-size:13px;margin-top:5px;"><strong>Desired:</strong> ${gap.desired_state}</div>` : ''}
+          ${gap.action ? `<div style="font-size:13px;margin-top:5px;color:#008f74;"><strong>Action:</strong> ${gap.action}</div>` : ''}
+        </div>
+        <div style="display:flex;gap:5px;">
+          ${canEdit ? `<button onclick="editGap('${gap.id}')" style="padding:5px 12px;background:#0088ff;color:white;border:none;border-radius:4px;cursor:pointer;font-size:12px;">✏</button>` : ''}
+          ${canDelete ? `<button onclick="deleteGap('${gap.id}')" style="padding:5px 12px;background:#dc2626;color:white;border:none;border-radius:4px;cursor:pointer;font-size:12px;">✕</button>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  
+  displayContainer.innerHTML = html;
+};
+
+// EDIT GAP
+window.editGap = function(id) {
+  const gap = window.gaps.find(g => g.id === id);
+  if (!gap) return;
+  
+  const existing = document.getElementById('edit-gap-modal');
+  if (existing) existing.remove();
+  
+  const div = document.createElement('div');
+  div.id = 'edit-gap-modal';
+  div.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.8);z-index:999999;display:flex;align-items:center;justify-content:center;';
+  
+  const box = document.createElement('div');
+  box.style.cssText = 'background:white;width:600px;max-height:90vh;overflow-y:auto;border-radius:12px;padding:2rem;box-shadow:0 20px 60px rgba(0,0,0,0.3);';
+  
+  box.innerHTML = '<h2 style="margin-bottom:1.5rem;">✏ Edit Gap</h2><div style="margin:10px 0;"><label style="display:block;margin-bottom:5px;font-weight:600;">Title *</label><input type="text" id="edit-gap-title" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-size:14px;"/></div><div style="margin:10px 0;"><label style="display:block;margin-bottom:5px;font-weight:600;">Current State</label><textarea id="edit-gap-current" rows="2" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-size:14px;"></textarea></div><div style="margin:10px 0;"><label style="display:block;margin-bottom:5px;font-weight:600;">Desired State</label><textarea id="edit-gap-desired" rows="2" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-size:14px;"></textarea></div><div style="margin:10px 0;"><label style="display:block;margin-bottom:5px;font-weight:600;">Action</label><textarea id="edit-gap-action" rows="2" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-size:14px;"></textarea></div><div style="margin-top:1.5rem;"><button id="save-gap-btn" style="background:#008f74;color:white;padding:12px 24px;border:none;border-radius:6px;cursor:pointer;font-weight:700;font-size:14px;">✓ Save Changes</button><button id="cancel-gap-btn" style="background:#e5e7eb;color:#333;padding:12px 24px;border:none;border-radius:6px;cursor:pointer;margin-left:10px;font-size:14px;">Cancel</button></div>';
+  
+  div.appendChild(box);
+  document.body.appendChild(div);
+  
+  document.getElementById('edit-gap-title').value = gap.title || '';
+  document.getElementById('edit-gap-current').value = gap.current_state || '';
+  document.getElementById('edit-gap-desired').value = gap.desired_state || '';
+  document.getElementById('edit-gap-action').value = gap.action || '';
+  
+  document.getElementById('save-gap-btn').onclick = async function() {
+    const updates = {
+      title: document.getElementById('edit-gap-title').value.trim(),
+      current_state: document.getElementById('edit-gap-current').value.trim(),
+      desired_state: document.getElementById('edit-gap-desired').value.trim(),
+      action: document.getElementById('edit-gap-action').value.trim(),
+      updated_at: new Date().toISOString()
+    };
+    
+    const { error } = await window.supabaseClient.from('gaps').update(updates).eq('id', id);
+    
+    if (error) {
+      alert('Error: ' + error.message);
+      return;
+    }
+    
+    alert('✓ Gap updated successfully!');
+    div.remove();
+    await window.loadAllData();
+  };
+  
+  document.getElementById('cancel-gap-btn').onclick = function() {
+    div.remove();
+  };
+};
+
+// DELETE GAP
+window.deleteGap = async function(id) {
+  if (!window.CAN_DELETE.includes(window.currentUser?.role)) {
+    alert('You need Manager role or above to delete gaps.');
+    return;
+  }
+  
+  const gap = window.gaps.find(g => g.id === id);
+  if (!gap) return;
+  
+  if (!confirm(`Delete gap "${gap.title}"?`)) return;
+  
+  const { error } = await window.supabaseClient.from('gaps').delete().eq('id', id);
+  
+  if (error) {
+    alert('Error: ' + error.message);
+    return;
+  }
+  
+  alert('✓ Gap deleted successfully!');
+  await window.loadAllData();
+};
+
 console.log('✅ gap.js loaded');
