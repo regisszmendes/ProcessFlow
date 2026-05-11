@@ -131,7 +131,7 @@ function getRoleBg(role) {
 }
 
 window.populateCompanyDropdowns = function () {
-  const opts = companies.map(c => `<option value="${c.id}">[${c.biz_id}] ${c.name}</option>`).join('');
+  const opts = window.companies.map(c => `<option value="${c.id}">[${c.biz_id}] ${c.name}</option>`).join('');
   const none = '<option value="">— select company —</option>';
   ['proc-company-id', 'adm-company-id', 'chg-company-id', 'change-filter-company'].forEach(id => {
     const el = document.getElementById(id);
@@ -143,7 +143,7 @@ window.populateCompanyDropdowns = function () {
 };
 
 window.populateProcessDropdowns = function () {
-  const opts = processes.map(p => {
+  const opts = window.processes.map(p => {
     const co = p.companies;
     const prefix = co ? `[${co.biz_id}] ` : '';
     return `<option value="${p.id}">${prefix}[${p.proc_id}] ${p.name}</option>`;
@@ -214,11 +214,17 @@ setInterval(async function () {
 }, 4000);
 
 // ===========================================================
-// EDIT MODAL FOR PROCESS (from process.js)
+// EDIT MODAL FOR PROCESS
 // ===========================================================
 window.openEditProcModal = function(id) {
-  const proc = processes.find(p => p.id === id);
-  if (!proc) return;
+  const proc = window.processes.find(p => p.id === id);
+  if (!proc) {
+    console.error('Process not found:', id);
+    return;
+  }
+  
+  console.log('Opening edit modal for:', proc);
+  
   document.getElementById('epm-internal-id').value = id;
   document.getElementById('epm-proc-id-label').textContent = proc.proc_id;
   document.getElementById('epm-proc-id').value = proc.proc_id;
@@ -240,6 +246,7 @@ window.openEditProcModal = function(id) {
   document.getElementById('epm-tools').value = proc.tools || '';
   document.getElementById('epm-kpis').value = proc.kpis || '';
   document.getElementById('epm-risks').value = proc.risks || '';
+  
   document.getElementById('edit-proc-modal').style.display = 'flex';
 };
 
