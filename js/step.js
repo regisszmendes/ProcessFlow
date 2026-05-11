@@ -163,6 +163,9 @@ window.renderStepsTable = function() {
     return;
   }
   
+  const canEdit = window.CAN_EDIT.includes(window.currentUser?.role);
+  const canDelete = window.CAN_DELETE.includes(window.currentUser?.role);
+  
   const html = window.steps.map((step, idx) => {
     const proc = window.processes.find(p => p.id === step.process_id);
     const procName = proc ? proc.name : 'Unknown Process';
@@ -175,6 +178,10 @@ window.renderStepsTable = function() {
           <div style="font-size:12px;color:#666;margin-top:3px;">Process: ${procName}</div>
         </div>
         ${step.type ? `<span style="font-size:11px;padding:3px 8px;background:#e5e7eb;border-radius:4px;text-transform:uppercase;font-weight:600;color:#666;">${step.type}</span>` : ''}
+        <div style="display:flex;gap:5px;">
+          ${canEdit ? `<button onclick="editStep('${step.id}')" style="padding:5px 12px;background:#0088ff;color:white;border:none;border-radius:4px;cursor:pointer;font-size:12px;">✏</button>` : ''}
+          ${canDelete ? `<button onclick="deleteStep('${step.id}')" style="padding:5px 12px;background:#dc2626;color:white;border:none;border-radius:4px;cursor:pointer;font-size:12px;">✕</button>` : ''}
+        </div>
       </div>
       ${step.description ? `<div style="font-size:13px;color:#666;margin-top:10px;padding-left:40px;">${step.description}</div>` : ''}
       ${step.responsible ? `<div style="font-size:12px;color:#888;margin-top:8px;padding-left:40px;">👤 Responsible: ${step.responsible}</div>` : ''}
@@ -186,3 +193,75 @@ window.renderStepsTable = function() {
 };
 
 console.log('✅ step.js loaded');
+
+// EDIT STEP
+window.editStep = function(id) {
+  const step = window.steps.find(s => s.id === id);
+  if (!step) return;
+  
+  const existing = document.getElementById('edit-step-modal');
+  if (existing) existing.remove();
+  
+  const div = document.createElement('div');
+  div.id = 'edit-step-modal';
+  div.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.8);z-index:999999;display:flex;align-items:center;justify-content:center;';
+  
+  const box = document.createElement('div');
+  box.style.cssText = 'background:white;width:600px;max-height:90vh;overflow-y:auto;border-radius:12px;padding:2rem;box-shadow:0 20px 60px rgba(0,0,0,0.3);';
+  
+  box.innerHTML = '<h2 style="margin-bottom:1.5rem;">✏ Edit Step</h2><div style="margin:10px 0;"><label style="display:block;margin-bottom:5px;font-weight:600;">Step Name *</label><input type="text" id="edit-step-name" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-size:14px;"/></div><div style="margin:10px 0;"><label style="display:block;margin-bottom:5px;font-weight:600;">Description</label><textarea id="edit-step-desc" rows="3" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-size:14px;resize:vertical;"></textarea></div><div style="margin:10px 0;"><label style="display:block;margin-bottom:5px;font-weight:600;">Responsible</label><input type="text" id="edit-step-resp" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-size:14px;"/></div><div style="margin-top:1.5rem;"><button id="save-step-btn" style="background:#008f74;color:white;padding:12px 24px;border:none;border-radius:6px;cursor:pointer;font-weight:700;font-size:14px;">✓ Save Changes</button><button id="cancel-step-btn" style="background:#e5e7eb;color:#333;padding:12px 24px;border:none;border-radius:6px;cursor:pointer;margin-left:10px;font-size:14px;">Cancel</button></div>';
+  
+  div.appendChild(box);
+  document.body.appendChild(div);
+  
+  document.getElementById('edit-step-name').value = step.name || '';
+  document.getElementById('edit-step-desc').value = step.description || '';
+  document.getElementById('edit-step-resp').value = step.responsible || '';
+  
+  document.getElementById('save-step-btn').onclick = async function() {
+    const updates = {
+      name: document.getElementById('edit-step-name').value.trim(),
+      description: document.getElementById('edit-step-desc').value.trim(),
+      responsible: document.getElementById('edit-step-resp').value.trim(),
+      updated_at: new Date().toISOString()
+    };
+    
+    const { error } = await window.supabaseClient.from('steps').update(updates).eq('id', id);
+    
+    if (error) {
+      alert('Error: ' + error.message);
+      return;
+    }
+    
+    alert('✓ Step updated successfully!');
+    div.remove();
+    await window.loadAllData();
+  };
+  
+  document.getElementById('cancel-step-btn').onclick = function() {
+    div.remove();
+  };
+};
+
+// DELETE STEP
+window.deleteStep = async function(id) {
+  if (!window.CAN_DELETE.includes(window.currentUser?.role)) {
+    alert('You need Manager role or above to delete steps.');
+    return;
+  }
+  
+  const step = window.steps.find(s => s.id === id);
+  if (!step) return;
+  
+  if (!confirm(`Delete step "${step.name}"?`)) return;
+  
+  const { error } = await window.supabaseClient.from('steps').delete().eq('id', id);
+  
+  if (error) {
+    alert('Error: ' + error.message);
+    return;
+  }
+  
+  alert('✓ Step deleted successfully!');
+  await window.loadAllData();
+};
