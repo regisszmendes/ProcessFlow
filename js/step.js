@@ -278,3 +278,56 @@ window.updateStepsEmptyMessage = function() {
     msg.style.display = window.steps.length > 0 ? 'none' : 'block';
   }
 };
+
+// RENDER STEPS (WITH FILTER)
+window.renderSteps = function() {
+  const filterProc = document.getElementById('step-filter-proc')?.value;
+  
+  const displayContainer = document.getElementById('steps-display-container');
+  if (!displayContainer) {
+    window.renderStepsTable();
+    return;
+  }
+  
+  // Filter steps by process if selected
+  let filteredSteps = window.steps;
+  if (filterProc) {
+    filteredSteps = window.steps.filter(s => s.process_id === filterProc);
+  }
+  
+  if (filteredSteps.length === 0) {
+    displayContainer.innerHTML = '<div style="text-align:center;padding:2rem;color:#999;">No steps found for selected process</div>';
+    if (typeof window.updateStepsEmptyMessage === 'function') window.updateStepsEmptyMessage();
+    return;
+  }
+  
+  const canEdit = window.CAN_EDIT.includes(window.currentUser?.role);
+  const canDelete = window.CAN_DELETE.includes(window.currentUser?.role);
+  
+  const html = filteredSteps.map((step, idx) => {
+    const proc = window.processes.find(p => p.id === step.process_id);
+    const procName = proc ? proc.name : 'Unknown Process';
+    
+    return `<div style="background:#f9f9f9;border:1px solid #e5e5e5;border-radius:8px;padding:1rem;margin-bottom:10px;">
+      <div style="display:flex;gap:10px;align-items:center;">
+        <div style="width:30px;height:30px;border-radius:50%;background:#008f74;color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;">${idx + 1}</div>
+        <div style="flex:1;">
+          <div style="font-weight:700;font-size:15px;">${step.name}</div>
+          <div style="font-size:12px;color:#666;margin-top:3px;">Process: ${procName}</div>
+        </div>
+        <div style="display:flex;gap:5px;">
+          ${canEdit ? `<button onclick="editStep('${step.id}')" style="padding:5px 12px;background:#0088ff;color:white;border:none;border-radius:4px;cursor:pointer;font-size:12px;">✏</button>` : ''}
+          ${canDelete ? `<button onclick="deleteStep('${step.id}')" style="padding:5px 12px;background:#dc2626;color:white;border:none;border-radius:4px;cursor:pointer;font-size:12px;">✕</button>` : ''}
+        </div>
+      </div>
+      ${step.description ? `<div style="font-size:13px;color:#666;margin-top:10px;padding-left:40px;">${step.description}</div>` : ''}
+      ${step.responsible ? `<div style="font-size:12px;color:#888;margin-top:5px;padding-left:40px;">👤 ${step.responsible}</div>` : ''}
+    </div>`;
+  }).join('');
+  
+  displayContainer.innerHTML = html;
+  
+  if (typeof window.updateStepsEmptyMessage === 'function') {
+    window.updateStepsEmptyMessage();
+  }
+};
