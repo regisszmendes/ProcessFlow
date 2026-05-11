@@ -52,6 +52,9 @@ window.saveStep = async function () {
   await window.loadAllData();
 };
 
+// ALIAS for HTML compatibility
+window.addStep = window.saveStep;
+
 // CLEAR STEP FORM
 window.clearStepForm = function () {
   [
