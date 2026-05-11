@@ -157,6 +157,11 @@ window.renderGapsTable = function() {
   }).join('');
   
   displayContainer.innerHTML = html;
+  
+  // Hide/show empty message
+  if (typeof window.updateGapsEmptyMessage === 'function') {
+    window.updateGapsEmptyMessage();
+  }
 };
 
 // EDIT GAP
@@ -234,3 +239,11 @@ window.deleteGap = async function(id) {
 };
 
 console.log('✅ gap.js loaded');
+
+// UPDATE EMPTY MESSAGE VISIBILITY
+window.updateGapsEmptyMessage = function() {
+  const msg = document.getElementById('empty-gaps-msg');
+  if (msg) {
+    msg.style.display = window.gaps.length > 0 ? 'none' : 'block';
+  }
+};
