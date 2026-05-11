@@ -52,6 +52,9 @@ window.saveGap = async function () {
   await window.loadAllData();
 };
 
+// ALIAS for HTML compatibility
+window.addGap = window.saveGap;
+
 // CLEAR GAP FORM
 window.clearGapForm = function () {
   [
