@@ -27,7 +27,7 @@ window.saveStep = async function () {
     name: name,
     description: document.getElementById('step-desc')?.value.trim() || '',
     responsible: document.getElementById('step-responsible')?.value.trim() || '',
-    step_type: document.getElementById('step-type')?.value || 'task',
+    type: document.getElementById('step-type')?.value || 'task',
     system: document.getElementById('step-system')?.value.trim() || '',
     sla: document.getElementById('step-sla')?.value.trim() || '',
     status: document.getElementById('step-status')?.value || 'not-started',
