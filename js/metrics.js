@@ -63,3 +63,6 @@ window.clearMetricForm = function () {
 };
 
 console.log('✅ metrics.js loaded');
+
+// ALIAS for HTML compatibility
+window.addMetric = window.saveMetric;
