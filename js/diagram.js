@@ -77,6 +77,9 @@ window.refreshDiagram = function () {
   canvas.innerHTML = svg;
 };
 
+// ALIAS for HTML compatibility
+window.renderDiagram = window.refreshDiagram;
+
 // EXPORT DIAGRAM AS SVG
 window.exportDiagram = function () {
   const canvas = document.getElementById('diagram-canvas');
