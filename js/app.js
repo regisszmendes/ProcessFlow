@@ -112,6 +112,7 @@ window.loadAllData = async function () {
     }
     
     if (typeof renderCompanyTable === 'function') renderCompanyTable();
+    if (typeof renderStepsTable === 'function') renderStepsTable();
 
     console.log('✅ All data loaded');
 
