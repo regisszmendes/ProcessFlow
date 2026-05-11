@@ -223,69 +223,67 @@ window.openEditProcModal = function(id) {
     return;
   }
   
-  console.log('Opening edit modal for:', proc);
+  // Remove any existing modal
+  const existing = document.getElementById('edit-modal-simple');
+  if (existing) existing.remove();
   
-  document.getElementById('epm-internal-id').value = id;
-  document.getElementById('epm-proc-id-label').textContent = proc.proc_id;
-  document.getElementById('epm-proc-id').value = proc.proc_id;
-  document.getElementById('epm-name').value = proc.name;
-  document.getElementById('epm-dept').value = proc.department || '';
-  document.getElementById('epm-owner').value = proc.owner || '';
-  document.getElementById('epm-version').value = proc.version || '';
-  document.getElementById('epm-status').value = proc.status;
-  document.getElementById('epm-priority').value = proc.priority;
-  document.getElementById('epm-type').value = proc.type;
-  document.getElementById('epm-start').value = proc.start_date || '';
-  document.getElementById('epm-end').value = proc.end_date || '';
-  document.getElementById('epm-duration').value = proc.duration || '';
-  document.getElementById('epm-frequency').value = proc.frequency || '';
-  document.getElementById('epm-desc').value = proc.description || '';
-  document.getElementById('epm-input').value = proc.input || '';
-  document.getElementById('epm-output').value = proc.output || '';
-  document.getElementById('epm-stakeholders').value = proc.stakeholders || '';
-  document.getElementById('epm-tools').value = proc.tools || '';
-  document.getElementById('epm-kpis').value = proc.kpis || '';
-  document.getElementById('epm-risks').value = proc.risks || '';
+  const div = document.createElement('div');
+  div.id = 'edit-modal-simple';
+  div.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.8);z-index:999999;display:flex;align-items:center;justify-content:center;';
   
-  document.getElementById('edit-proc-modal').classList.add('open');
+  const box = document.createElement('div');
+  box.style.cssText = 'background:white;width:600px;max-height:90vh;overflow-y:auto;border-radius:12px;padding:2rem;box-shadow:0 20px 60px rgba(0,0,0,0.3);';
+  
+  box.innerHTML = '<h2 style="margin-bottom:1.5rem;">✏ Edit Process</h2><div style="margin:10px 0;"><label style="display:block;margin-bottom:5px;font-weight:600;">Process Name *</label><input type="text" id="edit-name" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-size:14px;"/></div><div style="margin:10px 0;"><label style="display:block;margin-bottom:5px;font-weight:600;">Department</label><input type="text" id="edit-dept" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-size:14px;"/></div><div style="margin:10px 0;"><label style="display:block;margin-bottom:5px;font-weight:600;">Owner</label><input type="text" id="edit-owner" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-size:14px;"/></div><div style="margin:10px 0;"><label style="display:block;margin-bottom:5px;font-weight:600;">Description</label><textarea id="edit-desc" rows="4" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-size:14px;resize:vertical;"></textarea></div><div style="margin-top:1.5rem;"><button id="save-edit-btn" style="background:#008f74;color:white;padding:12px 24px;border:none;border-radius:6px;cursor:pointer;font-weight:700;font-size:14px;">✓ Save Changes</button><button id="cancel-edit-btn" style="background:#e5e7eb;color:#333;padding:12px 24px;border:none;border-radius:6px;cursor:pointer;margin-left:10px;font-size:14px;">Cancel</button></div>';
+  
+  div.appendChild(box);
+  document.body.appendChild(div);
+  
+  // Fill form with data
+  document.getElementById('edit-name').value = proc.name || '';
+  document.getElementById('edit-dept').value = proc.department || '';
+  document.getElementById('edit-owner').value = proc.owner || '';
+  document.getElementById('edit-desc').value = proc.description || '';
+  
+  // Save button
+  document.getElementById('save-edit-btn').onclick = async function() {
+    const updates = {
+      name: document.getElementById('edit-name').value.trim(),
+      department: document.getElementById('edit-dept').value.trim(),
+      owner: document.getElementById('edit-owner').value.trim(),
+      description: document.getElementById('edit-desc').value.trim(),
+      updated_at: new Date().toISOString()
+    };
+    
+    const { error } = await window.supabaseClient.from('processes').update(updates).eq('id', id);
+    
+    if (error) {
+      alert('Error: ' + error.message);
+      return;
+    }
+    
+    alert('✓ Process updated successfully!');
+    div.remove();
+    await window.loadAllData();
+  };
+  
+  // Cancel button
+  document.getElementById('cancel-edit-btn').onclick = function() {
+    div.remove();
+  };
 };
 
 window.closeEditProcModal = function() {
-  document.getElementById('edit-proc-modal').classList.remove('open');
+  const modal = document.getElementById('edit-modal-simple');
+  if (modal) modal.remove();
 };
 
 window.applyEditProcess = async function() {
-  const id = document.getElementById('epm-internal-id').value;
-  const updates = {
-    proc_id: document.getElementById('epm-proc-id').value.trim(),
-    name: document.getElementById('epm-name').value.trim(),
-    department: document.getElementById('epm-dept').value.trim(),
-    owner: document.getElementById('epm-owner').value.trim(),
-    version: document.getElementById('epm-version').value.trim(),
-    status: document.getElementById('epm-status').value,
-    priority: document.getElementById('epm-priority').value,
-    type: document.getElementById('epm-type').value,
-    start_date: document.getElementById('epm-start').value || null,
-    end_date: document.getElementById('epm-end').value || null,
-    duration: document.getElementById('epm-duration').value.trim(),
-    frequency: document.getElementById('epm-frequency').value,
-    description: document.getElementById('epm-desc').value.trim(),
-    input: document.getElementById('epm-input').value.trim(),
-    output: document.getElementById('epm-output').value.trim(),
-    stakeholders: document.getElementById('epm-stakeholders').value.trim(),
-    tools: document.getElementById('epm-tools').value.trim(),
-    kpis: document.getElementById('epm-kpis').value.trim(),
-    risks: document.getElementById('epm-risks').value.trim(),
-    updated_at: new Date().toISOString()
-  };
-  const { error } = await window.supabaseClient.from('processes').update(updates).eq('id', id);
-  if (error) {
-    alert('Error: ' + error.message);
-    return;
+  // Fallback for old modal if still exists
+  const modal = document.getElementById('edit-modal-simple');
+  if (modal) {
+    document.getElementById('save-edit-btn').click();
   }
-  alert('✓ Updated!');
-  closeEditProcModal();
-  await loadAllData();
 };
 
 console.log('✅ app.js loaded');
