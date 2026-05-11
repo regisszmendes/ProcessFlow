@@ -351,3 +351,67 @@ window.openRootCauseAnalysis = function() {
 
 // Alias for button compatibility
 window.addRCRow = window.openRootCauseAnalysis;
+
+// RENDER GAPS (WITH FILTER)
+window.renderGaps = function() {
+  const filterProc = document.getElementById('gap-filter-proc')?.value;
+  
+  const displayContainer = document.getElementById('gaps-display-container');
+  if (!displayContainer) {
+    window.renderGapsTable();
+    return;
+  }
+  
+  // Filter gaps by process if selected
+  let filteredGaps = window.gaps;
+  if (filterProc) {
+    filteredGaps = window.gaps.filter(g => g.process_id === filterProc);
+  }
+  
+  if (filteredGaps.length === 0) {
+    displayContainer.innerHTML = '<div style="text-align:center;padding:2rem;color:#999;">No gaps found for selected process</div>';
+    if (typeof window.updateGapsEmptyMessage === 'function') window.updateGapsEmptyMessage();
+    return;
+  }
+  
+  const canEdit = window.CAN_EDIT.includes(window.currentUser?.role);
+  const canDelete = window.CAN_DELETE.includes(window.currentUser?.role);
+  
+  const severityColors = {
+    critical: '#dc2626',
+    high: '#d97706',
+    medium: '#0088ff',
+    low: '#6b7280'
+  };
+  
+  const html = filteredGaps.map((gap, idx) => {
+    const proc = window.processes.find(p => p.id === gap.process_id);
+    const procName = proc ? proc.name : 'Unknown Process';
+    const sevColor = severityColors[gap.severity] || '#6b7280';
+    
+    return `<div style="background:#fff;border-left:4px solid ${sevColor};border:1px solid #e5e5e5;border-radius:8px;padding:1rem;margin-bottom:10px;">
+      <div style="display:flex;gap:10px;align-items:flex-start;">
+        <div style="flex:1;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
+            <div style="font-weight:700;font-size:15px;">${gap.title}</div>
+            <span style="font-size:11px;padding:3px 8px;background:${sevColor};color:white;border-radius:4px;text-transform:uppercase;font-weight:600;">${gap.severity}</span>
+          </div>
+          <div style="font-size:12px;color:#666;margin-bottom:8px;">Process: ${procName}</div>
+          ${gap.current_state ? `<div style="font-size:13px;margin-top:8px;"><strong>Current:</strong> ${gap.current_state}</div>` : ''}
+          ${gap.desired_state ? `<div style="font-size:13px;margin-top:5px;"><strong>Desired:</strong> ${gap.desired_state}</div>` : ''}
+          ${gap.action ? `<div style="font-size:13px;margin-top:5px;color:#008f74;"><strong>Action:</strong> ${gap.action}</div>` : ''}
+        </div>
+        <div style="display:flex;gap:5px;">
+          ${canEdit ? `<button onclick="editGap('${gap.id}')" style="padding:5px 12px;background:#0088ff;color:white;border:none;border-radius:4px;cursor:pointer;font-size:12px;">✏</button>` : ''}
+          ${canDelete ? `<button onclick="deleteGap('${gap.id}')" style="padding:5px 12px;background:#dc2626;color:white;border:none;border-radius:4px;cursor:pointer;font-size:12px;">✕</button>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  
+  displayContainer.innerHTML = html;
+  
+  if (typeof window.updateGapsEmptyMessage === 'function') {
+    window.updateGapsEmptyMessage();
+  }
+};
