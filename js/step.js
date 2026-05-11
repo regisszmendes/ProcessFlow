@@ -63,4 +63,25 @@ window.clearStepForm = function () {
   });
 };
 
+// REFRESH PREVIOUS STEP DROPDOWN
+window.refreshPrevStepDropdown = function () {
+  const procId = document.getElementById('step-proc-id').value;
+  const dropdown = document.getElementById('step-prev-step');
+  
+  if (!dropdown) return;
+  
+  if (!procId) {
+    dropdown.innerHTML = '<option value="">— select process first —</option>';
+    return;
+  }
+  
+  const procSteps = window.steps.filter(s => s.process_id === procId);
+  
+  const opts = procSteps.map(s => 
+    `<option value="${s.id}">${s.name}</option>`
+  ).join('');
+  
+  dropdown.innerHTML = '<option value="">— none (first step) —</option>' + opts;
+};
+
 console.log('✅ step.js loaded');
