@@ -213,10 +213,10 @@ window.loadIntegrationSettings = async function() {
   const { data, error } = await window.supabaseClient
     .from('integration_settings')
     .select('*')
-    .single();
+    .maybeSingle();  // Changed from .single()
 
-  if (error && error.code !== 'PGRST116') { // PGRST116 = no rows
-    console.error('Error loading integration settings:', error);
+  if (error) {
+    console.log('Integration settings load info:', error.message);
     return;
   }
 
