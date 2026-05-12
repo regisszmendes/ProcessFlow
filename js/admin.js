@@ -237,75 +237,53 @@ window.toggleUserActive = async function(userId, isActive) {
 };
 
 // LOAD INTEGRATION SETTINGS
-window.loadIntegrationSettings = async function() {
-  const { data, error } = await window.supabaseClient
-    .from('integration_settings')
-    .select('*')
-    .maybeSingle();  // Changed from .single()
-
-  if (error) {
-    console.log('Integration settings load info:', error.message);
-    return;
-  }
-
-  if (data) {
-    const apiKeyInput = document.getElementById('anthropic-api-key');
-    if (apiKeyInput) {
-      apiKeyInput.value = data.anthropic_api_key || '';
-    }
-  }
+window.loadIntegrationSettings = function() {
+  const apiKey = localStorage.getItem('ai_api_key') || '';
+  const model = localStorage.getItem('ai_model') || 'claude-3-5-sonnet-20241022';
+  const maxTokens = localStorage.getItem('ai_max_tokens') || '2000';
+  
+  const apiKeyInput = document.getElementById('int-api-key');
+  if (apiKeyInput) apiKeyInput.value = apiKey;
+  
+  const modelSelect = document.getElementById('int-model');
+  if (modelSelect) modelSelect.value = model;
+  
+  const tokensSelect = document.getElementById('int-max-tokens');
+  if (tokensSelect) tokensSelect.value = maxTokens;
 };
 
 // SAVE INTEGRATION SETTINGS
-window.saveIntegration = async function() {
-  if (!window.CAN_ADMIN.includes(window.currentUser?.role)) {
-    alert('You need Admin role to manage integration settings.');
-    return;
-  }
-
-  const apiKey = document.getElementById('anthropic-api-key')?.value.trim();
+window.saveIntegration = function() {
+  const apiKey = document.getElementById('int-api-key')?.value.trim();
+  const model = document.getElementById('int-model')?.value || 'claude-3-5-sonnet-20241022';
+  const maxTokens = document.getElementById('int-max-tokens')?.value || '2000';
 
   if (!apiKey) {
     alert('API Key is required.');
     return;
   }
 
-  // Check if settings exist
-  const { data: existing } = await window.supabaseClient
-    .from('integration_settings')
-    .select('id')
-    .single();
+  localStorage.setItem('ai_api_key', apiKey);
+  localStorage.setItem('ai_model', model);
+  localStorage.setItem('ai_max_tokens', maxTokens);
 
-  let error;
+  alert('✓ Integration settings saved to browser!');
+};
 
-  if (existing) {
-    // Update
-    const result = await window.supabaseClient
-      .from('integration_settings')
-      .update({ 
-        anthropic_api_key: apiKey,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', existing.id);
-    error = result.error;
+// TOGGLE API KEY VISIBILITY
+window.toggleApiKeyVisibility = function() {
+  const input = document.getElementById('int-api-key');
+  const btn = document.getElementById('int-key-eye');
+  
+  if (!input) return;
+  
+  if (input.type === 'password') {
+    input.type = 'text';
+    if (btn) btn.textContent = '🙈';
   } else {
-    // Insert
-    const result = await window.supabaseClient
-      .from('integration_settings')
-      .insert([{ 
-        anthropic_api_key: apiKey,
-        created_by: window.currentUser.id
-      }]);
-    error = result.error;
+    input.type = 'password';
+    if (btn) btn.textContent = '👁';
   }
-
-  if (error) {
-    console.error('Error saving integration settings:', error);
-    alert('Error: ' + error.message);
-    return;
-  }
-
-  alert('✓ Integration settings saved!');
 };
 
 // RENDER ANALYTICS
