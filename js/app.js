@@ -115,6 +115,7 @@ window.loadAllData = async function () {
     if (typeof renderStepsTable === 'function') renderStepsTable();
     if (typeof renderGapsTable === 'function') renderGapsTable();
     if (typeof populateProcessDropdowns === 'function') populateProcessDropdowns();
+    if (typeof populateCompanyDropdowns === 'function') populateCompanyDropdowns();
 
     console.log('✅ All data loaded');
 
@@ -293,6 +294,15 @@ console.log('✅ app.js loaded');
 
 // POPULATE PROCESS DROPDOWNS
 window.populateProcessDropdowns = function() {
+  // Populate proc-company-id (Process Registration form)
+  const procCompanyDropdown = document.getElementById('proc-company-id');
+  if (procCompanyDropdown && window.companies) {
+    const opts = window.companies.map(c => 
+      `<option value="${c.id}">${c.name}</option>`
+    ).join('');
+    procCompanyDropdown.innerHTML = '<option value="">— select company —</option>' + opts;
+  }
+  
   // Populate step-proc-id
   const stepProcDropdown = document.getElementById('step-proc-id');
   if (stepProcDropdown && window.processes) {
