@@ -359,3 +359,15 @@ window.populateProcessDropdowns = function() {
   
   console.log('✅ Process dropdowns populated');
 };
+
+// REFRESH DROPDOWNS ON SECTION CHANGE
+window.refreshSectionDropdowns = function() {
+  setTimeout(() => {
+    if (typeof populateProcessDropdowns === 'function') {
+      populateProcessDropdowns();
+    }
+    if (typeof populateCompanyDropdowns === 'function') {
+      populateCompanyDropdowns();
+    }
+  }, 100);
+};
