@@ -34,53 +34,35 @@ window.generateImprovementPlan = async function() {
     outputDiv.style.display = 'block';
   }
 
-  // Get API key from integration settings
-  const { data: integration } = await window.supabaseClient
-    .from('integration_settings')
-    .select('*')
-    .single();
-
-  const apiKey = integration?.anthropic_api_key;
+  // Get API key and model from localStorage
+  const apiKey = localStorage.getItem('ai_api_key');
+  const model = localStorage.getItem('ai_model') || 'claude-3-5-sonnet-20241022';
+  const maxTokens = parseInt(localStorage.getItem('ai_max_tokens') || '2000');
 
   if (!apiKey) {
     if (outputDiv) {
-      outputDiv.innerHTML = '<div style="padding:1rem;background:#fee;border:1px solid #fcc;border-radius:8px;color:#c00;">⚠️ No Anthropic API key configured. Go to CONFIG → Integration to add your API key.</div>';
+      outputDiv.innerHTML = '<div style="padding:1rem;background:#fee;border:1px solid #fcc;border-radius:8px;color:#c00;">⚠️ No API key configured. Go to CONFIG → Integration to add your API key.</div>';
     }
     return;
   }
 
-  try {
-    // Build context
-    const context = `
-Process: ${proc.name}
-Description: ${proc.description || 'No description'}
-Department: ${proc.department || 'Not specified'}
-Owner: ${proc.owner || 'Not specified'}
-
-Steps (${procSteps.length}):
-${procSteps.map((s, i) => `${i + 1}. ${s.name}${s.description ? ': ' + s.description : ''}`).join('\n')}
-
-Identified Gaps (${procGaps.length}):
-${procGaps.map(g => `- ${g.title} (${g.severity}): Current: ${g.current_state || 'N/A'}, Desired: ${g.desired_state || 'N/A'}`).join('\n')}
-
-Current Metrics (${procMetrics.length}):
-${procMetrics.map(m => `- ${m.name}: Current ${m.current || 'N/A'}, Target ${m.target}`).join('\n')}
-`;
-
-    // Call Claude API
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 2000,
-        messages: [{
-          role: 'user',
-          content: `You are a process improvement expert. Analyze this business process and provide a detailed improvement plan with specific, actionable recommendations.
+  // Determine provider from model name
+  let apiUrl, headers, requestBody;
+  
+  if (model.startsWith('claude')) {
+    // Anthropic Claude
+    apiUrl = 'https://api.anthropic.com/v1/messages';
+    headers = {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01'
+    };
+    requestBody = {
+      model: model,
+      max_tokens: maxTokens,
+      messages: [{
+        role: 'user',
+        content: `You are a process improvement expert. Analyze this business process and provide a detailed improvement plan with specific, actionable recommendations.
 
 ${context}
 
@@ -93,8 +75,40 @@ Provide:
 6. Success Metrics (how to measure improvement)
 
 Be specific, practical, and focus on the most impactful changes.`
-        }]
-      })
+      }]
+    };
+  } else if (model.startsWith('gpt')) {
+    // OpenAI
+    apiUrl = 'https://api.openai.com/v1/chat/completions';
+    headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`
+    };
+    requestBody = {
+      model: model,
+      max_tokens: maxTokens,
+      messages: [{
+        role: 'user',
+        content: `You are a process improvement expert. Analyze this business process and provide a detailed improvement plan.
+
+${context}
+
+Provide: Executive Summary, Key Issues, Recommendations, Quick Wins, Medium-term Actions, Success Metrics.`
+      }]
+    };
+  } else {
+    if (outputDiv) {
+      outputDiv.innerHTML = '<div style="padding:1rem;background:#fee;border:1px solid #fcc;border-radius:8px;color:#c00;">⚠️ Unsupported model selected. Please choose Claude or GPT model.</div>';
+    }
+    return;
+  }
+
+  try {
+    // Call AI API
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify(requestBody)
     });
 
     const data = await response.json();
@@ -103,7 +117,13 @@ Be specific, practical, and focus on the most impactful changes.`
       throw new Error(data.error.message || 'API request failed');
     }
 
-    const aiText = data.content[0].text;
+    // Extract text based on provider
+    let aiText;
+    if (model.startsWith('claude')) {
+      aiText = data.content[0].text;
+    } else if (model.startsWith('gpt')) {
+      aiText = data.choices[0].message.content;
+    }
 
     // Display result
     if (outputDiv) {
@@ -112,7 +132,7 @@ Be specific, practical, and focus on the most impactful changes.`
           <h3>🚀 AI-Generated Improvement Plan</h3>
           <div style="white-space:pre-wrap;line-height:1.8;">${escapeHtml(aiText)}</div>
           <div style="margin-top:1.5rem;padding-top:1rem;border-top:1px solid rgba(124,58,237,.2);font-size:.75rem;color:#999;">
-            Generated by Claude Sonnet 4 • ${new Date().toLocaleString()}
+            Generated by ${model} • ${new Date().toLocaleString()}
           </div>
         </div>
       `;
