@@ -313,3 +313,72 @@ window.renderAnalytics = function() {
 };
 
 console.log('✅ admin.js loaded');
+
+// TEST API KEY CONNECTION
+window.testApiKey = async function() {
+  const apiKey = document.getElementById('int-api-key')?.value.trim();
+  const model = document.getElementById('int-model')?.value || 'claude-3-5-sonnet-20241022';
+  
+  if (!apiKey) {
+    alert('Please enter an API key first.');
+    return;
+  }
+  
+  const btn = event.target;
+  const originalText = btn.textContent;
+  btn.textContent = '⏳ Testing...';
+  btn.disabled = true;
+  
+  try {
+    let apiUrl, headers, requestBody;
+    
+    if (model.startsWith('claude')) {
+      apiUrl = 'https://api.anthropic.com/v1/messages';
+      headers = {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01'
+      };
+      requestBody = {
+        model: model,
+        max_tokens: 50,
+        messages: [{ role: 'user', content: 'Say "Connection successful!" in one sentence.' }]
+      };
+    } else if (model.startsWith('gpt')) {
+      apiUrl = 'https://api.openai.com/v1/chat/completions';
+      headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      };
+      requestBody = {
+        model: model,
+        max_tokens: 50,
+        messages: [{ role: 'user', content: 'Say "Connection successful!" in one sentence.' }]
+      };
+    } else {
+      alert('⚠️ Unsupported model. Please select Claude or GPT.');
+      btn.textContent = originalText;
+      btn.disabled = false;
+      return;
+    }
+    
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify(requestBody)
+    });
+    
+    const data = await response.json();
+    
+    if (response.ok) {
+      alert('✅ Connection successful! API key is valid and working.');
+    } else {
+      alert('❌ Connection failed: ' + (data.error?.message || 'Invalid API key or network error'));
+    }
+  } catch (error) {
+    alert('❌ Connection error: ' + error.message);
+  } finally {
+    btn.textContent = originalText;
+    btn.disabled = false;
+  }
+};
