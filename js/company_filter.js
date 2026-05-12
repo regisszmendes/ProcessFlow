@@ -1,8 +1,8 @@
 // ===========================================================
-// COMPANY FILTER FOR STEPS SECTION
+// COMPANY FILTER FOR STEPS AND GAPS SECTIONS
 // ===========================================================
 
-// FILTER PROCESSES BY COMPANY
+// FILTER PROCESSES BY COMPANY (FOR STEPS SECTION)
 window.filterProcessesByCompany = function() {
   const companyId = document.getElementById('step-company-filter')?.value;
   const procDropdown = document.getElementById('step-proc-id');
@@ -11,7 +11,7 @@ window.filterProcessesByCompany = function() {
   
   let filteredProcs = window.processes;
   if (companyId) {
-    filteredProcs = window.processes.filter(p => p.company_id === companyId);
+    filteredProcs = window.processes.filter(p => p.company_id == companyId); // Use == to handle both string and number
   }
   
   const opts = filteredProcs.map(p => 
@@ -25,9 +25,11 @@ window.filterProcessesByCompany = function() {
   if (prevStepDropdown) {
     prevStepDropdown.innerHTML = '<option value="">— select process first —</option>';
   }
+  
+  console.log('✅ Filtered processes for company:', filteredProcs.length);
 };
 
-// ADD TO populateProcessDropdowns - COMPANY DROPDOWNS
+// POPULATE COMPANY DROPDOWNS
 window.populateCompanyDropdowns = function() {
   // Step section company filter
   const stepCompanyFilter = document.getElementById('step-company-filter');
@@ -46,6 +48,8 @@ window.populateCompanyDropdowns = function() {
     ).join('');
     gapCompanyFilter.innerHTML = '<option value="">All Companies</option>' + opts;
   }
+  
+  console.log('✅ Company dropdowns populated');
 };
 
-console.log('✅ Company filter functions loaded');
+console.log('✅ company_filter.js loaded');
