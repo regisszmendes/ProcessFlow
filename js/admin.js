@@ -136,7 +136,7 @@ window.deleteCompany = async function(id) {
 
 // RENDER USER TABLE
 window.renderUserTable = async function() {
-  const tbody = document.getElementById('user-table-body');
+  const tbody = document.getElementById('users-table-body');
   if (!tbody) return;
 
   const { data: users, error } = await window.supabaseClient
@@ -146,12 +146,12 @@ window.renderUserTable = async function() {
 
   if (error) {
     console.error('Error loading users:', error);
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;color:#c00;">Error loading users</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:#c00;">Error loading users</td></tr>';
     return;
   }
 
   if (!users || users.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;color:#999;">No users found</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:#999;">No users found</td></tr>';
     return;
   }
 
@@ -162,27 +162,34 @@ window.renderUserTable = async function() {
     admin: '#a855f7'
   };
 
-  const html = users.map(u => `
+  const html = users.map(u => {
+    const company = window.companies.find(c => c.id === u.company_id);
+    
+    return `
     <tr>
       <td><strong>${u.name}</strong></td>
       <td>${u.email}</td>
       <td>
-        <select onchange="updateUserRole('${u.id}', this.value)" style="padding:5px;border:1px solid #ccc;border-radius:4px;font-size:12px;background:${roleColors[u.role] || '#999'};color:white;font-weight:600;">
+        <select onchange="updateUserRole('${u.id}', this.value)" style="padding:5px 10px;border:1px solid #ccc;border-radius:4px;font-size:12px;background:${roleColors[u.role] || '#999'};color:white;font-weight:600;cursor:pointer;">
           <option value="viewer" ${u.role === 'viewer' ? 'selected' : ''}>Viewer</option>
           <option value="editor" ${u.role === 'editor' ? 'selected' : ''}>Editor</option>
           <option value="manager" ${u.role === 'manager' ? 'selected' : ''}>Manager</option>
           <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
         </select>
       </td>
+      <td>${company ? company.name : '—'}</td>
       <td>
         <label style="display:flex;align-items:center;gap:5px;cursor:pointer;">
           <input type="checkbox" ${u.active ? 'checked' : ''} onchange="toggleUserActive('${u.id}', this.checked)"/>
-          <span style="font-size:12px;">${u.active ? 'Active' : 'Inactive'}</span>
+          <span style="font-size:12px;font-weight:600;color:${u.active ? '#059669' : '#dc2626'};">${u.active ? 'Active' : 'Inactive'}</span>
         </label>
       </td>
       <td>${new Date(u.created_at).toLocaleDateString()}</td>
+      <td>
+        <button class="btn btn-danger" style="padding:5px 12px;font-size:12px;" onclick="deleteUser('${u.id}')">✕</button>
+      </td>
     </tr>
-  `).join('');
+  `}).join('');
 
   tbody.innerHTML = html;
 };
@@ -303,9 +310,12 @@ window.saveIntegration = async function() {
 
 // RENDER ANALYTICS
 window.renderAnalytics = function() {
-  const container = document.getElementById('analytics-container');
-  if (!container) return;
-
+  // Update KPI values
+  const totalVisits = document.getElementById('an-total-visits');
+  const todayVisits = document.getElementById('an-today-visits');
+  const uniqueDays = document.getElementById('an-unique-days');
+  const avgDay = document.getElementById('an-avg-day');
+  
   const stats = {
     totalCompanies: window.companies.length,
     totalProcesses: window.processes.length,
@@ -314,35 +324,14 @@ window.renderAnalytics = function() {
     criticalGaps: window.gaps.filter(g => g.severity === 'critical').length,
     highGaps: window.gaps.filter(g => g.severity === 'high').length
   };
-
-  container.innerHTML = `
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;">
-      <div class="metric-card">
-        <div class="metric-label">Companies</div>
-        <div class="metric-value">${stats.totalCompanies}</div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-label">Processes</div>
-        <div class="metric-value">${stats.totalProcesses}</div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-label">Steps</div>
-        <div class="metric-value">${stats.totalSteps}</div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-label">Total Gaps</div>
-        <div class="metric-value">${stats.totalGaps}</div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-label">Critical Gaps</div>
-        <div class="metric-value" style="color:#dc2626;">${stats.criticalGaps}</div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-label">High Gaps</div>
-        <div class="metric-value" style="color:#d97706;">${stats.highGaps}</div>
-      </div>
-    </div>
-  `;
+  
+  // For now, use process/step counts as visit proxies
+  if (totalVisits) totalVisits.textContent = stats.totalProcesses + stats.totalSteps;
+  if (todayVisits) todayVisits.textContent = stats.totalGaps;
+  if (uniqueDays) uniqueDays.textContent = stats.totalCompanies;
+  if (avgDay) avgDay.textContent = Math.round((stats.totalSteps + stats.totalGaps) / Math.max(stats.totalCompanies, 1));
+  
+  console.log('Analytics rendered:', stats);
 };
 
 console.log('✅ admin.js loaded');
