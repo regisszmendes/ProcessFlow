@@ -114,6 +114,7 @@ window.loadAllData = async function () {
     if (typeof renderCompanyTable === 'function') renderCompanyTable();
     if (typeof renderStepsTable === 'function') renderStepsTable();
     if (typeof renderGapsTable === 'function') renderGapsTable();
+    if (typeof populateProcessDropdowns === 'function') populateProcessDropdowns();
 
     console.log('✅ All data loaded');
 
@@ -289,3 +290,62 @@ window.applyEditProcess = async function() {
 };
 
 console.log('✅ app.js loaded');
+
+// POPULATE PROCESS DROPDOWNS
+window.populateProcessDropdowns = function() {
+  // Populate step-proc-id
+  const stepProcDropdown = document.getElementById('step-proc-id');
+  if (stepProcDropdown && window.processes) {
+    const opts = window.processes.map(p => 
+      `<option value="${p.id}">${p.name}</option>`
+    ).join('');
+    stepProcDropdown.innerHTML = '<option value="">— select process —</option>' + opts;
+  }
+  
+  // Populate step-filter-proc
+  const stepFilterDropdown = document.getElementById('step-filter-proc');
+  if (stepFilterDropdown && window.processes) {
+    const opts = window.processes.map(p => 
+      `<option value="${p.id}">${p.name}</option>`
+    ).join('');
+    stepFilterDropdown.innerHTML = '<option value="">All Processes</option>' + opts;
+  }
+  
+  // Populate gap-proc-id
+  const gapProcDropdown = document.getElementById('gap-proc-id');
+  if (gapProcDropdown && window.processes) {
+    const opts = window.processes.map(p => 
+      `<option value="${p.id}">${p.name}</option>`
+    ).join('');
+    gapProcDropdown.innerHTML = '<option value="">— select process —</option>' + opts;
+  }
+  
+  // Populate gap-filter-proc
+  const gapFilterDropdown = document.getElementById('gap-filter-proc');
+  if (gapFilterDropdown && window.processes) {
+    const opts = window.processes.map(p => 
+      `<option value="${p.id}">${p.name}</option>`
+    ).join('');
+    gapFilterDropdown.innerHTML = '<option value="">All Processes</option>' + opts;
+  }
+  
+  // Populate ai-proc-id (Improve section)
+  const aiProcDropdown = document.getElementById('ai-proc-id');
+  if (aiProcDropdown && window.processes) {
+    const opts = window.processes.map(p => 
+      `<option value="${p.id}">${p.name}</option>`
+    ).join('');
+    aiProcDropdown.innerHTML = '<option value="">— select process —</option>' + opts;
+  }
+  
+  // Populate diagram-filter-proc
+  const diagramProcDropdown = document.getElementById('diagram-filter-proc');
+  if (diagramProcDropdown && window.processes) {
+    const opts = window.processes.map(p => 
+      `<option value="${p.id}">${p.name}</option>`
+    ).join('');
+    diagramProcDropdown.innerHTML = '<option value="">— select process —</option>' + opts;
+  }
+  
+  console.log('✅ Process dropdowns populated');
+};
