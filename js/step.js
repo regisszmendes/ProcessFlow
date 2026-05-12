@@ -41,7 +41,7 @@ window.saveStep = async function () {
     created_by: window.currentUser.id
   };
 
-  const { data, error } = await window.supabaseClient
+  const { data, error} = await window.supabaseClient
     .from('steps')
     .insert([stepData])
     .select();
@@ -136,7 +136,7 @@ window.onSignalChange = function (signal) {
   }
 };
 
-// RENDER STEPS TABLE
+// RENDER STEPS TABLE (WITH DECISION PATHS AND PROPER ORDERING)
 window.renderStepsTable = function() {
   const container = document.getElementById('steps-display-container');
   
@@ -166,9 +166,28 @@ window.renderStepsTable = function() {
   const canEdit = window.CAN_EDIT.includes(window.currentUser?.role);
   const canDelete = window.CAN_DELETE.includes(window.currentUser?.role);
   
-  const html = window.steps.map((step, idx) => {
+  // SORT BY CREATION DATE (CHRONOLOGICAL ORDER)
+  const sortedSteps = [...window.steps].sort((a, b) => 
+    new Date(a.created_at) - new Date(b.created_at)
+  );
+  
+  const html = sortedSteps.map((step, idx) => {
     const proc = window.processes.find(p => p.id === step.process_id);
     const procName = proc ? proc.name : 'Unknown Process';
+    
+    // DECISION PATHS DISPLAY
+    let decisionPaths = '';
+    if (step.type === 'decision') {
+      const yesStep = window.steps.find(s => s.id === step.branch_yes);
+      const noStep = window.steps.find(s => s.id === step.branch_no);
+      decisionPaths = `
+        <div style="margin-top:10px;padding:10px;background:#f0f9ff;border-left:3px solid #0088ff;border-radius:4px;">
+          <div style="font-size:12px;font-weight:700;color:#0088ff;margin-bottom:5px;">🔀 Decision Paths:</div>
+          ${step.branch_yes ? `<div style="font-size:12px;color:#059669;margin-top:3px;">✓ <strong>YES</strong> → ${yesStep ? yesStep.name : step.branch_yes}</div>` : '<div style="font-size:11px;color:#999;">✓ YES path not defined</div>'}
+          ${step.branch_no ? `<div style="font-size:12px;color:#dc2626;margin-top:3px;">✗ <strong>NO</strong> → ${noStep ? noStep.name : step.branch_no}</div>` : '<div style="font-size:11px;color:#999;">✗ NO path not defined</div>'}
+        </div>
+      `;
+    }
     
     return `<div style="background:#f9f9f9;border:1px solid #e5e5e5;border-radius:8px;padding:1rem;margin-bottom:10px;">
       <div style="display:flex;gap:10px;align-items:center;">
@@ -177,15 +196,15 @@ window.renderStepsTable = function() {
           <div style="font-weight:700;font-size:15px;">${step.name}</div>
           <div style="font-size:12px;color:#666;margin-top:3px;">Process: ${procName}</div>
         </div>
-        ${step.type ? `<span style="font-size:11px;padding:3px 8px;background:#e5e7eb;border-radius:4px;text-transform:uppercase;font-weight:600;color:#666;">${step.type}</span>` : ''}
+        ${step.type ? `<span style="font-size:11px;padding:3px 8px;background:${step.type === 'decision' ? '#fef3c7' : '#e5e7eb'};color:${step.type === 'decision' ? '#92400e' : '#666'};border-radius:4px;text-transform:uppercase;font-weight:600;">${step.type}</span>` : ''}
         <div style="display:flex;gap:5px;">
           ${canEdit ? `<button onclick="editStep('${step.id}')" style="padding:5px 12px;background:#0088ff;color:white;border:none;border-radius:4px;cursor:pointer;font-size:12px;">✏</button>` : ''}
           ${canDelete ? `<button onclick="deleteStep('${step.id}')" style="padding:5px 12px;background:#dc2626;color:white;border:none;border-radius:4px;cursor:pointer;font-size:12px;">✕</button>` : ''}
         </div>
       </div>
       ${step.description ? `<div style="font-size:13px;color:#666;margin-top:10px;padding-left:40px;">${step.description}</div>` : ''}
-      ${step.responsible ? `<div style="font-size:12px;color:#888;margin-top:8px;padding-left:40px;">👤 Responsible: ${step.responsible}</div>` : ''}
-      ${step.sla ? `<div style="font-size:12px;color:#888;margin-top:3px;padding-left:40px;">⏱ SLA: ${step.sla}</div>` : ''}
+      ${step.responsible ? `<div style="font-size:12px;color:#888;margin-top:5px;padding-left:40px;">👤 ${step.responsible}</div>` : ''}
+      ${decisionPaths}
     </div>`;
   }).join('');
   
@@ -196,8 +215,6 @@ window.renderStepsTable = function() {
     window.updateStepsEmptyMessage();
   }
 };
-
-console.log('✅ step.js loaded');
 
 // EDIT STEP
 window.editStep = function(id) {
@@ -304,9 +321,28 @@ window.renderSteps = function() {
   const canEdit = window.CAN_EDIT.includes(window.currentUser?.role);
   const canDelete = window.CAN_DELETE.includes(window.currentUser?.role);
   
-  const html = filteredSteps.map((step, idx) => {
+  // SORT BY CREATION DATE
+  const sortedSteps = [...filteredSteps].sort((a, b) => 
+    new Date(a.created_at) - new Date(b.created_at)
+  );
+  
+  const html = sortedSteps.map((step, idx) => {
     const proc = window.processes.find(p => p.id === step.process_id);
     const procName = proc ? proc.name : 'Unknown Process';
+    
+    // DECISION PATHS
+    let decisionPaths = '';
+    if (step.type === 'decision') {
+      const yesStep = window.steps.find(s => s.id === step.branch_yes);
+      const noStep = window.steps.find(s => s.id === step.branch_no);
+      decisionPaths = `
+        <div style="margin-top:10px;padding:10px;background:#f0f9ff;border-left:3px solid #0088ff;border-radius:4px;">
+          <div style="font-size:12px;font-weight:700;color:#0088ff;margin-bottom:5px;">🔀 Decision Paths:</div>
+          ${step.branch_yes ? `<div style="font-size:12px;color:#059669;margin-top:3px;">✓ <strong>YES</strong> → ${yesStep ? yesStep.name : step.branch_yes}</div>` : '<div style="font-size:11px;color:#999;">✓ YES path not defined</div>'}
+          ${step.branch_no ? `<div style="font-size:12px;color:#dc2626;margin-top:3px;">✗ <strong>NO</strong> → ${noStep ? noStep.name : step.branch_no}</div>` : '<div style="font-size:11px;color:#999;">✗ NO path not defined</div>'}
+        </div>
+      `;
+    }
     
     return `<div style="background:#f9f9f9;border:1px solid #e5e5e5;border-radius:8px;padding:1rem;margin-bottom:10px;">
       <div style="display:flex;gap:10px;align-items:center;">
@@ -315,6 +351,7 @@ window.renderSteps = function() {
           <div style="font-weight:700;font-size:15px;">${step.name}</div>
           <div style="font-size:12px;color:#666;margin-top:3px;">Process: ${procName}</div>
         </div>
+        ${step.type ? `<span style="font-size:11px;padding:3px 8px;background:${step.type === 'decision' ? '#fef3c7' : '#e5e7eb'};color:${step.type === 'decision' ? '#92400e' : '#666'};border-radius:4px;text-transform:uppercase;font-weight:600;">${step.type}</span>` : ''}
         <div style="display:flex;gap:5px;">
           ${canEdit ? `<button onclick="editStep('${step.id}')" style="padding:5px 12px;background:#0088ff;color:white;border:none;border-radius:4px;cursor:pointer;font-size:12px;">✏</button>` : ''}
           ${canDelete ? `<button onclick="deleteStep('${step.id}')" style="padding:5px 12px;background:#dc2626;color:white;border:none;border-radius:4px;cursor:pointer;font-size:12px;">✕</button>` : ''}
@@ -322,6 +359,7 @@ window.renderSteps = function() {
       </div>
       ${step.description ? `<div style="font-size:13px;color:#666;margin-top:10px;padding-left:40px;">${step.description}</div>` : ''}
       ${step.responsible ? `<div style="font-size:12px;color:#888;margin-top:5px;padding-left:40px;">👤 ${step.responsible}</div>` : ''}
+      ${decisionPaths}
     </div>`;
   }).join('');
   
@@ -331,3 +369,5 @@ window.renderSteps = function() {
     window.updateStepsEmptyMessage();
   }
 };
+
+console.log('✅ step.js with decision paths loaded');
