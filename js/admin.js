@@ -9,8 +9,8 @@ window.saveCompany = async function() {
     return;
   }
 
-  const bizId = document.getElementById('adm-biz-id')?.value.trim();
-  const name = document.getElementById('adm-name')?.value.trim();
+  const bizId = document.getElementById('biz-id')?.value.trim();
+  const name = document.getElementById('biz-name')?.value.trim();
 
   if (!bizId || !name) {
     alert('Company ID and Name are required.');
@@ -20,8 +20,13 @@ window.saveCompany = async function() {
   const companyData = {
     biz_id: bizId,
     name: name,
-    industry: document.getElementById('adm-industry')?.value.trim() || '',
-    country: document.getElementById('adm-country')?.value.trim() || '',
+    industry: document.getElementById('biz-industry')?.value.trim() || '',
+    country: document.getElementById('biz-country')?.value.trim() || '',
+    size: document.getElementById('biz-size')?.value || '',
+    status: document.getElementById('biz-status')?.value || 'active',
+    description: document.getElementById('biz-desc')?.value.trim() || '',
+    contact: document.getElementById('biz-contact')?.value.trim() || '',
+    email: document.getElementById('biz-email')?.value.trim() || '',
     created_by: window.currentUser.id
   };
 
@@ -43,36 +48,52 @@ window.saveCompany = async function() {
 
 // CLEAR COMPANY FORM
 window.clearCompanyForm = function() {
-  ['adm-biz-id', 'adm-name', 'adm-industry', 'adm-country'].forEach(id => {
+  ['biz-id', 'biz-name', 'biz-industry', 'biz-country', 'biz-desc', 'biz-contact', 'biz-email'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
+  
+  const sizeEl = document.getElementById('biz-size');
+  if (sizeEl) sizeEl.value = '';
+  
+  const statusEl = document.getElementById('biz-status');
+  if (statusEl) statusEl.value = 'active';
 };
 
 // RENDER COMPANY TABLE
 window.renderCompanyTable = function() {
-  const tbody = document.getElementById('company-table-body');
+  const tbody = document.getElementById('biz-table-body');
+  const tableCard = document.getElementById('biz-table-card');
+  
   if (!tbody) return;
 
   if (window.companies.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:#999;">No companies registered yet</td></tr>';
+    if (tableCard) tableCard.style.display = 'none';
     return;
   }
+  
+  if (tableCard) tableCard.style.display = 'block';
 
   const canDelete = window.CAN_DELETE.includes(window.currentUser?.role);
 
-  const html = window.companies.map(c => `
+  const html = window.companies.map(c => {
+    const procCount = window.processes.filter(p => p.company_id === c.id).length;
+    
+    return `
     <tr>
       <td><span style="font-family:var(--mono);font-weight:700;color:#0088ff;">${c.biz_id}</span></td>
       <td><strong>${c.name}</strong></td>
       <td>${c.industry || '—'}</td>
       <td>${c.country || '—'}</td>
-      <td>${new Date(c.created_at).toLocaleDateString()}</td>
+      <td>${c.size || '—'}</td>
+      <td><span style="padding:3px 8px;background:${c.status === 'active' ? '#dcfce7' : '#fee'};color:${c.status === 'active' ? '#166534' : '#991b1b'};border-radius:4px;font-size:11px;font-weight:600;">${c.status || 'active'}</span></td>
+      <td>${procCount}</td>
+      <td>${c.contact || '—'}</td>
       <td>
         ${canDelete ? `<button class="btn btn-danger" style="padding:5px 12px;font-size:12px;" onclick="deleteCompany('${c.id}')">✕</button>` : '—'}
       </td>
     </tr>
-  `).join('');
+  `}).join('');
 
   tbody.innerHTML = html;
 };
