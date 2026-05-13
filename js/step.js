@@ -34,7 +34,6 @@ window.saveStep = async function () {
     input: document.getElementById('step-input')?.value.trim() || '',
     output: document.getElementById('step-output')?.value.trim() || '',
     prev_step_id: document.getElementById('step-prev-id')?.value || null,
-    decision_branch: document.getElementById('step-decision-branch')?.value || null, // NEW FIELD
     is_start: document.getElementById('step-is-start')?.checked || false,
     is_end: document.getElementById('step-is-end')?.checked || false,
     branch_yes: document.getElementById('step-branch-yes-id')?.value || null,
