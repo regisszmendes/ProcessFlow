@@ -29,12 +29,17 @@ window.refreshDiagram = function () {
     return;
   }
 
+  // CONSTANTS - Define these FIRST before using them
+  const stepWidth = 180;
+  const stepHeight = 80;
+  const verticalGap = 60;
+  const horizontalBranchGap = 300;
+  const startX = 150;
+  const startY = 80;
+
   // Build execution flow tree
   const flowTree = buildFlowTree(procSteps);
   const { width, height } = calculateDiagramSize(flowTree);
-  
-  const startX = 150;
-  const startY = 80;
 
   let svg = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg" style="background:#f9fafb;">`;
   
@@ -54,10 +59,6 @@ window.refreshDiagram = function () {
   // Track positions for all elements
   const positions = {};
   let currentY = startY;
-  const stepWidth = 180;
-  const stepHeight = 80;
-  const verticalGap = 60;
-  const horizontalBranchGap = 300;
 
   // Find start step
   const startStep = procSteps.find(s => s.is_start) || procSteps[0];
