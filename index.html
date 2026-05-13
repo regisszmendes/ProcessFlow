@@ -329,14 +329,33 @@
   <!-- AI Output -->
   <div id="ai-output" style="display:none;margin-top:1.5rem;"></div>
   
-  <!-- Saved Plans -->
-  <div class="card" style="margin-top:1.5rem;">
+  <!-- Saved Plans Staging Area -->
+  <div class="card" style="margin-top:2rem;">
     <div class="card-header">
       <div class="card-icon" style="background:rgba(124,58,237,.1)">💾</div>
-      <span class="card-title">Saved Improvement Plans</span>
+      <span class="card-title">Saved Plans (Staging Area)</span>
+      <div style="font-size:12px;color:#666;margin-left:auto;">
+        Save multiple generated plans here, then choose which ones to send to Monitoring
+      </div>
     </div>
-    <div id="saved-plans-container" style="padding:1rem;">
-      <div style="text-align:center;padding:2rem;color:#999;">No saved improvement plans yet.</div>
+    <div id="staged-plans-container" style="padding:1rem;">
+      <div style="text-align:center;padding:2rem;color:#999;">
+        No saved plans yet. Generate and save plans above.
+      </div>
+    </div>
+  </div>
+
+  <!-- Instructions Card -->
+  <div class="card" style="margin-top:1rem;background:#f0f9ff;border:1px solid #0088ff;">
+    <div style="padding:1rem;">
+      <h4 style="margin:0 0 0.5rem 0;color:#0088ff;font-size:14px;">💡 How it works:</h4>
+      <ol style="margin:0;padding-left:1.5rem;font-size:13px;color:#333;line-height:1.8;">
+        <li><strong>Generate</strong> improvement plans above by selecting a process</li>
+        <li><strong>Save</strong> each generated plan to this staging area</li>
+        <li><strong>Compare</strong> multiple plans and decide which is best</li>
+        <li><strong>Send</strong> your chosen plan to <strong>📊 Monitoring</strong> section to track KPIs and progress</li>
+        <li><strong>Delete</strong> plans you don't need anymore</li>
+      </ol>
     </div>
   </div>
 </section>
