@@ -319,7 +319,10 @@ Structure: Executive Summary, Key Issues, Recommendations (with impact/effort/pr
         <div class="ai-output">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;padding-bottom:1rem;border-bottom:2px solid rgba(124,58,237,.2);">
             <h3 style="margin:0;">🚀 AI-Generated Improvement Plan</h3>
-            <button onclick="savePlanToMonitoring()" style="padding:10px 20px;background:#008f74;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:700;font-size:14px;">💾 Save to Monitoring</button>
+            <div style="display:flex;gap:10px;">
+              <button onclick="downloadPlanAsText()" style="padding:10px 20px;background:#0088ff;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:700;font-size:14px;">📥 Download</button>
+              <button onclick="savePlanToMonitoring()" style="padding:10px 20px;background:#008f74;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:700;font-size:14px;">💾 Save to Monitoring</button>
+            </div>
           </div>
           <div style="white-space:pre-wrap;line-height:1.8;font-size:14px;">${formatAIOutput(aiText)}</div>
           <div style="margin-top:1.5rem;padding-top:1rem;border-top:1px solid rgba(124,58,237,.2);font-size:.75rem;color:#999;">
@@ -640,3 +643,36 @@ function escapeHtml(unsafe) {
 }
 
 console.log('✅ ai.js with complete save functionality loaded');
+
+// DOWNLOAD PLAN AS TEXT FILE
+window.downloadPlanAsText = function() {
+  if (!window.currentAIPlan) {
+    alert('No plan to download. Generate a plan first.');
+    return;
+  }
+
+  const proc = window.processes.find(p => p.id === window.currentAIPlan.process_id);
+  const fileName = `ImprovementPlan-${proc?.name || 'Process'}-${new Date().toISOString().split('T')[0]}.txt`;
+  
+  const content = `
+IMPROVEMENT PLAN
+================
+Process: ${proc?.name || 'Unknown'}
+Generated: ${new Date(window.currentAIPlan.generated_at).toLocaleString()}
+Model: ${window.currentAIPlan.model}
+
+${window.currentAIPlan.content}
+`;
+
+  const blob = new Blob([content], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  
+  console.log('✅ Plan downloaded as:', fileName);
+};
