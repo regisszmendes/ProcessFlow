@@ -48,6 +48,11 @@ window.saveMetric = async function () {
   alert('✓ Metric saved successfully!');
   clearMetricForm();
   await window.loadAllData();
+  
+  // Refresh dropdowns after saving
+  if (typeof window.renderMetricsTable === 'function') {
+    window.renderMetricsTable();
+  }
 };
 
 // CLEAR METRIC FORM
@@ -443,19 +448,45 @@ window.renderMetrics = function() {
 
 // INITIALIZE METRICS SECTION
 window.initMetricsSection = function() {
+  console.log('🔧 Initializing Metrics Section...');
+  
   // Refresh process dropdown
   if (typeof window.refreshMetricProcessDropdown === 'function') {
     window.refreshMetricProcessDropdown();
+    console.log('✅ Process dropdown refreshed');
   }
   
   // Initialize step dropdown to show "select process first"
   const stepDropdown = document.getElementById('metric-step-id');
   if (stepDropdown) {
     stepDropdown.innerHTML = '<option value="">— select process first —</option>';
+    console.log('✅ Step dropdown initialized');
   }
   
   // Render metrics table if there are metrics
   if (window.metrics && window.metrics.length > 0) {
     window.renderMetricsTable();
+    console.log('✅ Metrics table rendered');
   }
 };
+
+// AUTO-TRIGGER: Try to initialize when metrics section becomes visible
+// This will attempt to run whenever the DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(() => {
+      const metricsSection = document.getElementById('section-metrics');
+      if (metricsSection && metricsSection.style.display !== 'none') {
+        window.initMetricsSection();
+      }
+    }, 500);
+  });
+} else {
+  // DOM already loaded, try now
+  setTimeout(() => {
+    const metricsSection = document.getElementById('section-metrics');
+    if (metricsSection) {
+      window.initMetricsSection();
+    }
+  }, 500);
+}
