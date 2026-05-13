@@ -167,10 +167,10 @@
         <select id="step-prev-id"><option value="">— none / first step —</option></select>
       </div>
       <div class="form-group full" id="branch-fields" style="display:none">
-        <label>Decision Branches</label>
+        <label>Decision Branches (Select Next Steps)</label>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:.7rem;margin-top:4px">
-          <div class="form-group"><label style="color:var(--success)">✓ Yes / True branch</label><input type="text" id="step-branch-yes" placeholder="e.g. Approve & continue"/></div>
-          <div class="form-group"><label style="color:var(--danger)">✗ No / False branch</label><input type="text" id="step-branch-no"  placeholder="e.g. Reject & notify"/></div>
+          <div class="form-group"><label style="color:var(--success)">✓ YES branch → Next Step</label><select id="step-branch-yes-id"><option value="">— select YES step —</option></select></div>
+          <div class="form-group"><label style="color:var(--danger)">✗ NO branch → Next Step</label><select id="step-branch-no-id"><option value="">— select NO step —</option></select></div>
         </div>
       </div>
       <div class="form-group full"><label>Step Description</label><textarea id="step-desc" rows="2" placeholder="What happens in this step…"></textarea></div>
