@@ -67,6 +67,24 @@ console.log('✅ metrics.js loaded');
 // ALIAS for HTML compatibility
 window.addMetric = window.saveMetric;
 
+// REFRESH PROCESS DROPDOWN FOR METRICS
+window.refreshMetricProcessDropdown = function () {
+  const dropdown = document.getElementById('metric-proc-id');
+  
+  if (!dropdown) return;
+  
+  if (!window.processes || window.processes.length === 0) {
+    dropdown.innerHTML = '<option value="">— no processes available —</option>';
+    return;
+  }
+  
+  const opts = window.processes.map(p => 
+    `<option value="${p.id}">${p.name}</option>`
+  ).join('');
+  
+  dropdown.innerHTML = '<option value="">— select process —</option>' + opts;
+};
+
 // REFRESH STEP DROPDOWN WHEN PROCESS IS SELECTED
 window.refreshMetricStepDropdown = function () {
   const procId = document.getElementById('metric-proc-id')?.value;
@@ -421,4 +439,23 @@ window.renderMetrics = function() {
   }).join('');
   
   displayContainer.innerHTML = html;
+};
+
+// INITIALIZE METRICS SECTION
+window.initMetricsSection = function() {
+  // Refresh process dropdown
+  if (typeof window.refreshMetricProcessDropdown === 'function') {
+    window.refreshMetricProcessDropdown();
+  }
+  
+  // Initialize step dropdown to show "select process first"
+  const stepDropdown = document.getElementById('metric-step-id');
+  if (stepDropdown) {
+    stepDropdown.innerHTML = '<option value="">— select process first —</option>';
+  }
+  
+  // Render metrics table if there are metrics
+  if (window.metrics && window.metrics.length > 0) {
+    window.renderMetricsTable();
+  }
 };
