@@ -1177,7 +1177,50 @@
     </div>
   </div>
 </div>
+<!-- =====================================================
+     MONITORING SECTION - Add this to your index.html
+     ===================================================== -->
 
+<section id="section-monitoring" class="section">
+  <div class="section-hero">
+    <span class="section-hero-icon">📊</span>
+    <div>
+      <div class="section-hero-title">Monitoring & Tracking</div>
+      <div class="section-hero-sub">Track improvement plans, monitor KPIs, and measure progress over time</div>
+    </div>
+  </div>
+  
+  <!-- Monitoring Dashboard -->
+  <div id="monitoring-dashboard">
+    <div style="text-align:center;padding:3rem;color:#999;">
+      <div style="font-size:3rem;margin-bottom:1rem;">📊</div>
+      <div style="font-size:1.2rem;font-weight:600;">No plans being monitored yet</div>
+      <div style="margin-top:0.5rem;">Generate an improvement plan in the IMPROVE section</div>
+    </div>
+  </div>
+  
+  <!-- Archived Plans -->
+  <div class="card" style="margin-top:1.5rem;" id="archived-plans-card">
+    <div class="card-header">
+      <div class="card-icon" style="background:rgba(107,114,128,.1)">📦</div>
+      <span class="card-title">Archived Plans</span>
+    </div>
+    <div id="archived-plans-container" style="padding:1rem;">
+      <div style="text-align:center;color:#999;padding:2rem;">No archived plans</div>
+    </div>
+  </div>
+</section>
+
+<!-- Add this CSS -->
+<style>
+.ai-output {
+  background: white;
+  border: 2px solid rgba(124,58,237,.2);
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 4px 6px rgba(0,0,0,.05);
+}
+</style>
 <script>
 // ============================================================
 // AI STEPS SELECTION
@@ -1220,7 +1263,8 @@ function getSelectedAISteps() {
   <script src="./js/gap.js"></script>
   <script src="./js/diagram.js"></script>
   <script src="./js/metrics.js"></script>
-  <script src="./js/ai.js"></script>    
+  <script src="./js/ai.js"></script>
+  <script src="./js/monitoring.js"></script>  
   <script src="./js/change.js"></script>
   <script src="./js/auth.js"></script>
   <script src="./js/admin.js"></script> 
