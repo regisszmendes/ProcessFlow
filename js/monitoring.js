@@ -163,6 +163,7 @@ window.renderMonitoringDashboard = function() {
         </div>
         
         <div id="plan-details-${plan.id}" style="display:none;padding:1.5rem;border-top:1px solid #e5e5e5;">
+          ${plan.executive_summary || plan.quick_wins || plan.medium_term ? `
           <div style="display:grid;grid-template-columns:2fr 1fr;gap:1.5rem;">
             <!-- Left: Plan Sections -->
             <div>
@@ -205,6 +206,24 @@ window.renderMonitoringDashboard = function() {
               </div>
             </div>
           </div>
+          ` : `
+          <!-- Single column when no parsed sections -->
+          <div style="max-width:600px;">
+            <div style="background:#f9f9f9;border-radius:8px;padding:1rem;margin-bottom:1rem;">
+              <h4 style="font-size:14px;margin-bottom:1rem;">Success Metrics (KPIs)</h4>
+              <div id="kpi-list-${plan.id}">
+                ${renderKPIList(plan.id, kpis)}
+              </div>
+              ${canEdit ? `<button onclick="addKPI('${plan.id}')" style="margin-top:1rem;width:100%;padding:8px;background:#008f74;color:white;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;">+ Add KPI</button>` : ''}
+            </div>
+            
+            <div style="display:flex;gap:0.5rem;">
+              <button onclick="viewFullPlan('${plan.id}')" style="flex:1;padding:10px;background:#0088ff;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-size:13px;">👁 View Full Plan</button>
+              ${canEdit ? `<button onclick="createProjectFromPlan('${plan.id}')" style="flex:1;padding:10px;background:#7c3aed;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-size:13px;">🚀 Create Project</button>` : ''}
+              ${canEdit ? `<button onclick="archivePlan('${plan.id}')" style="flex:1;padding:10px;background:#6b7280;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-size:13px;">📦 Archive</button>` : ''}
+            </div>
+          </div>
+          `}
         </div>
       </div>
     `;
