@@ -281,6 +281,12 @@ Structure: Executive Summary, Key Issues, Recommendations (with impact/effort/pr
 
     const data = await response.json();
 
+    // Check for errors
+    if (!response.ok) {
+      const errorMsg = data.error?.message || data.error?.type || JSON.stringify(data.error) || 'API request failed';
+      throw new Error(errorMsg);
+    }
+
     if (data.error) {
       throw new Error(data.error.message || 'API request failed');
     }
@@ -288,9 +294,13 @@ Structure: Executive Summary, Key Issues, Recommendations (with impact/effort/pr
     // Extract text based on provider
     let aiText;
     if (model.startsWith('claude')) {
-      aiText = data.content[0].text;
+      aiText = data.content?.[0]?.text || '';
     } else if (model.startsWith('gpt')) {
-      aiText = data.choices[0].message.content;
+      aiText = data.choices?.[0]?.message?.content || '';
+    }
+
+    if (!aiText) {
+      throw new Error('No response text received from AI');
     }
 
     // Store the plan temporarily for saving
@@ -321,8 +331,42 @@ Structure: Executive Summary, Key Issues, Recommendations (with impact/effort/pr
 
   } catch (error) {
     console.error('AI generation error:', error);
+    console.error('API URL:', apiUrl);
+    console.error('Model:', model);
+    console.error('Has API key:', !!apiKey);
+    
     if (outputDiv) {
-      outputDiv.innerHTML = `<div style="padding:1rem;background:#fee;border:1px solid #fcc;border-radius:8px;color:#c00;">⚠️ Error: ${error.message}<br><br>Check your API key and model configuration in CONFIG section.</div>`;
+      let errorMessage = error.message;
+      
+      // More helpful error messages
+      if (errorMessage.includes('401') || errorMessage.includes('Unauthorized')) {
+        errorMessage = 'Invalid API key. Please check your API key in CONFIG → Integration.';
+      } else if (errorMessage.includes('429')) {
+        errorMessage = 'Rate limit exceeded. Please wait a moment and try again.';
+      } else if (errorMessage.includes('quota')) {
+        errorMessage = 'API quota exceeded. Please check your account credits.';
+      } else if (errorMessage.includes('Failed to fetch')) {
+        errorMessage = 'Network error. Check your internet connection and API key configuration.';
+      }
+      
+      outputDiv.innerHTML = `
+        <div style="padding:1rem;background:#fee;border:1px solid #fcc;border-radius:8px;color:#c00;">
+          <strong>⚠️ Error:</strong> ${errorMessage}
+          <br><br>
+          <details style="margin-top:0.5rem;font-size:0.9em;">
+            <summary style="cursor:pointer;font-weight:600;">Technical Details</summary>
+            <pre style="margin-top:0.5rem;padding:0.5rem;background:#fff;border:1px solid #ccc;border-radius:4px;font-size:0.8em;overflow:auto;">${error.stack || error.message}</pre>
+          </details>
+          <br>
+          <strong>Troubleshooting:</strong>
+          <ul style="margin-top:0.5rem;font-size:0.9em;">
+            <li>Go to CONFIG → Integration tab</li>
+            <li>Check your API key is correct</li>
+            <li>Click "⚡ Test Connection" to verify</li>
+            <li>Make sure you selected the right model (GPT for OpenAI, Claude for Anthropic)</li>
+          </ul>
+        </div>
+      `;
     }
   }
 };
