@@ -116,12 +116,13 @@ window.refreshPrevStepDropdown = function () {
   dropdown.innerHTML = '<option value="">— none (first step) —</option>' + opts;
 };
 
-// TOGGLE DECISION FIELDS
+// TOGGLE DECISION FIELDS - NOW ONLY SHOWS YES/NO WHEN TYPE = DECISION
 window.toggleDecisionFields = function () {
   const type = document.getElementById('step-type')?.value;
   const branchFields = document.getElementById('branch-fields');
   
   if (branchFields) {
+    // Only show if type is 'decision'
     branchFields.style.display = (type === 'decision') ? 'contents' : 'none';
   }
   
@@ -148,7 +149,7 @@ window.toggleDecisionFields = function () {
   }
 };
 
-// SIGNAL CHANGE
+// SIGNAL CHANGE - PREVENTS SELECTING BOTH START AND END
 window.onSignalChange = function (signal) {
   if (signal === 'start') {
     const isStart = document.getElementById('step-is-start')?.checked;
@@ -195,7 +196,7 @@ window.renderStepsTable = function() {
   const canEdit = window.CAN_EDIT.includes(window.currentUser?.role);
   const canDelete = window.CAN_DELETE.includes(window.currentUser?.role);
   
-  // SORT BY CREATION DATE (CHRONOLOGICAL ORDER)
+  // SORT BY CREATION DATE
   const sortedSteps = [...window.steps].sort((a, b) => 
     new Date(a.created_at) - new Date(b.created_at)
   );
@@ -204,7 +205,7 @@ window.renderStepsTable = function() {
     const proc = window.processes.find(p => p.id === step.process_id);
     const procName = proc ? proc.name : 'Unknown Process';
     
-    // DECISION PATHS DISPLAY
+    // DECISION PATHS - ONLY FOR DECISION TYPE
     let decisionPaths = '';
     if (step.type === 'decision') {
       const yesStep = window.steps.find(s => s.id === step.branch_yes);
@@ -245,7 +246,7 @@ window.renderStepsTable = function() {
   }
 };
 
-// EDIT STEP
+// EDIT STEP - NOW WITH ALL FIELDS INCLUDING SYSTEM, SLA, INPUT, OUTPUT, STATUS, TYPE, BRANCHES
 window.editStep = function(id) {
   const step = window.steps.find(s => s.id === id);
   if (!step) return;
@@ -255,25 +256,171 @@ window.editStep = function(id) {
   
   const div = document.createElement('div');
   div.id = 'edit-step-modal';
-  div.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.8);z-index:999999;display:flex;align-items:center;justify-content:center;';
+  div.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.8);z-index:999999;display:flex;align-items:center;justify-content:center;padding:20px;';
   
   const box = document.createElement('div');
-  box.style.cssText = 'background:white;width:600px;max-height:90vh;overflow-y:auto;border-radius:12px;padding:2rem;box-shadow:0 20px 60px rgba(0,0,0,0.3);';
+  box.style.cssText = 'background:white;width:700px;max-width:100%;max-height:90vh;overflow-y:auto;border-radius:12px;padding:2rem;box-shadow:0 20px 60px rgba(0,0,0,0.3);';
   
-  box.innerHTML = '<h2 style="margin-bottom:1.5rem;">✏ Edit Step</h2><div style="margin:10px 0;"><label style="display:block;margin-bottom:5px;font-weight:600;">Step Name *</label><input type="text" id="edit-step-name" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-size:14px;"/></div><div style="margin:10px 0;"><label style="display:block;margin-bottom:5px;font-weight:600;">Description</label><textarea id="edit-step-desc" rows="3" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-size:14px;resize:vertical;"></textarea></div><div style="margin:10px 0;"><label style="display:block;margin-bottom:5px;font-weight:600;">Responsible</label><input type="text" id="edit-step-resp" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-size:14px;"/></div><div style="margin-top:1.5rem;"><button id="save-step-btn" style="background:#008f74;color:white;padding:12px 24px;border:none;border-radius:6px;cursor:pointer;font-weight:700;font-size:14px;">✓ Save Changes</button><button id="cancel-step-btn" style="background:#e5e7eb;color:#333;padding:12px 24px;border:none;border-radius:6px;cursor:pointer;margin-left:10px;font-size:14px;">Cancel</button></div>';
+  // Get all steps from same process for branch dropdowns
+  const procSteps = window.steps.filter(s => s.process_id === step.process_id && s.id !== id);
+  const branchOpts = procSteps.map(s => 
+    `<option value="${s.id}" ${step.branch_yes === s.id || step.branch_no === s.id ? 'selected' : ''}>${s.name}</option>`
+  ).join('');
+  
+  box.innerHTML = `
+    <h2 style="margin-bottom:1.5rem;">✏ Edit Step</h2>
+    
+    <!-- Name -->
+    <div style="margin:10px 0;">
+      <label style="display:block;margin-bottom:5px;font-weight:600;">Step Name *</label>
+      <input type="text" id="edit-step-name" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-size:14px;"/>
+    </div>
+    
+    <!-- Description -->
+    <div style="margin:10px 0;">
+      <label style="display:block;margin-bottom:5px;font-weight:600;">Description</label>
+      <textarea id="edit-step-desc" rows="3" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-size:14px;resize:vertical;"></textarea>
+    </div>
+    
+    <!-- Two columns: Responsible | System -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0;">
+      <div>
+        <label style="display:block;margin-bottom:5px;font-weight:600;">Responsible</label>
+        <input type="text" id="edit-step-resp" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-size:14px;"/>
+      </div>
+      <div>
+        <label style="display:block;margin-bottom:5px;font-weight:600;">System</label>
+        <input type="text" id="edit-step-system" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-size:14px;"/>
+      </div>
+    </div>
+    
+    <!-- Two columns: Type | Status -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0;">
+      <div>
+        <label style="display:block;margin-bottom:5px;font-weight:600;">Type</label>
+        <select id="edit-step-type" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-size:14px;" onchange="toggleEditBranchFields()">
+          <option value="task">Task</option>
+          <option value="decision">Decision</option>
+          <option value="automation">Automation</option>
+          <option value="approval">Approval</option>
+        </select>
+      </div>
+      <div>
+        <label style="display:block;margin-bottom:5px;font-weight:600;">Status</label>
+        <select id="edit-step-status" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-size:14px;">
+          <option value="not-started">Not Started</option>
+          <option value="in-progress">In Progress</option>
+          <option value="completed">Completed</option>
+          <option value="blocked">Blocked</option>
+        </select>
+      </div>
+    </div>
+    
+    <!-- SLA -->
+    <div style="margin:10px 0;">
+      <label style="display:block;margin-bottom:5px;font-weight:600;">SLA (e.g., 2 hours, 1 day)</label>
+      <input type="text" id="edit-step-sla" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-size:14px;"/>
+    </div>
+    
+    <!-- Input -->
+    <div style="margin:10px 0;">
+      <label style="display:block;margin-bottom:5px;font-weight:600;">Input</label>
+      <textarea id="edit-step-input" rows="2" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-size:14px;resize:vertical;"></textarea>
+    </div>
+    
+    <!-- Output -->
+    <div style="margin:10px 0;">
+      <label style="display:block;margin-bottom:5px;font-weight:600;">Output</label>
+      <textarea id="edit-step-output" rows="2" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-size:14px;resize:vertical;"></textarea>
+    </div>
+    
+    <!-- Start/End checkboxes -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:15px 0;">
+      <div>
+        <label style="display:flex;align-items:center;cursor:pointer;">
+          <input type="checkbox" id="edit-step-is-start" style="margin-right:8px;" onchange="onEditSignalChange('start')"/>
+          <span style="font-weight:600;">Start Point</span>
+        </label>
+      </div>
+      <div>
+        <label style="display:flex;align-items:center;cursor:pointer;">
+          <input type="checkbox" id="edit-step-is-end" style="margin-right:8px;" onchange="onEditSignalChange('end')"/>
+          <span style="font-weight:600;">End Point</span>
+        </label>
+      </div>
+    </div>
+    
+    <!-- DECISION BRANCHES - SHOWN ONLY IF TYPE = DECISION -->
+    <div id="edit-branch-fields" style="display:none;margin:15px 0;padding:15px;background:#f0f9ff;border-radius:8px;border:2px solid #0088ff;">
+      <h3 style="margin:0 0 10px 0;font-size:14px;color:#0088ff;font-weight:700;">🔀 Decision Paths</h3>
+      
+      <div style="margin:10px 0;">
+        <label style="display:block;margin-bottom:5px;font-weight:600;color:#059669;">✓ YES Path</label>
+        <select id="edit-step-branch-yes" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-size:14px;">
+          <option value="">— select YES step —</option>
+          ${branchOpts}
+        </select>
+      </div>
+      
+      <div style="margin:10px 0;">
+        <label style="display:block;margin-bottom:5px;font-weight:600;color:#dc2626;">✗ NO Path</label>
+        <select id="edit-step-branch-no" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-size:14px;">
+          <option value="">— select NO step —</option>
+          ${branchOpts}
+        </select>
+      </div>
+    </div>
+    
+    <!-- Buttons -->
+    <div style="margin-top:1.5rem;display:flex;gap:10px;">
+      <button id="save-step-btn" style="flex:1;background:#008f74;color:white;padding:12px 24px;border:none;border-radius:6px;cursor:pointer;font-weight:700;font-size:14px;">✓ Save Changes</button>
+      <button id="cancel-step-btn" style="background:#e5e7eb;color:#333;padding:12px 24px;border:none;border-radius:6px;cursor:pointer;font-size:14px;">Cancel</button>
+    </div>
+  `;
   
   div.appendChild(box);
   document.body.appendChild(div);
   
+  // Populate fields with current values
   document.getElementById('edit-step-name').value = step.name || '';
   document.getElementById('edit-step-desc').value = step.description || '';
   document.getElementById('edit-step-resp').value = step.responsible || '';
+  document.getElementById('edit-step-system').value = step.system || '';
+  document.getElementById('edit-step-type').value = step.type || 'task';
+  document.getElementById('edit-step-status').value = step.status || 'not-started';
+  document.getElementById('edit-step-sla').value = step.sla || '';
+  document.getElementById('edit-step-input').value = step.input || '';
+  document.getElementById('edit-step-output').value = step.output || '';
+  document.getElementById('edit-step-is-start').checked = step.is_start || false;
+  document.getElementById('edit-step-is-end').checked = step.is_end || false;
   
+  // Set branch values if they exist
+  if (step.branch_yes) {
+    document.getElementById('edit-step-branch-yes').value = step.branch_yes;
+  }
+  if (step.branch_no) {
+    document.getElementById('edit-step-branch-no').value = step.branch_no;
+  }
+  
+  // Show/hide branch fields based on type
+  toggleEditBranchFields();
+  
+  // Save button
   document.getElementById('save-step-btn').onclick = async function() {
     const updates = {
       name: document.getElementById('edit-step-name').value.trim(),
       description: document.getElementById('edit-step-desc').value.trim(),
       responsible: document.getElementById('edit-step-resp').value.trim(),
+      system: document.getElementById('edit-step-system').value.trim(),
+      type: document.getElementById('edit-step-type').value,
+      status: document.getElementById('edit-step-status').value,
+      sla: document.getElementById('edit-step-sla').value.trim(),
+      input: document.getElementById('edit-step-input').value.trim(),
+      output: document.getElementById('edit-step-output').value.trim(),
+      is_start: document.getElementById('edit-step-is-start').checked,
+      is_end: document.getElementById('edit-step-is-end').checked,
+      branch_yes: document.getElementById('edit-step-branch-yes').value || null,
+      branch_no: document.getElementById('edit-step-branch-no').value || null,
       updated_at: new Date().toISOString()
     };
     
@@ -289,9 +436,37 @@ window.editStep = function(id) {
     await window.loadAllData();
   };
   
+  // Cancel button
   document.getElementById('cancel-step-btn').onclick = function() {
     div.remove();
   };
+};
+
+// TOGGLE BRANCH FIELDS IN EDIT MODAL
+window.toggleEditBranchFields = function() {
+  const type = document.getElementById('edit-step-type')?.value;
+  const branchFields = document.getElementById('edit-branch-fields');
+  
+  if (branchFields) {
+    branchFields.style.display = (type === 'decision') ? 'block' : 'none';
+  }
+};
+
+// SIGNAL CHANGE FOR EDIT MODAL - PREVENTS SELECTING BOTH START AND END
+window.onEditSignalChange = function (signal) {
+  if (signal === 'start') {
+    const isStart = document.getElementById('edit-step-is-start')?.checked;
+    if (isStart) {
+      const endEl = document.getElementById('edit-step-is-end');
+      if (endEl) endEl.checked = false;
+    }
+  } else if (signal === 'end') {
+    const isEnd = document.getElementById('edit-step-is-end')?.checked;
+    if (isEnd) {
+      const startEl = document.getElementById('edit-step-is-start');
+      if (startEl) startEl.checked = false;
+    }
+  }
 };
 
 // DELETE STEP
@@ -359,7 +534,7 @@ window.renderSteps = function() {
     const proc = window.processes.find(p => p.id === step.process_id);
     const procName = proc ? proc.name : 'Unknown Process';
     
-    // DECISION PATHS
+    // DECISION PATHS - ONLY FOR DECISION TYPE
     let decisionPaths = '';
     if (step.type === 'decision') {
       const yesStep = window.steps.find(s => s.id === step.branch_yes);
@@ -399,4 +574,4 @@ window.renderSteps = function() {
   }
 };
 
-console.log('✅ step.js with decision paths loaded');
+console.log('✅ step.js with YES/NO buttons and extended edit fields loaded');
