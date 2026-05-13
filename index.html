@@ -275,6 +275,137 @@
 </section>
 
 <!-- ==================== AI / IMPROVE ==================== -->
+  <!-- =====================================================
+     AI IMPROVEMENT SECTION - Add this to your index.html
+     ===================================================== -->
+
+<section id="section-ai" class="section">
+  <!-- Generate Improvement Plan Card -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon" style="background:rgba(124,58,237,.1)">🤖</div>
+      <span class="card-title">AI-Powered Improvement Analysis</span>
+    </div>
+    
+    <div class="form-grid">
+      <!-- Process Selection (REQUIRED) -->
+      <div class="form-group">
+        <label>Process to Analyze *</label>
+        <select id="ai-proc-id">
+          <option value="">— select process —</option>
+        </select>
+      </div>
+      
+      <!-- Step Selection (OPTIONAL) -->
+      <div class="form-group">
+        <label>Focus on Specific Step <span style="color:var(--text3)">(optional)</span></label>
+        <select id="ai-step-id">
+          <option value="">— select process first —</option>
+        </select>
+      </div>
+      
+      <!-- Metric Selection (OPTIONAL) -->
+      <div class="form-group">
+        <label>Focus on Specific Metric <span style="color:var(--text3)">(optional)</span></label>
+        <select id="ai-metric-id">
+          <option value="">— select process first —</option>
+        </select>
+      </div>
+      
+      <!-- Generate Button -->
+      <div class="form-group full" style="margin-top:1rem;">
+        <button onclick="generateImprovementPlan()" class="btn-primary" style="width:100%;padding:14px;font-size:16px;font-weight:700;">
+          🚀 Generate Improvement Plan
+        </button>
+        <div style="font-size:12px;color:#666;margin-top:8px;text-align:center;">
+          AI will analyze your process, steps, gaps, and metrics to create a comprehensive improvement plan
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- AI Output -->
+  <div id="ai-output" style="display:none;margin-top:1.5rem;"></div>
+  
+  <!-- Saved Plans -->
+  <div class="card" style="margin-top:1.5rem;">
+    <div class="card-header">
+      <div class="card-icon" style="background:rgba(124,58,237,.1)">💾</div>
+      <span class="card-title">Saved Improvement Plans</span>
+    </div>
+    <div id="saved-plans-container" style="padding:1rem;">
+      <div style="text-align:center;padding:2rem;color:#999;">No saved improvement plans yet.</div>
+    </div>
+  </div>
+</section>
+
+<!-- Add this CSS if you don't have it -->
+<style>
+.ai-thinking {
+  text-align: center;
+  padding: 3rem;
+  color: #7c3aed;
+  font-weight: 600;
+}
+
+.spinner {
+  border: 4px solid #f3f4f6;
+  border-top: 4px solid #7c3aed;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.ai-output {
+  background: white;
+  border: 2px solid rgba(124,58,237,.2);
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 4px 6px rgba(0,0,0,.05);
+}
+
+.ai-output h4 {
+  color: #7c3aed;
+  font-size: 16px;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+  font-weight: 700;
+}
+
+.ai-output h5 {
+  color: #008f74;
+  font-size: 14px;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  font-weight: 700;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 12px rgba(124,58,237,.3);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(124,58,237,.4);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+</style>
 <section id="section-ai" class="section">
   <div class="section-hero"><span class="section-hero-icon">🚀</span><div><div class="section-hero-title">Improve</div><div class="section-hero-sub">AI analyses the selected process and proposes targeted improvements</div></div></div>
   <div class="card">
