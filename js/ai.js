@@ -319,7 +319,7 @@ Structure: Executive Summary, Key Issues, Recommendations (with impact/effort/pr
         <div class="ai-output">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;padding-bottom:1rem;border-bottom:2px solid rgba(124,58,237,.2);">
             <h3 style="margin:0;">🚀 AI-Generated Improvement Plan</h3>
-            <button onclick="savePlanToDatabase()" style="padding:10px 20px;background:#008f74;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:700;font-size:14px;">💾 Save Plan</button>
+            <button onclick="savePlanToMonitoring()" style="padding:10px 20px;background:#008f74;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:700;font-size:14px;">💾 Save to Monitoring</button>
           </div>
           <div style="white-space:pre-wrap;line-height:1.8;font-size:14px;">${formatAIOutput(aiText)}</div>
           <div style="margin-top:1.5rem;padding-top:1rem;border-top:1px solid rgba(124,58,237,.2);font-size:.75rem;color:#999;">
