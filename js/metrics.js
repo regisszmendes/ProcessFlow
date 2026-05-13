@@ -1,5 +1,5 @@
 // ===========================================================
-// METRICS MANAGEMENT
+// METRICS MANAGEMENT - FIXED FOR YOUR HTML
 // ===========================================================
 
 // SAVE METRIC
@@ -18,19 +18,21 @@ window.saveMetric = async function () {
     return;
   }
 
-  if (!name || !target) {
-    alert('Metric name and target are required.');
+  if (!name) {
+    alert('Metric name is required.');
     return;
   }
 
   const metricData = {
     process_id: procId,
+    step_id: document.getElementById('metric-step-id')?.value || null,
     name: name,
-    description: document.getElementById('metric-desc').value.trim(),
-    target: target,
-    current: document.getElementById('metric-current').value.trim(),
-    unit: document.getElementById('metric-unit').value.trim(),
-    frequency: document.getElementById('metric-frequency').value,
+    category: document.getElementById('metric-cat')?.value || '',
+    current: document.getElementById('metric-val')?.value.trim() || '',
+    unit: document.getElementById('metric-unit')?.value.trim() || '',
+    target: target || '',
+    trend: document.getElementById('metric-trend')?.value || '',
+    notes: document.getElementById('metric-notes')?.value.trim() || '',
     created_by: window.currentUser.id
   };
 
@@ -49,7 +51,7 @@ window.saveMetric = async function () {
   clearMetricForm();
   await window.loadAllData();
   
-  // Refresh dropdowns after saving
+  // Refresh display
   if (typeof window.renderMetricsTable === 'function') {
     window.renderMetricsTable();
   }
@@ -57,17 +59,17 @@ window.saveMetric = async function () {
 
 // CLEAR METRIC FORM
 window.clearMetricForm = function () {
-  [
-    'metric-name', 'metric-desc', 'metric-target', 'metric-current', 'metric-unit'
-  ].forEach(id => {
+  ['metric-name', 'metric-val', 'metric-unit', 'metric-target', 'metric-notes'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
   
-  document.getElementById('metric-frequency').value = '';
+  const catEl = document.getElementById('metric-cat');
+  if (catEl) catEl.value = 'time';
+  
+  const trendEl = document.getElementById('metric-trend');
+  if (trendEl) trendEl.value = '';
 };
-
-console.log('✅ metrics.js loaded');
 
 // ALIAS for HTML compatibility
 window.addMetric = window.saveMetric;
@@ -76,7 +78,10 @@ window.addMetric = window.saveMetric;
 window.refreshMetricProcessDropdown = function () {
   const dropdown = document.getElementById('metric-proc-id');
   
-  if (!dropdown) return;
+  if (!dropdown) {
+    console.warn('⚠️ metric-proc-id dropdown not found');
+    return;
+  }
   
   if (!window.processes || window.processes.length === 0) {
     dropdown.innerHTML = '<option value="">— no processes available —</option>';
@@ -88,6 +93,7 @@ window.refreshMetricProcessDropdown = function () {
   ).join('');
   
   dropdown.innerHTML = '<option value="">— select process —</option>' + opts;
+  console.log(`✅ Loaded ${window.processes.length} processes into dropdown`);
 };
 
 // REFRESH STEP DROPDOWN WHEN PROCESS IS SELECTED
@@ -95,7 +101,10 @@ window.refreshMetricStepDropdown = function () {
   const procId = document.getElementById('metric-proc-id')?.value;
   const dropdown = document.getElementById('metric-step-id');
   
-  if (!dropdown) return;
+  if (!dropdown) {
+    console.warn('⚠️ metric-step-id dropdown not found');
+    return;
+  }
   
   if (!procId) {
     dropdown.innerHTML = '<option value="">— select process first —</option>';
@@ -113,112 +122,110 @@ window.refreshMetricStepDropdown = function () {
     `<option value="${s.id}">${s.name}</option>`
   ).join('');
   
-  dropdown.innerHTML = '<option value="">— none (process-level metric) —</option>' + opts;
+  dropdown.innerHTML = '<option value="">— none / process-level —</option>' + opts;
+  console.log(`✅ Loaded ${procSteps.length} steps for selected process`);
 };
 
-// RENDER METRICS TABLE
-window.renderMetricsTable = function() {
-  const container = document.getElementById('metrics-display-container');
+// RENDER METRICS GRID
+window.renderMetrics = function() {
+  const filterProc = document.getElementById('metric-filter-proc')?.value;
+  const grid = document.getElementById('metrics-grid');
   
-  // Create container if doesn't exist
-  if (!container) {
-    const metricsSection = document.getElementById('section-metrics');
-    if (!metricsSection) return;
-    
-    const cards = metricsSection.querySelectorAll('.card');
-    if (cards.length > 0) {
-      const displayCard = document.createElement('div');
-      displayCard.className = 'card';
-      displayCard.style.marginTop = '1.5rem';
-      displayCard.innerHTML = '<div class="card-header"><div class="card-icon" style="background:rgba(0,143,116,.1)">📊</div><span class="card-title">Registered Metrics</span></div><div id="metrics-display-container" style="padding:1rem;"></div>';
-      cards[0].parentNode.appendChild(displayCard);
-    }
+  if (!grid) return;
+  
+  let filteredMetrics = window.metrics || [];
+  if (filterProc) {
+    filteredMetrics = filteredMetrics.filter(m => m.process_id === filterProc);
   }
   
-  const displayContainer = document.getElementById('metrics-display-container');
-  if (!displayContainer) return;
-  
-  if (window.metrics.length === 0) {
-    displayContainer.innerHTML = '<div style="text-align:center;padding:2rem;color:#999;">No metrics registered yet</div>';
+  if (filteredMetrics.length === 0) {
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="es-icon">📊</div><div class="es-text">No metrics yet.</div></div>';
     return;
   }
   
   const canEdit = window.CAN_EDIT.includes(window.currentUser?.role);
   const canDelete = window.CAN_DELETE.includes(window.currentUser?.role);
   
-  const html = window.metrics.map((metric, idx) => {
+  const html = filteredMetrics.map(metric => {
     const proc = window.processes.find(p => p.id === metric.process_id);
-    const procName = proc ? proc.name : 'Unknown Process';
+    const procName = proc ? proc.name : 'Unknown';
     
-    // Calculate progress percentage
     let progressPercent = 0;
     let progressColor = '#6b7280';
+    let gapText = '—';
+    
     if (metric.current && metric.target) {
       const current = parseFloat(metric.current);
       const target = parseFloat(metric.target);
+      
       if (!isNaN(current) && !isNaN(target) && target !== 0) {
         progressPercent = Math.round((current / target) * 100);
+        const gap = target - current;
+        gapText = gap > 0 ? `+${gap.toFixed(1)}` : gap.toFixed(1);
         
-        // Color based on progress
-        if (progressPercent >= 100) {
-          progressColor = '#059669'; // Green - target met
-        } else if (progressPercent >= 75) {
-          progressColor = '#0088ff'; // Blue - on track
-        } else if (progressPercent >= 50) {
-          progressColor = '#f59e0b'; // Orange - needs attention
-        } else {
-          progressColor = '#dc2626'; // Red - critical
-        }
+        if (progressPercent >= 100) progressColor = '#059669';
+        else if (progressPercent >= 75) progressColor = '#0088ff';
+        else if (progressPercent >= 50) progressColor = '#f59e0b';
+        else progressColor = '#dc2626';
       }
     }
     
-    return `<div style="background:#f9f9f9;border:1px solid #e5e5e5;border-radius:8px;padding:1rem;margin-bottom:10px;">
-      <div style="display:flex;gap:10px;align-items:flex-start;">
-        <div style="flex:1;">
-          <div style="font-weight:700;font-size:15px;margin-bottom:5px;">${metric.name}</div>
-          <div style="font-size:12px;color:#666;margin-bottom:8px;">Process: ${procName}</div>
-          ${metric.description ? `<div style="font-size:13px;color:#666;margin-bottom:8px;">${metric.description}</div>` : ''}
-          
-          <div style="display:flex;gap:20px;margin-top:10px;flex-wrap:wrap;">
-            <div>
-              <div style="font-size:11px;color:#888;text-transform:uppercase;">Target</div>
-              <div style="font-size:16px;font-weight:700;color:#008f74;">${metric.target}${metric.unit ? ' ' + metric.unit : ''}</div>
-            </div>
-            ${metric.current ? `
-            <div>
-              <div style="font-size:11px;color:#888;text-transform:uppercase;">Current</div>
-              <div style="font-size:16px;font-weight:700;color:${progressColor};">${metric.current}${metric.unit ? ' ' + metric.unit : ''}</div>
-            </div>
-            ` : ''}
-            ${metric.current && metric.target ? `
-            <div>
-              <div style="font-size:11px;color:#888;text-transform:uppercase;">Progress</div>
-              <div style="font-size:16px;font-weight:700;color:${progressColor};">${progressPercent}%</div>
-            </div>
-            ` : ''}
-            ${metric.frequency ? `
-            <div>
-              <div style="font-size:11px;color:#888;text-transform:uppercase;">Frequency</div>
-              <div style="font-size:13px;font-weight:600;color:#666;">${metric.frequency}</div>
-            </div>
-            ` : ''}
+    const trendIcon = metric.trend === 'improving' ? '↑' : metric.trend === 'worsening' ? '↓' : '→';
+    const trendColor = metric.trend === 'improving' ? '#059669' : metric.trend === 'worsening' ? '#dc2626' : '#6b7280';
+    
+    return `
+      <div class="metric-card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+          <div>
+            <div style="font-weight:700;font-size:15px;margin-bottom:4px;">${metric.name}</div>
+            <div style="font-size:12px;color:#666;">📋 ${procName}</div>
+            ${metric.category ? `<span style="display:inline-block;margin-top:4px;font-size:11px;padding:2px 6px;background:#e5e7eb;border-radius:3px;">${metric.category}</span>` : ''}
           </div>
-          
+          <div style="display:flex;gap:4px;">
+            ${canEdit ? `<button onclick="editMetric('${metric.id}')" style="padding:4px 8px;background:#0088ff;color:white;border:none;border-radius:4px;cursor:pointer;font-size:11px;">✏</button>` : ''}
+            ${canDelete ? `<button onclick="deleteMetric('${metric.id}')" style="padding:4px 8px;background:#dc2626;color:white;border:none;border-radius:4px;cursor:pointer;font-size:11px;">✕</button>` : ''}
+          </div>
+        </div>
+        
+        <div style="display:flex;gap:16px;margin-top:12px;flex-wrap:wrap;">
+          ${metric.current ? `
+          <div>
+            <div style="font-size:11px;color:#888;text-transform:uppercase;">Current</div>
+            <div style="font-size:18px;font-weight:700;color:${progressColor};">${metric.current}${metric.unit || ''}</div>
+          </div>
+          ` : ''}
+          ${metric.target ? `
+          <div>
+            <div style="font-size:11px;color:#888;text-transform:uppercase;">Target</div>
+            <div style="font-size:18px;font-weight:700;color:#008f74;">${metric.target}${metric.unit || ''}</div>
+          </div>
+          ` : ''}
           ${metric.current && metric.target ? `
-          <div style="margin-top:10px;background:#e5e7eb;height:8px;border-radius:4px;overflow:hidden;">
-            <div style="width:${Math.min(progressPercent, 100)}%;height:100%;background:${progressColor};transition:width 0.3s;"></div>
+          <div>
+            <div style="font-size:11px;color:#888;text-transform:uppercase;">Progress</div>
+            <div style="font-size:18px;font-weight:700;color:${progressColor};">${progressPercent}%</div>
+          </div>
+          ` : ''}
+          ${metric.trend ? `
+          <div>
+            <div style="font-size:11px;color:#888;text-transform:uppercase;">Trend</div>
+            <div style="font-size:18px;font-weight:700;color:${trendColor};">${trendIcon}</div>
           </div>
           ` : ''}
         </div>
-        <div style="display:flex;gap:5px;">
-          ${canEdit ? `<button onclick="editMetric('${metric.id}')" style="padding:5px 12px;background:#0088ff;color:white;border:none;border-radius:4px;cursor:pointer;font-size:12px;">✏</button>` : ''}
-          ${canDelete ? `<button onclick="deleteMetric('${metric.id}')" style="padding:5px 12px;background:#dc2626;color:white;border:none;border-radius:4px;cursor:pointer;font-size:12px;">✕</button>` : ''}
+        
+        ${metric.current && metric.target ? `
+        <div style="margin-top:12px;background:#e5e7eb;height:6px;border-radius:3px;overflow:hidden;">
+          <div style="width:${Math.min(progressPercent, 100)}%;height:100%;background:${progressColor};transition:width 0.3s;"></div>
         </div>
+        ` : ''}
+        
+        ${metric.notes ? `<div style="margin-top:8px;font-size:12px;color:#666;">${metric.notes}</div>` : ''}
       </div>
-    </div>`;
+    `;
   }).join('');
   
-  displayContainer.innerHTML = html;
+  grid.innerHTML = html;
 };
 
 // EDIT METRIC
@@ -244,19 +251,14 @@ window.editMetric = function(id) {
       <input type="text" id="edit-metric-name" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-size:14px;"/>
     </div>
     
-    <div style="margin:10px 0;">
-      <label style="display:block;margin-bottom:5px;font-weight:600;">Description</label>
-      <textarea id="edit-metric-desc" rows="2" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-size:14px;resize:vertical;"></textarea>
-    </div>
-    
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0;">
       <div>
-        <label style="display:block;margin-bottom:5px;font-weight:600;">Target Value *</label>
-        <input type="text" id="edit-metric-target" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-size:14px;"/>
+        <label style="display:block;margin-bottom:5px;font-weight:600;">Current Value</label>
+        <input type="number" id="edit-metric-current" step="any" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-size:14px;"/>
       </div>
       <div>
-        <label style="display:block;margin-bottom:5px;font-weight:600;">Current Value</label>
-        <input type="text" id="edit-metric-current" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-size:14px;"/>
+        <label style="display:block;margin-bottom:5px;font-weight:600;">Target Value</label>
+        <input type="number" id="edit-metric-target" step="any" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-size:14px;"/>
       </div>
     </div>
     
@@ -266,16 +268,19 @@ window.editMetric = function(id) {
         <input type="text" id="edit-metric-unit" placeholder="%, hours, $..." style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-size:14px;"/>
       </div>
       <div>
-        <label style="display:block;margin-bottom:5px;font-weight:600;">Frequency</label>
-        <select id="edit-metric-frequency" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-size:14px;">
-          <option value="">Select...</option>
-          <option value="daily">Daily</option>
-          <option value="weekly">Weekly</option>
-          <option value="monthly">Monthly</option>
-          <option value="quarterly">Quarterly</option>
-          <option value="yearly">Yearly</option>
+        <label style="display:block;margin-bottom:5px;font-weight:600;">Trend</label>
+        <select id="edit-metric-trend" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-size:14px;">
+          <option value="">Unknown</option>
+          <option value="improving">Improving ↑</option>
+          <option value="stable">Stable →</option>
+          <option value="worsening">Worsening ↓</option>
         </select>
       </div>
+    </div>
+    
+    <div style="margin:10px 0;">
+      <label style="display:block;margin-bottom:5px;font-weight:600;">Notes</label>
+      <textarea id="edit-metric-notes" rows="2" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-size:14px;resize:vertical;"></textarea>
     </div>
     
     <div style="margin-top:1.5rem;display:flex;gap:10px;">
@@ -289,21 +294,21 @@ window.editMetric = function(id) {
   
   // Populate fields
   document.getElementById('edit-metric-name').value = metric.name || '';
-  document.getElementById('edit-metric-desc').value = metric.description || '';
-  document.getElementById('edit-metric-target').value = metric.target || '';
   document.getElementById('edit-metric-current').value = metric.current || '';
+  document.getElementById('edit-metric-target').value = metric.target || '';
   document.getElementById('edit-metric-unit').value = metric.unit || '';
-  document.getElementById('edit-metric-frequency').value = metric.frequency || '';
+  document.getElementById('edit-metric-trend').value = metric.trend || '';
+  document.getElementById('edit-metric-notes').value = metric.notes || '';
   
   // Save button
   document.getElementById('save-metric-btn').onclick = async function() {
     const updates = {
       name: document.getElementById('edit-metric-name').value.trim(),
-      description: document.getElementById('edit-metric-desc').value.trim(),
-      target: document.getElementById('edit-metric-target').value.trim(),
       current: document.getElementById('edit-metric-current').value.trim(),
+      target: document.getElementById('edit-metric-target').value.trim(),
       unit: document.getElementById('edit-metric-unit').value.trim(),
-      frequency: document.getElementById('edit-metric-frequency').value,
+      trend: document.getElementById('edit-metric-trend').value,
+      notes: document.getElementById('edit-metric-notes').value.trim(),
       updated_at: new Date().toISOString()
     };
     
@@ -348,104 +353,6 @@ window.deleteMetric = async function(id) {
   await window.loadAllData();
 };
 
-// RENDER METRICS (WITH FILTER)
-window.renderMetrics = function() {
-  const filterProc = document.getElementById('metric-filter-proc')?.value;
-  
-  const displayContainer = document.getElementById('metrics-display-container');
-  if (!displayContainer) {
-    window.renderMetricsTable();
-    return;
-  }
-  
-  // Filter metrics by process if selected
-  let filteredMetrics = window.metrics;
-  if (filterProc) {
-    filteredMetrics = window.metrics.filter(m => m.process_id === filterProc);
-  }
-  
-  if (filteredMetrics.length === 0) {
-    displayContainer.innerHTML = '<div style="text-align:center;padding:2rem;color:#999;">No metrics found for selected process</div>';
-    return;
-  }
-  
-  const canEdit = window.CAN_EDIT.includes(window.currentUser?.role);
-  const canDelete = window.CAN_DELETE.includes(window.currentUser?.role);
-  
-  const html = filteredMetrics.map((metric) => {
-    const proc = window.processes.find(p => p.id === metric.process_id);
-    const procName = proc ? proc.name : 'Unknown Process';
-    
-    // Calculate progress percentage
-    let progressPercent = 0;
-    let progressColor = '#6b7280';
-    if (metric.current && metric.target) {
-      const current = parseFloat(metric.current);
-      const target = parseFloat(metric.target);
-      if (!isNaN(current) && !isNaN(target) && target !== 0) {
-        progressPercent = Math.round((current / target) * 100);
-        
-        if (progressPercent >= 100) {
-          progressColor = '#059669';
-        } else if (progressPercent >= 75) {
-          progressColor = '#0088ff';
-        } else if (progressPercent >= 50) {
-          progressColor = '#f59e0b';
-        } else {
-          progressColor = '#dc2626';
-        }
-      }
-    }
-    
-    return `<div style="background:#f9f9f9;border:1px solid #e5e5e5;border-radius:8px;padding:1rem;margin-bottom:10px;">
-      <div style="display:flex;gap:10px;align-items:flex-start;">
-        <div style="flex:1;">
-          <div style="font-weight:700;font-size:15px;margin-bottom:5px;">${metric.name}</div>
-          <div style="font-size:12px;color:#666;margin-bottom:8px;">Process: ${procName}</div>
-          ${metric.description ? `<div style="font-size:13px;color:#666;margin-bottom:8px;">${metric.description}</div>` : ''}
-          
-          <div style="display:flex;gap:20px;margin-top:10px;flex-wrap:wrap;">
-            <div>
-              <div style="font-size:11px;color:#888;text-transform:uppercase;">Target</div>
-              <div style="font-size:16px;font-weight:700;color:#008f74;">${metric.target}${metric.unit ? ' ' + metric.unit : ''}</div>
-            </div>
-            ${metric.current ? `
-            <div>
-              <div style="font-size:11px;color:#888;text-transform:uppercase;">Current</div>
-              <div style="font-size:16px;font-weight:700;color:${progressColor};">${metric.current}${metric.unit ? ' ' + metric.unit : ''}</div>
-            </div>
-            ` : ''}
-            ${metric.current && metric.target ? `
-            <div>
-              <div style="font-size:11px;color:#888;text-transform:uppercase;">Progress</div>
-              <div style="font-size:16px;font-weight:700;color:${progressColor};">${progressPercent}%</div>
-            </div>
-            ` : ''}
-            ${metric.frequency ? `
-            <div>
-              <div style="font-size:11px;color:#888;text-transform:uppercase;">Frequency</div>
-              <div style="font-size:13px;font-weight:600;color:#666;">${metric.frequency}</div>
-            </div>
-            ` : ''}
-          </div>
-          
-          ${metric.current && metric.target ? `
-          <div style="margin-top:10px;background:#e5e7eb;height:8px;border-radius:4px;overflow:hidden;">
-            <div style="width:${Math.min(progressPercent, 100)}%;height:100%;background:${progressColor};transition:width 0.3s;"></div>
-          </div>
-          ` : ''}
-        </div>
-        <div style="display:flex;gap:5px;">
-          ${canEdit ? `<button onclick="editMetric('${metric.id}')" style="padding:5px 12px;background:#0088ff;color:white;border:none;border-radius:4px;cursor:pointer;font-size:12px;">✏</button>` : ''}
-          ${canDelete ? `<button onclick="deleteMetric('${metric.id}')" style="padding:5px 12px;background:#dc2626;color:white;border:none;border-radius:4px;cursor:pointer;font-size:12px;">✕</button>` : ''}
-        </div>
-      </div>
-    </div>`;
-  }).join('');
-  
-  displayContainer.innerHTML = html;
-};
-
 // INITIALIZE METRICS SECTION
 window.initMetricsSection = function() {
   console.log('🔧 Initializing Metrics Section...');
@@ -453,40 +360,36 @@ window.initMetricsSection = function() {
   // Refresh process dropdown
   if (typeof window.refreshMetricProcessDropdown === 'function') {
     window.refreshMetricProcessDropdown();
-    console.log('✅ Process dropdown refreshed');
   }
   
-  // Initialize step dropdown to show "select process first"
+  // Also refresh the filter dropdown
+  const filterDropdown = document.getElementById('metric-filter-proc');
+  if (filterDropdown && window.processes) {
+    const opts = window.processes.map(p => 
+      `<option value="${p.id}">${p.name}</option>`
+    ).join('');
+    filterDropdown.innerHTML = '<option value="">All Processes</option>' + opts;
+  }
+  
+  // Initialize step dropdown
   const stepDropdown = document.getElementById('metric-step-id');
   if (stepDropdown) {
     stepDropdown.innerHTML = '<option value="">— select process first —</option>';
-    console.log('✅ Step dropdown initialized');
   }
   
-  // Render metrics table if there are metrics
+  // Render metrics
   if (window.metrics && window.metrics.length > 0) {
-    window.renderMetricsTable();
-    console.log('✅ Metrics table rendered');
+    window.renderMetrics();
   }
 };
 
-// AUTO-TRIGGER: Try to initialize when metrics section becomes visible
-// This will attempt to run whenever the DOM is ready
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', function() {
-    setTimeout(() => {
-      const metricsSection = document.getElementById('section-metrics');
-      if (metricsSection && metricsSection.style.display !== 'none') {
-        window.initMetricsSection();
-      }
-    }, 500);
-  });
-} else {
-  // DOM already loaded, try now
-  setTimeout(() => {
-    const metricsSection = document.getElementById('section-metrics');
-    if (metricsSection) {
-      window.initMetricsSection();
-    }
-  }, 500);
-}
+// Set up event listener for process dropdown
+setTimeout(() => {
+  const procDropdown = document.getElementById('metric-proc-id');
+  if (procDropdown) {
+    procDropdown.addEventListener('change', window.refreshMetricStepDropdown);
+    console.log('✅ Event listener added to metric-proc-id');
+  }
+}, 1000);
+
+console.log('✅ metrics.js loaded');
