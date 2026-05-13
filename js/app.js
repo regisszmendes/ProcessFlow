@@ -99,6 +99,18 @@ window.loadAllData = async function () {
     const { data: changeData } = await window.supabaseClient.from('change_entries').select('*').order('created_at', { ascending: false });
     window.changeEntries = changeData || [];
 
+    // Load improvement plans and KPIs for monitoring
+    const { data: plansData } = await window.supabaseClient
+      .from('improvement_plans')
+      .select('*')
+      .order('generated_at', { ascending: false });
+    window.improvement_plans = plansData || [];
+
+    const { data: kpisData } = await window.supabaseClient
+      .from('plan_kpis')
+      .select('*');
+    window.plan_kpis = kpisData || [];
+
     populateCompanyDropdowns();
     populateProcessDropdowns();
     if (typeof populateChangeDropdowns === 'function') populateChangeDropdowns();
@@ -116,8 +128,10 @@ window.loadAllData = async function () {
     if (typeof renderGapsTable === 'function') renderGapsTable();
     if (typeof populateProcessDropdowns === 'function') populateProcessDropdowns();
     if (typeof populateCompanyDropdowns === 'function') populateCompanyDropdowns();
+    if (typeof renderMonitoringDashboard === 'function') renderMonitoringDashboard();
 
     console.log('✅ All data loaded');
+    console.log('  - Improvement Plans:', window.improvement_plans?.length || 0);
 
   } catch (error) {
     console.error('❌ Error loading data:', error);
