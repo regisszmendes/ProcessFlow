@@ -61,6 +61,32 @@ window.saveGap = async function () {
 // ALIAS for HTML compatibility
 window.addGap = window.saveGap;
 
+// REFRESH STEP DROPDOWN WHEN PROCESS IS SELECTED
+window.refreshGapStepDropdown = function () {
+  const procId = document.getElementById('gap-proc-id')?.value;
+  const dropdown = document.getElementById('gap-step-id');
+  
+  if (!dropdown) return;
+  
+  if (!procId) {
+    dropdown.innerHTML = '<option value="">— select process first —</option>';
+    return;
+  }
+  
+  const procSteps = window.steps.filter(s => s.process_id === procId);
+  
+  if (procSteps.length === 0) {
+    dropdown.innerHTML = '<option value="">— no steps for this process —</option>';
+    return;
+  }
+  
+  const opts = procSteps.map(s => 
+    `<option value="${s.id}">${s.name}</option>`
+  ).join('');
+  
+  dropdown.innerHTML = '<option value="">— none (process-level gap) —</option>' + opts;
+};
+
 // CLEAR GAP FORM
 window.clearGapForm = function () {
   [
