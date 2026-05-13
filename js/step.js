@@ -36,8 +36,8 @@ window.saveStep = async function () {
     prev_step_id: document.getElementById('step-prev-id')?.value || null,
     is_start: document.getElementById('step-is-start')?.checked || false,
     is_end: document.getElementById('step-is-end')?.checked || false,
-    branch_yes: document.getElementById('step-branch-yes')?.value.trim() || '',
-    branch_no: document.getElementById('step-branch-no')?.value.trim() || '',
+    branch_yes: document.getElementById('step-branch-yes-id')?.value || null, // Changed to use dropdown ID
+    branch_no: document.getElementById('step-branch-no-id')?.value || null, // Changed to use dropdown ID
     created_by: window.currentUser.id
   };
 
@@ -69,7 +69,7 @@ window.addStep = window.saveStep;
 window.clearStepForm = function () {
   [
     'step-name', 'step-desc', 'step-responsible', 'step-system',
-    'step-sla', 'step-input', 'step-output', 'step-branch-yes', 'step-branch-no'
+    'step-sla', 'step-input', 'step-output'
   ].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
@@ -86,6 +86,13 @@ window.clearStepForm = function () {
   
   const endEl = document.getElementById('step-is-end');
   if (endEl) endEl.checked = false;
+  
+  // Clear branch dropdowns
+  const yesDropdown = document.getElementById('step-branch-yes-id');
+  if (yesDropdown) yesDropdown.value = '';
+  
+  const noDropdown = document.getElementById('step-branch-no-id');
+  if (noDropdown) noDropdown.value = '';
 };
 
 // REFRESH PREVIOUS STEP DROPDOWN
@@ -112,10 +119,32 @@ window.refreshPrevStepDropdown = function () {
 // TOGGLE DECISION FIELDS
 window.toggleDecisionFields = function () {
   const type = document.getElementById('step-type')?.value;
-  const decisionFields = document.getElementById('decision-fields');
+  const branchFields = document.getElementById('branch-fields');
   
-  if (decisionFields) {
-    decisionFields.style.display = (type === 'decision') ? 'contents' : 'none';
+  if (branchFields) {
+    branchFields.style.display = (type === 'decision') ? 'contents' : 'none';
+  }
+  
+  // Populate branch dropdowns with existing steps from same process
+  if (type === 'decision') {
+    const procId = document.getElementById('step-proc-id')?.value;
+    if (procId) {
+      const procSteps = window.steps.filter(s => s.process_id === procId);
+      
+      const opts = procSteps.map(s => 
+        `<option value="${s.id}">${s.name}</option>`
+      ).join('');
+      
+      const yesDropdown = document.getElementById('step-branch-yes-id');
+      const noDropdown = document.getElementById('step-branch-no-id');
+      
+      if (yesDropdown) {
+        yesDropdown.innerHTML = '<option value="">— select YES step —</option>' + opts;
+      }
+      if (noDropdown) {
+        noDropdown.innerHTML = '<option value="">— select NO step —</option>' + opts;
+      }
+    }
   }
 };
 
