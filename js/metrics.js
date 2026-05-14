@@ -82,9 +82,9 @@ window.saveMetric = async function() {
     process_id: procId,
     step_id: stepId,
     name: name,
-    target: target || '',
-    current: current || '',
-    unit: unit || '',
+    target: target || null,
+    current: current || null,
+    unit: unit || null,
     created_by: window.currentUser.id
   };
 
@@ -216,9 +216,9 @@ window.updateMetric = async function(id) {
     process_id: procId,
     step_id: stepId,
     name: name,
-    target: target || '',
-    current: current || '',
-    unit: unit || ''
+    target: target || null,
+    current: current || null,
+    unit: unit || null
   };
 
   try {
