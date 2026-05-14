@@ -1284,5 +1284,43 @@ function getSelectedAISteps() {
   <script src="./js/change.js"></script>
   <script src="./js/auth.js"></script>
   <script src="./js/admin.js"></script> 
+
+  <!-- ADD THIS RIGHT BEFORE </body> TAG -->
+<script>
+// Fix showSection function
+window.showSection = function(sectionId, btn) {
+  console.log('Showing section:', sectionId);
+  
+  // Hide all sections
+  document.querySelectorAll('.section').forEach(section => {
+    section.style.display = 'none';
+    section.classList.remove('active');
+  });
+  
+  // Show selected section
+  const targetSection = document.getElementById('section-' + sectionId);
+  if (targetSection) {
+    targetSection.style.display = 'block';
+    targetSection.classList.add('active');
+  } else {
+    console.error('Section not found:', 'section-' + sectionId);
+  }
+  
+  // Update nav buttons
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  
+  // Call specific render functions
+  if (sectionId === 'monitoring' && typeof renderMonitoringDashboard === 'function') {
+    renderMonitoringDashboard();
+  }
+  
+  // Scroll to top
+  window.scrollTo(0, 0);
+};
+
+console.log('✅ showSection function loaded');
+</script>
+
 </body>
 </html>
