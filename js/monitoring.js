@@ -306,7 +306,7 @@ window.addKPI = function(planId) {
       }
       
       alert('✅ KPI added!');
-      window.loadAllData().then(() => renderMonitoringDashboard());
+      window.loadAllData().then(() => renderMonitoringDashboardFiltered()());
     });
 };
 
