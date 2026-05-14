@@ -678,11 +678,39 @@ ${window.currentAIPlan.content}
 // STAGING AREA - Save multiple plans before sending to monitoring
 // ===========================================================
 
-// Initialize saved plans array
+// Initialize saved plans array - will be loaded from database
 window.savedAIPlans = window.savedAIPlans || [];
 
+// Load staging plans from database
+window.loadStagingPlans = async function() {
+  try {
+    const { data, error } = await window.supabaseClient
+      .from('staging_plans')
+      .select('*')
+      .eq('created_by', window.currentUser.id)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    window.savedAIPlans = data || [];
+    renderStagedPlans();
+    console.log('✅ Loaded', window.savedAIPlans.length, 'staging plans from database');
+
+  } catch (error) {
+    console.error('Error loading staging plans:', error);
+    window.savedAIPlans = [];
+  }
+};
+
+// Auto-load staging plans when page loads
+setTimeout(() => {
+  if (window.currentUser && typeof loadStagingPlans === 'function') {
+    loadStagingPlans();
+  }
+}, 1000);
+
 // SAVE GENERATED PLAN TO STAGING AREA
-window.saveGeneratedPlan = function() {
+window.saveGeneratedPlan = async function() {
   if (!window.currentAIPlan) {
     alert('No plan to save. Generate a plan first.');
     return;
@@ -693,20 +721,36 @@ window.saveGeneratedPlan = function() {
   
   if (!title) return;
 
-  const savedPlan = {
-    id: 'temp_' + Date.now(),
+  const planData = {
+    process_id: window.currentAIPlan.process_id,
+    step_id: window.currentAIPlan.step_id,
+    metric_id: window.currentAIPlan.metric_id,
     title: title,
-    ...window.currentAIPlan,
-    saved_at: new Date().toISOString()
+    content: window.currentAIPlan.content,
+    model: window.currentAIPlan.model,
+    sent_to_monitoring: false,
+    created_by: window.currentUser.id,
+    generated_at: window.currentAIPlan.generated_at
   };
 
-  window.savedAIPlans.push(savedPlan);
-  
-  alert('✅ Plan saved to staging area!');
-  
-  window.currentAIPlan = null;
-  
-  renderStagedPlans();
+  try {
+    const { data, error } = await window.supabaseClient
+      .from('staging_plans')
+      .insert([planData])
+      .select();
+
+    if (error) throw error;
+
+    alert('✅ Plan saved to staging area!');
+    
+    window.currentAIPlan = null;
+    
+    await loadStagingPlans();
+
+  } catch (error) {
+    console.error('Error saving plan:', error);
+    alert('Error: ' + error.message);
+  }
 };
 
 // RENDER STAGED PLANS
@@ -732,12 +776,12 @@ window.renderStagedPlans = function() {
             <div style="flex:1;">
               <div class="card-title">${plan.title}</div>
               <div style="font-size:12px;color:#666;margin-top:4px;">
-                📊 ${procName} • Saved: ${new Date(plan.saved_at).toLocaleString()}
-                ${plan.sentToMonitoring ? `<br><span style="color:#008f74;font-weight:600;">✓ Sent to Monitoring ${new Date(plan.sentAt).toLocaleString()}</span>` : ''}
+                📊 ${procName} • Saved: ${new Date(plan.created_at).toLocaleString()}
+                ${plan.sent_to_monitoring ? `<br><span style="color:#008f74;font-weight:600;">✓ Sent to Monitoring ${new Date(plan.sent_at).toLocaleString()}</span>` : ''}
               </div>
             </div>
             <div style="display:flex;gap:8px;">
-              ${plan.sentToMonitoring ? 
+              ${plan.sent_to_monitoring ? 
                 `<button disabled style="padding:8px 16px;background:#d1d5db;color:#6b7280;border:none;border-radius:6px;cursor:not-allowed;font-weight:700;font-size:13px;">✓ Already Sent</button>` :
                 `<button onclick="event.stopPropagation(); sendPlanToMonitoring('${plan.id}')" style="padding:8px 16px;background:#008f74;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:700;font-size:13px;">📊 Send to Monitoring</button>`
               }
@@ -816,16 +860,17 @@ window.sendPlanToMonitoring = async function(planId) {
 
     alert('✅ Plan sent to MONITORING! Go to 📊 Monitor section to track progress.');
     
-    // Mark plan as sent instead of deleting it
-    const sentPlan = window.savedAIPlans.find(p => p.id === planId);
-    if (sentPlan) {
-      sentPlan.sentToMonitoring = true;
-      sentPlan.sentAt = new Date().toISOString();
-    }
+    // Mark plan as sent in database
+    await window.supabaseClient
+      .from('staging_plans')
+      .update({
+        sent_to_monitoring: true,
+        sent_at: new Date().toISOString()
+      })
+      .eq('id', planId);
     
     await window.loadAllData();
-    
-    renderStagedPlans();
+    await loadStagingPlans();
 
   } catch (error) {
     console.error('Error:', error);
@@ -834,7 +879,7 @@ window.sendPlanToMonitoring = async function(planId) {
 };
 
 // DELETE STAGED PLAN
-window.deleteStagedPlan = function(planId) {
+window.deleteStagedPlan = async function(planId) {
   const plan = window.savedAIPlans.find(p => p.id === planId);
   
   if (!plan) return;
@@ -843,11 +888,21 @@ window.deleteStagedPlan = function(planId) {
     return;
   }
 
-  window.savedAIPlans = window.savedAIPlans.filter(p => p.id !== planId);
-  
-  renderStagedPlans();
-  
-  alert('✅ Plan deleted!');
+  try {
+    const { error } = await window.supabaseClient
+      .from('staging_plans')
+      .delete()
+      .eq('id', planId);
+
+    if (error) throw error;
+
+    alert('✅ Plan deleted!');
+    await loadStagingPlans();
+
+  } catch (error) {
+    console.error('Error deleting plan:', error);
+    alert('Error: ' + error.message);
+  }
 };
 
 // PARSE AI PLAN
