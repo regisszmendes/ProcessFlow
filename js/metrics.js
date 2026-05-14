@@ -78,6 +78,11 @@ window.saveMetric = async function() {
     return;
   }
 
+  if (!target) {
+    alert('Please enter a target value.');
+    return;
+  }
+
   const metricData = {
     process_id: procId,
     step_id: stepId,
@@ -126,15 +131,18 @@ window.clearMetricForm = function() {
 window.renderMetricsTable = function() {
   const tbody = document.getElementById('metrics-table-body');
   const tableCard = document.getElementById('metrics-table-card');
+  const emptyState = document.querySelector('#metrics-grid .empty-state');
 
   if (!tbody) return;
 
   if (!window.metrics || window.metrics.length === 0) {
     if (tableCard) tableCard.style.display = 'none';
+    if (emptyState) emptyState.style.display = 'block';
     return;
   }
 
   if (tableCard) tableCard.style.display = 'block';
+  if (emptyState) emptyState.style.display = 'none';
 
   const canEdit = window.CAN_EDIT.includes(window.currentUser?.role);
   const canDelete = window.CAN_DELETE.includes(window.currentUser?.role);
@@ -165,50 +173,113 @@ window.renderMetricsTable = function() {
   tbody.innerHTML = html;
 };
 
-// EDIT METRIC
-window.editMetric = async function(id) {
+// EDIT METRIC - WITH MODAL
+window.editMetric = function(id) {
   const metric = window.metrics.find(m => m.id === id);
   if (!metric) return;
 
-  document.getElementById('metric-proc-id').value = metric.process_id;
-  refreshMetricStepDropdown();
-  
+  // Remove existing modal if any
+  const existing = document.getElementById('metric-edit-modal');
+  if (existing) existing.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'metric-edit-modal';
+  modal.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.7);z-index:999999;display:flex;align-items:center;justify-content:center;';
+
+  const box = document.createElement('div');
+  box.style.cssText = 'background:white;width:600px;max-width:90%;border-radius:12px;padding:2rem;box-shadow:0 20px 60px rgba(0,0,0,0.3);max-height:80vh;overflow-y:auto;';
+
+  box.innerHTML = `
+    <h3 style="margin:0 0 1.5rem 0;color:#333;">Edit Metric</h3>
+    
+    <div style="margin-bottom:1rem;">
+      <label style="display:block;font-size:13px;font-weight:600;color:#666;margin-bottom:0.5rem;">Process *</label>
+      <select id="edit-metric-proc" onchange="editMetricRefreshSteps()" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-size:14px;">
+        ${window.processes.map(p => `<option value="${p.id}" ${p.id === metric.process_id ? 'selected' : ''}>${p.name}</option>`).join('')}
+      </select>
+    </div>
+    
+    <div style="margin-bottom:1rem;">
+      <label style="display:block;font-size:13px;font-weight:600;color:#666;margin-bottom:0.5rem;">Step (optional)</label>
+      <select id="edit-metric-step" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-size:14px;">
+        <option value="">— process level —</option>
+      </select>
+    </div>
+    
+    <div style="margin-bottom:1rem;">
+      <label style="display:block;font-size:13px;font-weight:600;color:#666;margin-bottom:0.5rem;">Metric Name *</label>
+      <input type="text" id="edit-metric-name" value="${metric.name}" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-size:14px;"/>
+    </div>
+    
+    <div style="margin-bottom:1rem;">
+      <label style="display:block;font-size:13px;font-weight:600;color:#666;margin-bottom:0.5rem;">Target Value *</label>
+      <input type="text" id="edit-metric-target" value="${metric.target || ''}" placeholder="e.g., 95%, 30 minutes, $10000" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-size:14px;"/>
+    </div>
+    
+    <div style="margin-bottom:1rem;">
+      <label style="display:block;font-size:13px;font-weight:600;color:#666;margin-bottom:0.5rem;">Current Value</label>
+      <input type="text" id="edit-metric-current" value="${metric.current || ''}" placeholder="e.g., 87%, 45 minutes" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-size:14px;"/>
+    </div>
+    
+    <div style="margin-bottom:1.5rem;">
+      <label style="display:block;font-size:13px;font-weight:600;color:#666;margin-bottom:0.5rem;">Unit (optional)</label>
+      <input type="text" id="edit-metric-unit" value="${metric.unit || ''}" placeholder="e.g., %, minutes, $" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-size:14px;"/>
+    </div>
+    
+    <div id="edit-metric-error" style="display:none;padding:10px;background:#fee;border:1px solid #fcc;border-radius:6px;color:#c00;font-size:13px;margin-bottom:1rem;"></div>
+    
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <button onclick="document.getElementById('metric-edit-modal').remove()" style="padding:10px 20px;background:#e5e7eb;color:#333;border:none;border-radius:6px;cursor:pointer;font-weight:600;">Cancel</button>
+      <button onclick="saveEditedMetric('${id}')" style="padding:10px 20px;background:#0088ff;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:600;">💾 Update Metric</button>
+    </div>
+  `;
+
+  modal.appendChild(box);
+  document.body.appendChild(modal);
+
+  // Populate steps dropdown
   setTimeout(() => {
+    editMetricRefreshSteps();
     if (metric.step_id) {
-      document.getElementById('metric-step-id').value = metric.step_id;
+      document.getElementById('edit-metric-step').value = metric.step_id;
     }
   }, 100);
 
-  document.getElementById('metric-name').value = metric.name;
-  document.getElementById('metric-target').value = metric.target || '';
-  document.getElementById('metric-current').value = metric.current || '';
-  document.getElementById('metric-unit').value = metric.unit || '';
-
-  const saveBtn = document.querySelector('button[onclick*="saveMetric"]');
-  if (saveBtn) {
-    saveBtn.textContent = '✓ Update Metric';
-    saveBtn.onclick = () => updateMetric(id);
-  }
-
-  document.getElementById('metric-name').scrollIntoView({ behavior: 'smooth' });
+  document.getElementById('edit-metric-name').focus();
 };
 
-// UPDATE METRIC
-window.updateMetric = async function(id) {
-  if (!window.CAN_EDIT.includes(window.currentUser?.role)) {
-    alert('You need Editor role or above.');
+// REFRESH STEPS IN EDIT MODAL
+window.editMetricRefreshSteps = function() {
+  const procId = document.getElementById('edit-metric-proc')?.value;
+  const stepSelect = document.getElementById('edit-metric-step');
+  
+  if (!stepSelect || !procId) return;
+  
+  const procSteps = window.steps.filter(s => s.process_id === procId);
+  
+  stepSelect.innerHTML = '<option value="">— process level —</option>' + 
+    procSteps.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+};
+
+// SAVE EDITED METRIC
+window.saveEditedMetric = async function(id) {
+  const procId = document.getElementById('edit-metric-proc').value;
+  const stepId = document.getElementById('edit-metric-step').value || null;
+  const name = document.getElementById('edit-metric-name').value.trim();
+  const target = document.getElementById('edit-metric-target').value.trim();
+  const current = document.getElementById('edit-metric-current').value.trim();
+  const unit = document.getElementById('edit-metric-unit').value.trim();
+  const errorDiv = document.getElementById('edit-metric-error');
+
+  if (!name) {
+    errorDiv.textContent = 'Please enter a metric name';
+    errorDiv.style.display = 'block';
     return;
   }
 
-  const procId = document.getElementById('metric-proc-id')?.value;
-  const stepId = document.getElementById('metric-step-id')?.value || null;
-  const name = document.getElementById('metric-name')?.value.trim();
-  const target = document.getElementById('metric-target')?.value.trim();
-  const current = document.getElementById('metric-current')?.value.trim();
-  const unit = document.getElementById('metric-unit')?.value.trim();
-
-  if (!procId || !name) {
-    alert('Process and name are required.');
+  if (!target) {
+    errorDiv.textContent = 'Please enter a target value';
+    errorDiv.style.display = 'block';
     return;
   }
 
@@ -216,7 +287,7 @@ window.updateMetric = async function(id) {
     process_id: procId,
     step_id: stepId,
     name: name,
-    target: target || null,
+    target: target,
     current: current || null,
     unit: unit || null
   };
@@ -229,23 +300,18 @@ window.updateMetric = async function(id) {
 
     if (error) throw error;
 
+    document.getElementById('metric-edit-modal').remove();
     alert('✅ Metric updated!');
-    clearMetricForm();
     await window.loadAllData();
-    renderMetricsTable();
-
-    const saveBtn = document.querySelector('button[onclick*="updateMetric"]');
-    if (saveBtn) {
-      saveBtn.textContent = '💾 Save Metric';
-      saveBtn.onclick = saveMetric;
-    }
 
   } catch (error) {
     console.error('Error updating metric:', error);
-    alert('Error: ' + error.message);
+    errorDiv.textContent = 'Error: ' + error.message;
+    errorDiv.style.display = 'block';
   }
 };
 
+// UPDATE METRIC
 // DELETE METRIC
 window.deleteMetric = async function(id) {
   if (!window.CAN_DELETE.includes(window.currentUser?.role)) {
