@@ -163,7 +163,6 @@ window.renderMonitoringDashboard = function() {
         </div>
         
         <div id="plan-details-${plan.id}" style="display:none;padding:1.5rem;border-top:1px solid #e5e5e5;">
-          ${plan.executive_summary || plan.quick_wins || plan.medium_term ? `
           <div style="display:grid;grid-template-columns:2fr 1fr;gap:1.5rem;">
             <!-- Left: Plan Sections -->
             <div>
@@ -206,24 +205,6 @@ window.renderMonitoringDashboard = function() {
               </div>
             </div>
           </div>
-          ` : `
-          <!-- Single column when no parsed sections -->
-          <div style="max-width:600px;">
-            <div style="background:#f9f9f9;border-radius:8px;padding:1rem;margin-bottom:1rem;">
-              <h4 style="font-size:14px;margin-bottom:1rem;">Success Metrics (KPIs)</h4>
-              <div id="kpi-list-${plan.id}">
-                ${renderKPIList(plan.id, kpis)}
-              </div>
-              ${canEdit ? `<button onclick="addKPI('${plan.id}')" style="margin-top:1rem;width:100%;padding:8px;background:#008f74;color:white;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;">+ Add KPI</button>` : ''}
-            </div>
-            
-            <div style="display:flex;gap:0.5rem;">
-              <button onclick="viewFullPlan('${plan.id}')" style="flex:1;padding:10px;background:#0088ff;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-size:13px;">👁 View Full Plan</button>
-              ${canEdit ? `<button onclick="createProjectFromPlan('${plan.id}')" style="flex:1;padding:10px;background:#7c3aed;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-size:13px;">🚀 Create Project</button>` : ''}
-              ${canEdit ? `<button onclick="archivePlan('${plan.id}')" style="flex:1;padding:10px;background:#6b7280;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-size:13px;">📦 Archive</button>` : ''}
-            </div>
-          </div>
-          `}
         </div>
       </div>
     `;
@@ -254,7 +235,11 @@ function renderKPIList(planId, kpis) {
             <div style="font-size:13px;font-weight:600;color:#333;">${kpi.name}</div>
             <div style="font-size:11px;color:#666;margin-top:2px;">Target: ${kpi.target}${kpi.unit || ''}</div>
           </div>
-          <div style="font-size:16px;">${statusIcon}</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="font-size:16px;">${statusIcon}</div>
+            <button onclick="editKPI('${kpi.id}')" style="padding:4px 8px;background:#0088ff;color:white;border:none;border-radius:4px;cursor:pointer;font-size:11px;">✎</button>
+            <button onclick="deleteKPI('${kpi.id}')" style="padding:4px 8px;background:#dc2626;color:white;border:none;border-radius:4px;cursor:pointer;font-size:11px;">✕</button>
+          </div>
         </div>
         
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;font-size:12px;">
@@ -289,83 +274,15 @@ window.togglePlanDetails = function(planId) {
   }
 };
 
-// ADD KPI - WITH MODAL
+// ADD KPI
 window.addKPI = function(planId) {
-  // Remove existing modal if any
-  const existing = document.getElementById('kpi-modal');
-  if (existing) existing.remove();
-
-  // Create modal
-  const modal = document.createElement('div');
-  modal.id = 'kpi-modal';
-  modal.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.7);z-index:999999;display:flex;align-items:center;justify-content:center;';
-
-  const box = document.createElement('div');
-  box.style.cssText = 'background:white;width:500px;max-width:90%;border-radius:12px;padding:2rem;box-shadow:0 20px 60px rgba(0,0,0,0.3);';
-
-  box.innerHTML = `
-    <h3 style="margin:0 0 1.5rem 0;color:#333;">Add Success Metric (KPI)</h3>
-    
-    <div style="margin-bottom:1rem;">
-      <label style="display:block;font-size:13px;font-weight:600;color:#666;margin-bottom:0.5rem;">KPI Name *</label>
-      <input type="text" id="kpi-name" placeholder="e.g., Process Time, Customer Satisfaction" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-size:14px;"/>
-    </div>
-    
-    <div style="margin-bottom:1rem;">
-      <label style="display:block;font-size:13px;font-weight:600;color:#666;margin-bottom:0.5rem;">Target Value *</label>
-      <input type="text" id="kpi-target" placeholder="e.g., 30, 95%, $10,000" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-size:14px;"/>
-    </div>
-    
-    <div style="margin-bottom:1.5rem;">
-      <label style="display:block;font-size:13px;font-weight:600;color:#666;margin-bottom:0.5rem;">Unit (optional)</label>
-      <input type="text" id="kpi-unit" placeholder="e.g., minutes, %, $" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-size:14px;"/>
-    </div>
-    
-    <div id="kpi-error" style="display:none;padding:10px;background:#fee;border:1px solid #fcc;border-radius:6px;color:#c00;font-size:13px;margin-bottom:1rem;"></div>
-    
-    <div style="display:flex;gap:10px;justify-content:flex-end;">
-      <button onclick="document.getElementById('kpi-modal').remove()" style="padding:10px 20px;background:#e5e7eb;color:#333;border:none;border-radius:6px;cursor:pointer;font-weight:600;">Cancel</button>
-      <button onclick="saveKPI('${planId}')" style="padding:10px 20px;background:#008f74;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:600;">💾 Save KPI</button>
-    </div>
-  `;
-
-  modal.appendChild(box);
-  document.body.appendChild(modal);
-
-  // Focus on first input
-  setTimeout(() => {
-    document.getElementById('kpi-name').focus();
-  }, 100);
-
-  // Close on ESC key
-  modal.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-      modal.remove();
-    }
-  });
-};
-
-// SAVE KPI FROM MODAL
-window.saveKPI = async function(planId) {
-  const name = document.getElementById('kpi-name').value.trim();
-  const target = document.getElementById('kpi-target').value.trim();
-  const unit = document.getElementById('kpi-unit').value.trim();
-  const errorDiv = document.getElementById('kpi-error');
-
-  // Validation
-  if (!name) {
-    errorDiv.textContent = 'Please enter a KPI name';
-    errorDiv.style.display = 'block';
-    document.getElementById('kpi-name').focus();
-    return;
-  }
-
-  if (!target) {
-    errorDiv.textContent = 'Please enter a target value';
-    errorDiv.style.display = 'block';
-    document.getElementById('kpi-target').focus();
-    return;
-  }
+  const name = prompt('KPI Name (e.g., "Process Time", "Customer Satisfaction"):');
+  if (!name) return;
+  
+  const target = prompt('Target Value (e.g., "30 minutes", "95%"):');
+  if (!target) return;
+  
+  const unit = prompt('Unit (optional, e.g., "minutes", "%", "$"):', '');
 
   const kpiData = {
     plan_id: planId,
@@ -378,28 +295,19 @@ window.saveKPI = async function(planId) {
     last_updated: new Date().toISOString()
   };
 
-  try {
-    const { data, error } = await window.supabaseClient
-      .from('plan_kpis')
-      .insert([kpiData])
-      .select();
-
-    if (error) throw error;
-
-    // Close modal
-    document.getElementById('kpi-modal').remove();
-
-    alert('✅ KPI added!');
-
-    // Reload and re-render
-    await window.loadAllData();
-    renderMonitoringDashboard();
-
-  } catch (error) {
-    console.error('Error adding KPI:', error);
-    errorDiv.textContent = 'Error: ' + error.message;
-    errorDiv.style.display = 'block';
-  }
+  window.supabaseClient
+    .from('plan_kpis')
+    .insert([kpiData])
+    .select()
+    .then(({ data, error }) => {
+      if (error) {
+        alert('Error adding KPI: ' + error.message);
+        return;
+      }
+      
+      alert('✅ KPI added!');
+      window.loadAllData().then(() => renderMonitoringDashboard());
+    });
 };
 
 // UPDATE KPI
@@ -612,3 +520,126 @@ function escapeHtml(unsafe) {
 }
 
 console.log('✅ monitoring.js loaded');
+
+// EDIT KPI
+window.editKPI = function(kpiId) {
+  const kpi = window.plan_kpis.find(k => k.id === kpiId);
+  if (!kpi) return;
+
+  // Remove existing modal if any
+  const existing = document.getElementById('kpi-edit-modal');
+  if (existing) existing.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'kpi-edit-modal';
+  modal.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.7);z-index:999999;display:flex;align-items:center;justify-content:center;';
+
+  const box = document.createElement('div');
+  box.style.cssText = 'background:white;width:500px;max-width:90%;border-radius:12px;padding:2rem;box-shadow:0 20px 60px rgba(0,0,0,0.3);';
+
+  box.innerHTML = `
+    <h3 style="margin:0 0 1.5rem 0;color:#333;">Edit KPI</h3>
+    
+    <div style="margin-bottom:1rem;">
+      <label style="display:block;font-size:13px;font-weight:600;color:#666;margin-bottom:0.5rem;">KPI Name *</label>
+      <input type="text" id="edit-kpi-name" value="${kpi.name}" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-size:14px;"/>
+    </div>
+    
+    <div style="margin-bottom:1rem;">
+      <label style="display:block;font-size:13px;font-weight:600;color:#666;margin-bottom:0.5rem;">Target Value *</label>
+      <input type="text" id="edit-kpi-target" value="${kpi.target}" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-size:14px;"/>
+    </div>
+    
+    <div style="margin-bottom:1.5rem;">
+      <label style="display:block;font-size:13px;font-weight:600;color:#666;margin-bottom:0.5rem;">Unit (optional)</label>
+      <input type="text" id="edit-kpi-unit" value="${kpi.unit || ''}" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-size:14px;"/>
+    </div>
+    
+    <div id="edit-kpi-error" style="display:none;padding:10px;background:#fee;border:1px solid #fcc;border-radius:6px;color:#c00;font-size:13px;margin-bottom:1rem;"></div>
+    
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <button onclick="document.getElementById('kpi-edit-modal').remove()" style="padding:10px 20px;background:#e5e7eb;color:#333;border:none;border-radius:6px;cursor:pointer;font-weight:600;">Cancel</button>
+      <button onclick="saveEditedKPI('${kpiId}')" style="padding:10px 20px;background:#0088ff;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:600;">💾 Update KPI</button>
+    </div>
+  `;
+
+  modal.appendChild(box);
+  document.body.appendChild(modal);
+
+  setTimeout(() => {
+    document.getElementById('edit-kpi-name').focus();
+  }, 100);
+};
+
+// SAVE EDITED KPI
+window.saveEditedKPI = async function(kpiId) {
+  const name = document.getElementById('edit-kpi-name').value.trim();
+  const target = document.getElementById('edit-kpi-target').value.trim();
+  const unit = document.getElementById('edit-kpi-unit').value.trim();
+  const errorDiv = document.getElementById('edit-kpi-error');
+
+  if (!name) {
+    errorDiv.textContent = 'Please enter a KPI name';
+    errorDiv.style.display = 'block';
+    return;
+  }
+
+  if (!target) {
+    errorDiv.textContent = 'Please enter a target value';
+    errorDiv.style.display = 'block';
+    return;
+  }
+
+  try {
+    const { error } = await window.supabaseClient
+      .from('plan_kpis')
+      .update({
+        name: name,
+        target: target,
+        unit: unit,
+        last_updated: new Date().toISOString()
+      })
+      .eq('id', kpiId);
+
+    if (error) throw error;
+
+    document.getElementById('kpi-edit-modal').remove();
+    alert('✅ KPI updated!');
+    await window.loadAllData();
+    renderMonitoringDashboard();
+
+  } catch (error) {
+    console.error('Error updating KPI:', error);
+    errorDiv.textContent = 'Error: ' + error.message;
+    errorDiv.style.display = 'block';
+  }
+};
+
+// DELETE KPI
+window.deleteKPI = async function(kpiId) {
+  const kpi = window.plan_kpis.find(k => k.id === kpiId);
+  if (!kpi) return;
+
+  if (!confirm(`Delete KPI "${kpi.name}"? This cannot be undone.`)) {
+    return;
+  }
+
+  try {
+    const { error } = await window.supabaseClient
+      .from('plan_kpis')
+      .delete()
+      .eq('id', kpiId);
+
+    if (error) throw error;
+
+    alert('✅ KPI deleted!');
+    await window.loadAllData();
+    renderMonitoringDashboard();
+
+  } catch (error) {
+    console.error('Error deleting KPI:', error);
+    alert('Error: ' + error.message);
+  }
+};
+
+console.log('✅ monitoring.js with KPI edit/delete loaded');
