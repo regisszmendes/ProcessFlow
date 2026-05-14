@@ -306,7 +306,7 @@ window.addKPI = function(planId) {
       }
       
       alert('✅ KPI added!');
-      window.loadAllData().then(() => renderMonitoringDashboardFiltered()());
+      window.loadAllData().then(() => renderMonitoringDashboard());
     });
 };
 
@@ -374,7 +374,6 @@ window.createProjectFromPlan = async function(planId) {
   const projectData = {
     name: `${plan.title} - Implementation`,
     process_id: plan.process_id,
-    description: plan.executive_summary || `Implementation of improvement plan: ${plan.title}`,
     status: 'planning',
     created_by: window.currentUser.id
   };
@@ -427,7 +426,7 @@ function parseRoadmapToTasks(plan, projectId) {
         tasks.push({
           project_id: projectId,
           title: text.substring(0, 200),
-          description: `Quick Win from: ${plan.title}`,
+          
           phase: 'quick-win',
           priority: 'high',
           kanban: 'backlog',
@@ -446,7 +445,7 @@ function parseRoadmapToTasks(plan, projectId) {
         tasks.push({
           project_id: projectId,
           title: text.substring(0, 200),
-          description: `Medium-term Action from: ${plan.title}`,
+          
           phase: 'short-term',
           priority: 'medium',
           kanban: 'backlog',
@@ -465,7 +464,7 @@ function parseRoadmapToTasks(plan, projectId) {
         tasks.push({
           project_id: projectId,
           title: text.substring(0, 200),
-          description: `Recommendation from: ${plan.title}`,
+          
           phase: 'long-term',
           priority: 'medium',
           kanban: 'backlog',
