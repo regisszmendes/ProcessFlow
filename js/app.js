@@ -129,6 +129,15 @@ window.loadAllData = async function () {
     if (typeof populateProcessDropdowns === 'function') populateProcessDropdowns();
     if (typeof populateCompanyDropdowns === 'function') populateCompanyDropdowns();
     if (typeof renderMonitoringDashboard === 'function') renderMonitoringDashboard();
+    
+    // Refresh metrics dropdowns
+    if (typeof refreshMetricProcessDropdown === 'function') refreshMetricProcessDropdown();
+    
+    // Refresh AI dropdowns
+    if (typeof refreshAIProcessDropdown === 'function') refreshAIProcessDropdown();
+    
+    // Refresh gaps dropdowns
+    if (typeof refreshGapProcessDropdown === 'function') refreshGapProcessDropdown();
 
     console.log('✅ All data loaded');
     console.log('  - Improvement Plans:', window.improvement_plans?.length || 0);
