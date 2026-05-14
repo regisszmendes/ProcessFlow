@@ -126,6 +126,7 @@ window.loadAllData = async function () {
     if (typeof renderCompanyTable === 'function') renderCompanyTable();
     if (typeof renderStepsTable === 'function') renderStepsTable();
     if (typeof renderGapsTable === 'function') renderGapsTable();
+    if (typeof renderMetricsTable === 'function') renderMetricsTable();
     if (typeof populateProcessDropdowns === 'function') populateProcessDropdowns();
     if (typeof populateCompanyDropdowns === 'function') populateCompanyDropdowns();
     if (typeof renderMonitoringDashboard === 'function') renderMonitoringDashboard();
