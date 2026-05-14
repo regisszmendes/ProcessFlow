@@ -72,7 +72,6 @@
 </header>
 
 <div id="main-app">
-<script>
   <!-- =====================================================
      MONITORING SECTION - Add this to your index.html
      ===================================================== -->
@@ -1237,37 +1236,6 @@
   </div>
 </div>
 
-// ============================================================
-// AI STEPS SELECTION
-// ============================================================
-function populateAIStepsSelect() {
-  const procId = document.getElementById('ai-proc-id').value;
-  const container = document.getElementById('ai-steps-container');
-  
-  if(!procId) {
-    container.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--text3);font-size:.78rem;padding:1rem">Select a process first to see its steps</div>';
-    return;
-  }
-  
-  const procSteps = steps.filter(s=>String(s.procId)===String(procId));
-  
-  if(!procSteps.length) {
-    container.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--text3);font-size:.78rem;padding:1rem">This process has no steps registered yet</div>';
-    return;
-  }
-  
-  container.innerHTML = procSteps.map(s=>`
-    <label style="display:flex;align-items:center;gap:6px;padding:.5rem;background:var(--surface);border:1px solid var(--border);border-radius:6px;cursor:pointer;transition:all .2s" onmouseover="this.style.background='var(--surface3)'" onmouseout="this.style.background='var(--surface)'">
-      <input type="checkbox" class="ai-step-checkbox" value="${s.id}" style="flex-shrink:0"/>
-      <span style="font-size:.78rem;line-height:1.3">${s.name}</span>
-    </label>
-  `).join('');
-}
-
-function getSelectedAISteps() {
-  const checkboxes = document.querySelectorAll('.ai-step-checkbox:checked');
-  return Array.from(checkboxes).map(cb=>parseInt(cb.value));
-}
 
 </script>
   <script src="./js/config.js"></script>
