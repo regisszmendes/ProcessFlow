@@ -733,10 +733,14 @@ window.renderStagedPlans = function() {
               <div class="card-title">${plan.title}</div>
               <div style="font-size:12px;color:#666;margin-top:4px;">
                 📊 ${procName} • Saved: ${new Date(plan.saved_at).toLocaleString()}
+                ${plan.sentToMonitoring ? `<br><span style="color:#008f74;font-weight:600;">✓ Sent to Monitoring ${new Date(plan.sentAt).toLocaleString()}</span>` : ''}
               </div>
             </div>
             <div style="display:flex;gap:8px;">
-              <button onclick="event.stopPropagation(); sendPlanToMonitoring('${plan.id}')" style="padding:8px 16px;background:#008f74;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:700;font-size:13px;">📊 Send to Monitoring</button>
+              ${plan.sentToMonitoring ? 
+                `<button disabled style="padding:8px 16px;background:#d1d5db;color:#6b7280;border:none;border-radius:6px;cursor:not-allowed;font-weight:700;font-size:13px;">✓ Already Sent</button>` :
+                `<button onclick="event.stopPropagation(); sendPlanToMonitoring('${plan.id}')" style="padding:8px 16px;background:#008f74;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:700;font-size:13px;">📊 Send to Monitoring</button>`
+              }
               <button onclick="event.stopPropagation(); deleteStagedPlan('${plan.id}')" style="padding:8px 16px;background:#dc2626;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:700;font-size:13px;">🗑</button>
             </div>
           </div>
@@ -812,7 +816,12 @@ window.sendPlanToMonitoring = async function(planId) {
 
     alert('✅ Plan sent to MONITORING! Go to 📊 Monitor section to track progress.');
     
-    window.savedAIPlans = window.savedAIPlans.filter(p => p.id !== planId);
+    // Mark plan as sent instead of deleting it
+    const sentPlan = window.savedAIPlans.find(p => p.id === planId);
+    if (sentPlan) {
+      sentPlan.sentToMonitoring = true;
+      sentPlan.sentAt = new Date().toISOString();
+    }
     
     await window.loadAllData();
     
