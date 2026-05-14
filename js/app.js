@@ -132,10 +132,15 @@ window.loadAllData = async function () {
     if (typeof renderMonitoringDashboard === 'function') renderMonitoringDashboard();
     
     // Refresh metrics dropdowns
+    if (typeof refreshMetricCompanyDropdown === 'function') refreshMetricCompanyDropdown();
     if (typeof refreshMetricProcessDropdown === 'function') refreshMetricProcessDropdown();
     
     // Refresh AI dropdowns
+    if (typeof refreshAICompanyDropdown === 'function') refreshAICompanyDropdown();
     if (typeof refreshAIProcessDropdown === 'function') refreshAIProcessDropdown();
+    
+    // Refresh monitoring filter
+    if (typeof refreshMonitoringCompanyDropdown === 'function') refreshMonitoringCompanyDropdown();
     
     // Refresh gaps dropdowns
     if (typeof refreshGapProcessDropdown === 'function') refreshGapProcessDropdown();
